@@ -1,5 +1,5 @@
 /* Real, metre-scale corridor. Static architecture; only the first-person camera moves.
-   No door/reader interactions in this scene. PBR maps are local CC0 assets (assets/pbr/).
+   Closed-door architecture; the access module controls only the reader and camera. PBR maps are local CC0 assets (assets/pbr/).
    Canvas textures below contain lighting/contact shading, not repainted photographs. */
 (() => {
   'use strict';
@@ -228,6 +228,35 @@
       contact(.18, SPACE.width, 0, .09, -.044, 0, Math.PI / 2);
       const mainDoor = door(0, .045, 0, true);
 
+      // STEP 03: bottom-entry nickel reader, mounted on the existing end wall.
+      // The 140 mm mouth accepts the top edge of a portrait card moving upward.
+      const reader = new T.Group(); reader.position.set(.97, 1.34, .035); scene.add(reader);
+      reader.name = 'investigation-card-slot';
+      const nickelCanvas = document.createElement('canvas'); nickelCanvas.width = 256; nickelCanvas.height = 256;
+      const nc = nickelCanvas.getContext('2d'); nc.fillStyle = '#92908a'; nc.fillRect(0,0,256,256);
+      for (let y=0;y<256;y++) { nc.fillStyle = `rgba(${y%3?230:30},${y%3?229:29},${y%3?223:27},${.010+(y*17%11)*.001})`; nc.fillRect(0,y,256,1); }
+      const nickelMap = new T.CanvasTexture(nickelCanvas); nickelMap.colorSpace = T.SRGBColorSpace;
+      const nickel = new T.MeshStandardMaterial({color:'#e3e0d7',map:nickelMap,metalness:.65,roughness:.52,envMapIntensity:1.3,emissive:'#4b463e',emissiveIntensity:.06});
+      const readerFace = nickel.clone();
+      box(.218,.304,.018,0,0,.007,darkMetal,reader,.008);
+      box(.202,.286,.062,0,0,.038,nickel,reader,.008);
+      box(.184,.262,.012,0,.004,.074,readerFace,reader,.005);
+      // Bottom-facing throat and two metal lips, not a hotel-style proximity pad.
+      box(.148,.012,.038,0,-.146,.053,gap,reader);
+      box(.176,.010,.016,0,-.151,.087,nickel,reader,.003);
+      box(.176,.008,.012,0,-.149,.023,nickel,reader,.002);
+      for (const y of [-.11,.113]) for(const x of [-.076,.076]) {
+        const screw = cylinder(.005,.005,.003,x,y,.083,nickel,reader,12); screw.rotation.x=Math.PI/2;
+        box(.005,.0009,.001,x,y,.085,gap,reader);
+      }
+      const amber = new T.MeshStandardMaterial({color:'#54452d',emissive:'#b27a2b',emissiveIntensity:0,roughness:.65});
+      box(.018,.006,.003,0,.104,.084,amber,reader,.001);
+      // No label or display. State is a small mechanical tell and a muted amber pin light.
+      function readerFeedback({hover=false,unlocked=false}={}) {
+        readerFace.emissive.set(hover?'#827762':'#000000'); readerFace.emissiveIntensity=hover?.10:0;
+        amber.emissiveIntensity=unlocked?.7:0; render();
+      }
+
       // Repeated side doors share draw calls. Main door remains an independent, closed mesh group.
       const batches = new Map(); scene.updateMatrixWorld(true);
       for (const group of sideDoors) {
@@ -320,7 +349,7 @@
         scene.add(mirror);
       }
       stage.prepend(canvas);
-      let progress = 0, bob = 0, sway = 0, lost = false;
+      let progress = 0, bob = 0, sway = 0, lost = false, authProgress = 0;
       const root = document.querySelector('#opening-sequence');
       function resize() {
         const rect = stage.getBoundingClientRect();
@@ -334,13 +363,25 @@
         const travel = travelAt(progress);
         camera.position.set(lateral * .0014, SPACE.eye - bounce * .0028,
           T.MathUtils.lerp(SPACE.startZ, SPACE.endZ, travel));
-        camera.lookAt(lateral * .0003, SPACE.targetY, 0);
+        if (authProgress > 0) {
+          camera.position.lerp(new T.Vector3(.97,1.23,.73),authProgress);
+          camera.lookAt(T.MathUtils.lerp(0,.97,authProgress),T.MathUtils.lerp(SPACE.targetY,1.20,authProgress),0);
+        } else camera.lookAt(lateral * .0003, SPACE.targetY, 0);
         renderer.render(scene, camera);
         root.dataset.cameraZ = camera.position.z.toFixed(3);
         root.dataset.renderer = 'webgl';
         root.dataset.drawCalls = String(renderer.info.render.calls);
         root.dataset.sideDoors = String(sideDoors.length);
         root.dataset.lightFixtures = String(lampCount);
+        root.dataset.authCamera = authProgress.toFixed(3);
+        stage.dispatchEvent(new Event('corridor:render'));
+      }
+      function readerProjection() {
+        const rect=stage.getBoundingClientRect();
+        const point=(x,y,z) => { const v=new T.Vector3(x,y,z).project(camera); return {x:(v.x+1)*rect.width/2,y:(1-v.y)*rect.height/2}; };
+        const left=point(.97-.109,1.34+.152,.124),right=point(.97+.109,1.34-.152,.124);
+        const ml=point(.97-.074,1.34-.151,.122),mr=point(.97+.074,1.34-.151,.122);
+        return {x:left.x,y:left.y,width:right.x-left.x,height:right.y-left.y,mouthX:(ml.x+mr.x)/2,mouthY:(ml.y+mr.y)/2,mouthWidth:mr.x-ml.x};
       }
       function onResize() { resize(); render(); }
       window.addEventListener('resize', onResize, { passive: true });
@@ -354,10 +395,13 @@
       resize(); render(0, 0, 0);
       root.classList.add('has-3d');
       active = Object.freeze({ render, resize: onResize, getCamera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),
-        // Future door interactions can use this actual mesh group; no listener is installed now.
-        mainDoor, dispose() {
+        readerProjection, readerFeedback,
+        authView(value) { authProgress=clamp(value); render(); },
+        // STEP 04 HOOK: mainDoor stays closed. Check HNJAccess.getState().doorUnlocked before a future handle action.
+        mainDoor, reader, dispose() {
           window.removeEventListener('resize', onResize); mirror?.dispose(); environment.dispose();
           geometry.forEach(g => g.dispose()); instanceGeometries.forEach(g => g.dispose());
+          nickelMap.dispose(); nickel.dispose(); readerFace.dispose(); amber.dispose();
           haloTexture.dispose(); edgeTexture.dispose(); textureCache.forEach(t => t.dispose()); renderer.dispose(); canvas.remove(); active = null;
         } });
       return active;

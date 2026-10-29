@@ -1,5 +1,5 @@
 /* Same-page opening: issued ID -> corridor -> five steps -> closed door.
-   No access reader, handle interaction, door opening, room interior or next scene. */
+   Reader authentication is connected by access.js; the door remains closed. */
 (() => {
   'use strict';
 
@@ -253,8 +253,7 @@
       await walkToDoor();
       state('arrived');
       root.setAttribute('aria-label', '닫힌 조사실 문 앞');
-      // NEXT SCENE HOOK: the closed door is now stable. Add the actual card slot and
-      // door interactions to #door-interaction-layer in a later task, not here.
+      // STEP 03: access.js attaches the reader only after the original walk settles.
       window.dispatchEvent(new CustomEvent('investigation:arrived', { detail: identity }));
     } catch (error) {
       // Recover to the same issued card if local assets are missing. No dummy page or alert.

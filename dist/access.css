@@ -1,0 +1,18 @@
+@charset "UTF-8";
+/* STEP 03 only. The issuance stylesheet and corridor framing remain intact. */
+.reader-target{position:absolute;display:block;min-width:44px;min-height:44px;transform:translate(-50%,-50%);pointer-events:auto;padding:0;background:transparent;border:0;border-radius:4px;color:transparent;touch-action:manipulation}
+.reader-target[hidden],.access-card[hidden],.reader-lip[hidden]{display:none}
+.reader-target:focus-visible{outline:1px solid #d0b77d99;outline-offset:5px;box-shadow:0 0 12px #cfb77c16}
+.reader-target:disabled{pointer-events:none}
+.access-card{position:absolute;left:0;top:0;z-index:4;pointer-events:auto;touch-action:none;user-select:none;cursor:grab;transform-origin:0 0;will-change:transform;filter:drop-shadow(3px 8px 6px #0008);outline:none}
+.access-card:focus-visible,.access-card.is-selected{filter:drop-shadow(0 0 2px #d9cba577) drop-shadow(4px 10px 7px #0009)}
+.access-card.is-dragging{cursor:grabbing;filter:drop-shadow(5px 14px 9px #000b)}
+.access-card.is-busy{pointer-events:none;cursor:default}
+.access-card .id-card{width:100%;pointer-events:none;transform-origin:0 0}
+.access-card .approved-stamp{opacity:.88;will-change:auto}
+.access-card .photo-select,.access-card .photo-toolbar,.access-card .edit-mark{display:none}
+.access-card .identity-field .access-name{font-weight:600;font-size:21px;letter-spacing:-.6px}
+.access-card .portrait:hover{filter:none}
+.reader-lip{position:absolute;z-index:5;height:3px;pointer-events:none;border-top:1px solid #e0d9c077;background:linear-gradient(#706d62,#2a2822);box-shadow:0 2px 2px #0008;transform:translateX(-50%)}
+.door-interaction-layer[data-auth-scene-open="true"] .reader-target{z-index:6}
+@media(prefers-reduced-motion:reduce){.access-card{will-change:auto}}

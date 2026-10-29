@@ -9,11 +9,13 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23181917'/%3E%3Ctext x='32' y='42' fill='%23ebe9df' text-anchor='middle' font-family='Arial' font-weight='bold' font-size='28'%3EH.%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="opening.css">
+  <link rel="stylesheet" href="access.css">
   <script src="app.js" defer></script>
   <script src="vendor/three.local.js" defer></script>
   <script src="vendor/reflector.local.js" defer></script>
   <script src="corridor-3d.js" defer></script>
   <script src="opening.js" defer></script>
+  <script src="access.js" defer></script>
 </head>
 <body>
   <svg class="texture-definitions" aria-hidden="true"><defs>
@@ -80,10 +82,13 @@
         </div>
       </div>
       <div class="opening-shade" aria-hidden="true"></div>
-      <!-- NEXT STEP: mount the card slot / door interactions here. No interactions yet.
-           WebGL: use corridor-3d.js mainDoor group and the real wall to its right.
-           Image fallback anchors only: door (0.50, 0.54), slot wall (0.70, 0.57). -->
-      <div class="door-interaction-layer" id="door-interaction-layer" aria-hidden="true"></div>
+      <!-- STEP 03: projected reader target, safe visual card clone and insertion occlusion. -->
+      <div class="door-interaction-layer" id="door-interaction-layer">
+        <button class="reader-target" id="reader-target" type="button" aria-label="금속 슬롯에 조사관증 넣기" hidden></button>
+        <div class="access-card" id="access-card" role="button" tabindex="0" aria-label="발급된 조사관증 선택. 선택 후 금속 슬롯을 누르거나 Enter로 삽입" hidden></div>
+        <div class="reader-lip" id="reader-lip" aria-hidden="true" hidden></div>
+        <p class="visually-hidden" id="access-status" role="status" aria-live="polite"></p>
+      </div>
     </div>
   </section>
   <div class="scene-blackout" id="scene-blackout" aria-hidden="true"></div>
