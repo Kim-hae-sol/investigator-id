@@ -5,27 +5,31 @@
 
 ## 실행
 
-`dist/index.html`을 브라우저에서 열면 바로 실행됩니다.
-또는 프로젝트 폴더에서 `python3 -m http.server 4178 --directory dist`를 실행한 다음
+GitHub Pages는 `main` 브랜치의 `/ (root)`를 그대로 배포합니다. 루트 `index.html`과
+`assets/`, `vendor/` 및 모든 CSS·JavaScript를 같은 상대 경로로 보관합니다.
+`.nojekyll`로 Jekyll 처리를 건너뛰며 별도 빌드가 필요 없습니다.
+
+`index.html`을 브라우저에서 열면 바로 실행됩니다.
+또는 프로젝트 폴더에서 `python3 -m http.server 4178 --directory .`를 실행한 다음
 `http://localhost:4178`에 접속합니다.
 
 ## 구조
 
-- `dist/index.html` — 장면, 카드, 접근성 레이블
-- `dist/styles.css` — 카드 재질, 금속 클립, 조명, 도장 모션, 작은 화면 대응
-- `dist/app.js` — 이름 입력, 사진 처리, 효과음, 자동 코드네임, 발급 상태, 브라우저 보관, 다음 장면 연동
-- `dist/opening.js` — 같은 페이지 전환, 연속 복도 이동, 다섯 걸음, 문 앞 정지
-- `dist/opening.css` — 새 장면에만 적용되는 화면·이미지·WebGL 스타일
-- `dist/access.js` — 슬롯 클로즈업, 발급 카드 복제, 포인터·키보드 조작, 삽입·음향·잠금 해제 상태
-- `dist/access.css` — 투명 슬롯 판정 영역, 인터랙션 카드와 삽입 시 가림 처리
-- `dist/corridor-3d.js` — 미터 단위 복도, 문/문틀/금속 손잡이, PBR 재질, 조명/그림자/반사, 실제 카메라 이동
-- `dist/vendor/` — 로컬 Three.js r180, 공식 Reflector, MIT 라이선스
-- `dist/assets/pbr/` — 월넛·플라스터·테라조 재질과 CC0 출처 문서
-- `dist/assets/corridor-start.png` — WebGL을 지원하지 않는 환경의 복도 대체 이미지
-- `dist/assets/door-arrival.png` — 향후 촬영/비주얼 참고용 근접 이미지
-- `dist/assets/shoe-steps.wav` — 실제 구두 발걸음 녹음에서 다듬은 네 개의 발소리
-- `dist/assets/AUDIO.md` — 구두 녹음의 출처, CC0 라이선스, 편집 내역
-- `dist/assets/ASSETS.md` — 에셋 구분, 교체 방법, 내장 ImageGen 최종 프롬프트
+- `index.html` — 장면, 카드, 접근성 레이블
+- `styles.css` — 카드 재질, 금속 클립, 조명, 도장 모션, 작은 화면 대응
+- `app.js` — 이름 입력, 사진 처리, 효과음, 자동 코드네임, 발급 상태, 브라우저 보관, 다음 장면 연동
+- `opening.js` — 같은 페이지 전환, 연속 복도 이동, 다섯 걸음, 문 앞 정지
+- `opening.css` — 새 장면에만 적용되는 화면·이미지·WebGL 스타일
+- `access.js` — 슬롯 클로즈업, 발급 카드 복제, 포인터·키보드 조작, 삽입·음향·잠금 해제 상태
+- `access.css` — 투명 슬롯 판정 영역, 인터랙션 카드와 삽입 시 가림 처리
+- `corridor-3d.js` — 미터 단위 복도, 문/문틀/금속 손잡이, PBR 재질, 조명/그림자/반사, 실제 카메라 이동
+- `vendor/` — 로컬 Three.js r180, 공식 Reflector, MIT 라이선스
+- `assets/pbr/` — 월넛·플라스터·테라조 재질과 CC0 출처 문서
+- `assets/corridor-start.png` — WebGL을 지원하지 않는 환경의 복도 대체 이미지
+- `assets/door-arrival.png` — 향후 촬영/비주얼 참고용 근접 이미지
+- `assets/shoe-steps.wav` — 실제 구두 발걸음 녹음에서 다듬은 네 개의 발소리
+- `assets/AUDIO.md` — 구두 녹음의 출처, CC0 라이선스, 편집 내역
+- `assets/ASSETS.md` — 에셋 구분, 교체 방법, 내장 ImageGen 최종 프롬프트
 - `package.py` — 이미지까지 내장한 단일 HTML과 소스 ZIP 재생성
 
 이름 또는 닉네임만 직접 입력합니다. 사진은 기존과 같이 선택이며, 없으면 실루엣으로 발급됩니다.
