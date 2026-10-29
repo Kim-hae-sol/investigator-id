@@ -23,6 +23,7 @@ GitHub Pages는 `main` 브랜치의 `/ (root)`를 그대로 배포합니다. 루
 - `access.js` — 슬롯 클로즈업, 발급 카드 복제, 포인터·키보드 조작, 삽입·음향·잠금 해제 상태
 - `access.css` — 투명 슬롯 판정 영역, 인터랙션 카드와 삽입 시 가림 처리
 - `corridor-3d.js` — 미터 단위 복도, 문/문틀/금속 손잡이, PBR 재질, 조명/그림자/반사, 실제 카메라 이동
+- `interrogation-room.js` — 별도 조사실 Scene, 탁자·마주 보는 의자·기록 가구, 입장/착석/탑뷰 카메라
 - `vendor/` — 로컬 Three.js r180, 공식 Reflector, MIT 라이선스
 - `assets/pbr/` — 월넛·플라스터·테라조 재질과 CC0 출처 문서
 - `assets/corridor-start.png` — WebGL을 지원하지 않는 환경의 복도 대체 이미지
@@ -171,6 +172,24 @@ x/y는 이미지와 프레임 사이 공간에 대한 0~1의 정규화된 위치
 실제 문 그룹은 `corridor-3d.js`의 `mainDoor`입니다. 현재는 회전·손잡이 핸들러가 없습니다.
 
 WebGL2를 지원하지 않는 브라우저에서는 기존 사진 대체 복도까지만 표시합니다. 인증 클로즈업에는 WebGL2가 필요합니다.
+
+## STEP 04 — 조사실 공간 베이스
+
+`interrogation-room.js`는 기존 복도 Scene과 분리된 조사실 Scene입니다. 기존의 로컬 Three.js와
+`assets/pbr/` 우드·벽·바닥 맵을 그대로 사용합니다. ID 발급, 복도, 카드 슬롯 인증 흐름에는 연결하지
+않았으므로 현재 출입 인증이 끝나도 복도 문은 닫힌 채 남아 있습니다.
+
+문 개방 장면이 준비되면 출입 인증 완료 후 별도 컨테이너를 만들고 다음 API를 호출해 연결할 수 있습니다.
+
+```js
+const room = await window.HNJInterrogationRoom.create(roomContainer, { initialView: 'entry' });
+await room.transitionTo('seated'); // 입장 → 조사관 착석 눈높이
+await room.transitionTo('tabletop'); // 책상 A4 파일을 위한 하향 시점
+room.setView('seated'); // 필요하면 즉시 시점을 맞춥니다.
+```
+
+카메라 프리셋은 `entry`, `seated`, `tabletop`입니다. `getObjects()`는 중앙 탁자와 두 좌석,
+메인 조명 그룹을 후속 인터랙션에서 배치·연결할 수 있도록 노출합니다. 화면에는 카메라 전환 UI가 없습니다.
 
 ## 복도 초기화 복구
 

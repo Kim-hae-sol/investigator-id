@@ -29,7 +29,7 @@ def package(output_dir):
     )
     if replaced != 1:
         raise ValueError('Expected exactly one embedded shoe Foley payload')
-    files = ['index.html', 'styles.css', 'app.js', 'opening.css', 'opening.js', 'corridor-3d.js',
+    files = ['index.html', 'styles.css', 'app.js', 'opening.css', 'opening.js', 'corridor-3d.js', 'interrogation-room.js',
              'access.css', 'access.js', 'vendor/three.local.js', 'vendor/reflector.local.js', 'vendor/THREE-LICENSE.txt']
     for name in files:
         src, dst = source / name, target / name
@@ -54,7 +54,7 @@ def package(output_dir):
         css = (source / name).read_text().replace('@charset "UTF-8";', '', 1)
         html = html.replace(f'<link rel="stylesheet" href="{name}">', '<style>\n' + css + '\n</style>')
     scripts = []
-    for name in ('app.js', 'vendor/three.local.js', 'vendor/reflector.local.js', 'corridor-3d.js', 'opening.js', 'access.js'):
+    for name in ('app.js', 'vendor/three.local.js', 'vendor/reflector.local.js', 'corridor-3d.js', 'interrogation-room.js', 'opening.js', 'access.js'):
         js = opening_js if name == 'opening.js' else (source / name).read_text()
         if '</script' in js.lower():
             raise ValueError('Inline script contains a closing script tag')
