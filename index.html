@@ -10,13 +10,15 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="opening.css">
   <link rel="stylesheet" href="access.css">
+  <link rel="stylesheet" href="room-entry.css">
   <script src="app.js" defer></script>
   <script src="vendor/three.local.js" defer></script>
   <script src="vendor/reflector.local.js" defer></script>
-  <script src="corridor-3d.js?v=20261030-1" defer></script>
-  <script src="interrogation-room.js?v=20261030-1" defer></script>
-  <script src="opening.js?v=20261030-1" defer></script>
+  <script src="corridor-3d.js?v=20261030-2" defer></script>
+  <script src="interrogation-room.js?v=20261030-2" defer></script>
+  <script src="opening.js?v=20261030-2" defer></script>
   <script src="access.js?v=20261030-1" defer></script>
+  <script src="room-entry.js?v=20261030-2" defer></script>
 </head>
 <body>
   <svg class="texture-definitions" aria-hidden="true"><defs>
@@ -97,6 +99,7 @@
   <!-- Local CC0 material maps. Hidden image elements keep file:// and standalone HTML
        working without fetch(), CDN requests or an asset server. See assets/pbr/CREDITS.md. -->
   <div hidden aria-hidden="true">
+    <img data-room="records-board" src="assets/records-board-v2.jpg" alt="" decoding="async">
     <img data-pbr="wood-color" src="assets/pbr/wood-color.jpg" alt="" decoding="async">
     <img data-pbr="wood-normal" src="assets/pbr/wood-normal.jpg" alt="" decoding="async">
     <img data-pbr="wood-roughness" src="assets/pbr/wood-roughness.jpg" alt="" decoding="async">

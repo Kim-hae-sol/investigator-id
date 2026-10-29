@@ -286,5 +286,6 @@
     }
   }
 
+  window.addEventListener('investigation:room-step', event => shoeStep(event.detail.index));
   window.addEventListener('investigation:enter', startOpening);
 })();

@@ -30,7 +30,7 @@ def package(output_dir):
     if replaced != 1:
         raise ValueError('Expected exactly one embedded shoe Foley payload')
     files = ['index.html', 'styles.css', 'app.js', 'opening.css', 'opening.js', 'corridor-3d.js', 'interrogation-room.js',
-             'access.css', 'access.js', 'vendor/three.local.js', 'vendor/reflector.local.js', 'vendor/THREE-LICENSE.txt']
+             'access.css', 'access.js', 'room-entry.css', 'room-entry.js', 'vendor/three.local.js', 'vendor/reflector.local.js', 'vendor/THREE-LICENSE.txt']
     for name in files:
         src, dst = source / name, target / name
         dst.parent.mkdir(parents=True, exist_ok=True)
@@ -50,11 +50,11 @@ def package(output_dir):
         shutil.copy2(__file__, target / 'package.py')
 
     html = (source / 'index.html').read_text()
-    for name in ('styles.css', 'opening.css', 'access.css'):
+    for name in ('styles.css', 'opening.css', 'access.css', 'room-entry.css'):
         css = (source / name).read_text().replace('@charset "UTF-8";', '', 1)
         html = html.replace(f'<link rel="stylesheet" href="{name}">', '<style>\n' + css + '\n</style>')
     scripts = []
-    for name in ('app.js', 'vendor/three.local.js', 'vendor/reflector.local.js', 'corridor-3d.js', 'interrogation-room.js', 'opening.js', 'access.js'):
+    for name in ('app.js', 'vendor/three.local.js', 'vendor/reflector.local.js', 'corridor-3d.js', 'interrogation-room.js', 'opening.js', 'access.js', 'room-entry.js'):
         js = opening_js if name == 'opening.js' else (source / name).read_text()
         if '</script' in js.lower():
             raise ValueError('Inline script contains a closing script tag')

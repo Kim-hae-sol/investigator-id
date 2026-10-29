@@ -212,12 +212,18 @@
         if (!geometry.has('door-contact')) geometry.set('door-contact', new T.PlaneGeometry(1.70, 2.75));
         const halo = new T.Mesh(geometry.get('door-contact'), haloMaterial);
         halo.position.set(0,1.28,-.004); g.add(halo);
-        if (!main) { g.userData.variant = sideDoors.length; sideDoors.push(g); }
+        if (main) {
+          g.children[0].visible=false;
+          const leaf=new T.Group();leaf.position.x=-.58;leaf.name='hinged-door-leaf';
+          const moving=g.children.filter((m,i)=>(i>=1&&i<=19)||m===lever||(m.position.x>.20&&m.position.y>.9&&m.position.y<1.12));
+          g.add(leaf);for(const m of moving){g.remove(m);m.position.x+=.58;leaf.add(m);}g.userData.leaf=leaf;
+        } else { g.userData.variant = sideDoors.length; sideDoors.push(g); }
         return g;
       }
 
       // Geometry, repetition and proportions change together; SPACE controls the complete corridor.
-      box(SPACE.width + .32, SPACE.height + .16, .16, 0, SPACE.height / 2, -.13, wallEnd);
+      for(const sign of [-1,1]) box((SPACE.width+.32-1.30)/2,SPACE.height+.16,.16,sign*(.65+(SPACE.width+.32-1.30)/4),SPACE.height/2,-.13,wallEnd);
+      box(1.30,SPACE.height+.16-2.48,.16,0,2.48+(SPACE.height+.16-2.48)/2,-.13,wallEnd);
       box(.16, SPACE.height + .16, SPACE.length, -half - .08, SPACE.height / 2, centreZ, wallSide);
       box(.16, SPACE.height + .16, SPACE.length, half + .08, SPACE.height / 2, centreZ, wallSide);
       box(SPACE.width + .32, .12, SPACE.length, 0, SPACE.height + .06, centreZ, ceiling);
@@ -361,7 +367,7 @@
         scene.add(mirror);
       }
       stage.prepend(canvas);
-      let progress = 0, bob = 0, sway = 0, lost = false, authProgress = 0;
+      let progress = 0, bob = 0, sway = 0, lost = false, authProgress = 0, doorProgress = 0, entryProgress = 0;
       const root = document.querySelector('#opening-sequence');
       function resize() {
         const rect = stage.getBoundingClientRect();
@@ -379,6 +385,11 @@
           camera.position.lerp(new T.Vector3(.97,1.23,.73),authProgress);
           camera.lookAt(T.MathUtils.lerp(0,.97,authProgress),T.MathUtils.lerp(SPACE.targetY,1.20,authProgress),0);
         } else camera.lookAt(lateral * .0003, SPACE.targetY, 0);
+        if(entryProgress>0) {
+          camera.position.set(0,T.MathUtils.lerp(SPACE.eye,1.70,entryProgress),T.MathUtils.lerp(SPACE.endZ,-.30,entryProgress));
+          camera.lookAt(0,T.MathUtils.lerp(SPACE.targetY,1.10,entryProgress),T.MathUtils.lerp(0,-3.95,entryProgress));
+          camera.fov=T.MathUtils.lerp(SPACE.fov,48,entryProgress);camera.updateProjectionMatrix();
+        }
         renderer.render(scene, camera);
         root.dataset.cameraZ = camera.position.z.toFixed(3);
         root.dataset.renderer = 'webgl';
@@ -394,6 +405,10 @@
         const left=point(.97-.109,1.34+.152,.124),right=point(.97+.109,1.34-.152,.124);
         const ml=point(.97-.074,1.34-.151,.122),mr=point(.97+.074,1.34-.151,.122);
         return {x:left.x,y:left.y,width:right.x-left.x,height:right.y-left.y,mouthX:(ml.x+mr.x)/2,mouthY:(ml.y+mr.y)/2,mouthWidth:mr.x-ml.x};
+      }
+      function handleProjection() {
+        const rect=stage.getBoundingClientRect(),v=new T.Vector3(.38,1.04,.20).project(camera);
+        return {x:(v.x+1)*rect.width/2,y:(1-v.y)*rect.height/2};
       }
       function onResize() { resize(); render(); }
       window.addEventListener('resize', onResize, { passive: true });
@@ -415,9 +430,13 @@
         throw new Error('3D renderer did not produce a valid first frame');
       root.classList.add('has-3d');
       active = Object.freeze({ render, resize: onResize, getCamera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),
-        readerProjection, readerFeedback,
+        readerProjection, readerFeedback, handleProjection,
+        getRenderer:()=>renderer,
+        attachRoom(roomScene) {roomScene.position.set(0,0,-3.40);scene.add(roomScene);renderer.shadowMap.autoUpdate=true;render();},
+        openDoor(value){doorProgress=clamp(value);mainDoor.userData.leaf.rotation.y=doorProgress*Math.PI*.55;renderer.shadowMap.needsUpdate=true;render();},
+        enterRoom(value){entryProgress=clamp(value);render();if(entryProgress===1)renderer.shadowMap.autoUpdate=false;},
         authView(value) { authProgress=clamp(value); render(); },
-        // STEP 04 HOOK: mainDoor stays closed. Check HNJAccess.getState().doorUnlocked before a future handle action.
+        // room-entry.js gates the hinged leaf and room approach on HNJAccess.doorUnlocked.
         mainDoor, reader, dispose() {
           window.removeEventListener('resize', onResize); mirror?.dispose(); environment.dispose();
           geometry.forEach(g => g.dispose()); instanceGeometries.forEach(g => g.dispose());

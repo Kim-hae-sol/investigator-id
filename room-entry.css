@@ -1,0 +1,4 @@
+/* Only the projected physical handle is interactive. No additional scene navigation UI. */
+.door-handle-target{position:absolute;width:68px;height:54px;transform:translate(-50%,-50%);background:transparent;border:0;border-radius:4px;padding:0;pointer-events:auto;cursor:pointer;touch-action:manipulation}
+.door-handle-target[hidden]{display:none}
+.door-handle-target:focus-visible{outline:1px solid #d2b88688;outline-offset:4px}
