@@ -58,7 +58,7 @@ def package(output_dir):
         js = opening_js if name == 'opening.js' else (source / name).read_text()
         if '</script' in js.lower():
             raise ValueError('Inline script contains a closing script tag')
-        html = html.replace(f'<script src="{name}" defer></script>', '')
+        html = re.sub(r'<script src="' + re.escape(name) + r'(?:\?[^"<>]*)?" defer></script>', '', html)
         scripts.append('<script>\n' + js + '\n</script>')
     html = html.replace('</body>', '\n'.join(scripts) + '\n</body>')
     for image in re.findall(r'src="(assets/[^"<>]+)"', html):

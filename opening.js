@@ -36,6 +36,14 @@
   let shoeBuffer = null;
   let shoeDecode = null;
   let spatialScene = null;
+  let scenePreparation = null;
+  function prepareScene() {
+    if (!scenePreparation) scenePreparation = (window.HNJCorridor3D?.create($('#opening-stage')) || Promise.resolve(null))
+      .catch(error=>{console.warn('Corridor preparation:',error.message);return null;});
+    return scenePreparation;
+  }
+  // Start after the original stamp finishes, rather than making the user wait in black.
+  window.addEventListener('investigator:issued',()=>{setTimeout(prepareScene,0);});
 
   // Recorded women's high-heel Foley, CC0, OwlStorm / Freesound 151208.
   // Four .52-second footfalls at .60-second intervals, including natural sole/room tails.
@@ -74,7 +82,11 @@
     veilAnimation = blackout.animate([{ opacity: from }, { opacity: to }], {
       duration, easing: 'ease-in-out', fill: 'forwards'
     });
-    await veilAnimation.finished;
+    // Some backgrounded/low-power browsers delay Web Animation completion indefinitely.
+    // The timer is only a completion guard; the visible fade keeps its original duration.
+    let guard;
+    await Promise.race([veilAnimation.finished.catch(()=>{}),new Promise(resolve=>{guard=setTimeout(resolve,duration+250);})]);
+    clearTimeout(guard);
     blackout.style.opacity = String(to);
     veilAnimation.cancel();
     veilAnimation = null;
@@ -222,20 +234,21 @@
   async function startOpening(event) {
     if (phase !== 'idle' || !event.detail || event.detail !== window.HNJ?.getIdentity()) return;
     identity = event.detail;
-    state('transitioning');
+    state('preparing');
     entryButton.disabled = resetButton.disabled = true;
     entryButton.blur();
     cardScene.inert = true;
-    blackout.classList.add('is-active');
     // This call is deliberately synchronous within the entry click: unlock Web Audio now.
     audioOutput();
     try {
-      await fadeBlack(1, reducedMotion.matches ? 120 : OPENING.fadeOut);
-      // Build/compile behind the completed blackout, so the ID-card motion remains intact.
-      // The existing photographic path is retained only for browsers without WebGL2.
-      spatialScene = await window.HNJCorridor3D?.create($('#opening-stage')) || null;
+      // Prepare and validate a first frame BEFORE the ID fades away. Slow/disabled GPUs
+      // and missing textures must never strand the user behind the black veil.
+      spatialScene = await prepareScene();
       if (!spatialScene && !await platesReady) throw new Error('Opening environment could not be prepared.');
       if (!spatialScene) root.dataset.renderer = 'image-fallback';
+      state('transitioning');
+      blackout.classList.add('is-active');
+      await fadeBlack(1, reducedMotion.matches ? 120 : OPENING.fadeOut);
       await pause(reducedMotion.matches ? 0 : OPENING.quiet);
       cardScene.hidden = true;
       cardScene.setAttribute('aria-hidden', 'true');
@@ -264,8 +277,10 @@
       cardScene.removeAttribute('aria-hidden');
       cardScene.inert = false;
       entryButton.disabled = resetButton.disabled = false;
-      await fadeBlack(0, 200);
+      // Recovery must not depend on another animation promise succeeding.
+      veilAnimation?.cancel(); veilAnimation=null; blackout.style.opacity='0';
       blackout.classList.remove('is-active');
+      scenePreparation=null;
       state('idle');
       console.warn('Investigation opening:', error.message);
     }

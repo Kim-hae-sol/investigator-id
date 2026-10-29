@@ -15,9 +15,21 @@
     return v * (t - a / 2);
   };
   let active = null;
-
+  let pending = null;
+  // A single bounded build is shared by prewarming, entry and the access module.
+  function deadline(promise, ms, label) {
+    let timer;
+    return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label)),ms);})])
+      .finally(()=>clearTimeout(timer));
+  }
   async function create(stage) {
     if (active) return active;
+    if (pending) return pending;
+    pending = build(stage);
+    try { return await pending; } finally { pending = null; }
+  }
+
+  async function build(stage) {
     const T = window.THREE;
     if (!T) return null;
     const canvas = document.createElement('canvas');
@@ -28,7 +40,7 @@
     try { renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' }); }
     catch { return null; }
     try {
-      await Promise.all([...document.querySelectorAll('[data-pbr]')].map(image => image.decode()));
+      await deadline(Promise.all([...document.querySelectorAll('[data-pbr]')].map(image => image.decode())), 7000, 'Material loading timed out');
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
       renderer.outputColorSpace = T.SRGBColorSpace;
       renderer.toneMapping = T.ACESFilmicToneMapping;
@@ -392,7 +404,15 @@
       canvas.addEventListener('webglcontextrestored', () => {
         lost = false; canvas.hidden = false; renderer.shadowMap.needsUpdate = true; render();
       });
-      resize(); render(0, 0, 0);
+      resize();
+      camera.position.set(0,SPACE.eye,SPACE.startZ); camera.lookAt(0,SPACE.targetY,0);
+      // Chrome can compile dozens of PBR/shadow programs on first draw. Warm them asynchronously
+      // while the issued ID remains visible, before the blackout is allowed to start.
+      if (renderer.compileAsync) await deadline(renderer.compileAsync(scene,camera),7000,'Shader preparation timed out');
+      render(0, 0, 0);
+      const gl=renderer.getContext();
+      if (gl.isContextLost() || renderer.info.programs.some(program=>program.diagnostics?.runnable===false))
+        throw new Error('3D renderer did not produce a valid first frame');
       root.classList.add('has-3d');
       active = Object.freeze({ render, resize: onResize, getCamera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),
         readerProjection, readerFeedback,

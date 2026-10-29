@@ -169,6 +169,7 @@
   });
   stage.addEventListener('corridor:render',projection);
   window.addEventListener('investigation:arrived',async()=>{
+    if(root.dataset.renderer!=='webgl')return; // Do not rebuild a failed GPU behind the photographic fallback.
     scene=await window.HNJCorridor3D.create(stage);
     if(!scene)return; // The pre-existing photo fallback remains available without a fake floating reader.
     state.arrivedAtDoor=true;target.hidden=false;projection();publish();
