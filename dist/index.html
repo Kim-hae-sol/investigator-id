@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111211">
+  <meta name="description" content="HNJ — Special Investigation Unit. 조사관 ID 발급.">
+  <title>HNJ — 조사관 ID 발급</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23181917'/%3E%3Ctext x='32' y='42' fill='%23ebe9df' text-anchor='middle' font-family='Arial' font-weight='bold' font-size='28'%3EH.%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="opening.css">
+  <script src="app.js" defer></script>
+  <script src="vendor/three.local.js" defer></script>
+  <script src="vendor/reflector.local.js" defer></script>
+  <script src="corridor-3d.js" defer></script>
+  <script src="opening.js" defer></script>
+</head>
+<body>
+  <svg class="texture-definitions" aria-hidden="true"><defs>
+    <filter id="paper-grain"><feTurbulence type="fractalNoise" baseFrequency=".79" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+    <filter id="ink-wear"><feTurbulence type="fractalNoise" baseFrequency=".09" numOctaves="3" seed="7" result="noise"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="1.6" xChannelSelector="R" yChannelSelector="G"/></filter>
+  </defs></svg>
+
+  <main class="scene" id="issuance-scene" data-state="editing" aria-label="조사관 ID 카드 발급">
+    <div class="object-stage">
+      <div class="card-rig">
+        <div class="metal-clip" aria-hidden="true"><div class="clip-loop"></div><div class="clip-jaw"><i></i></div><div class="clip-rivet"></div></div>
+
+        <form class="id-card" id="id-form" novalidate aria-label="조사관 신분증 작성">
+          <div class="card-texture" aria-hidden="true"></div>
+          <div class="punch-slot" aria-hidden="true"></div>
+          <div class="card-content">
+            <div class="card-masthead"><span class="card-brand">HNJ</span><span class="card-department">SPECIAL<br>INVESTIGATION UNIT</span></div>
+            <div class="card-heading"><h1>INVESTIGATOR</h1></div>
+
+            <div class="portrait" id="photo-frame" role="group" aria-label="프로필 사진" tabindex="-1">
+              <span class="portrait-grid" aria-hidden="true"></span>
+              <span class="portrait-figure" aria-hidden="true"><span class="figure-head"></span><span class="figure-neck"></span><span class="figure-body"></span></span>
+              <img class="portrait-image" id="portrait-image" alt="업로드한 조사관 프로필 사진" draggable="false" hidden>
+              <span class="photo-corner top-left" aria-hidden="true"></span><span class="photo-corner bottom-right" aria-hidden="true"></span>
+              <span class="photo-index" id="photo-position-label">PORTRAIT / 01</span>
+              <button class="photo-select" id="photo-button" type="button" aria-label="프로필 사진 업로드" aria-describedby="photo-help"><span class="photo-control"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 5v10M5 10h10" stroke="currentColor" stroke-width="1.2"/></svg><span id="photo-help">사진 등록</span></span></button>
+              <div class="photo-toolbar" id="photo-toolbar" role="group" aria-label="사진 크기 조정" hidden><button id="photo-zoom-out" type="button" aria-label="사진 축소">−</button><input id="photo-zoom" type="range" min="0" max="100" step="0.1" value="50" aria-label="사진 확대 비율"><button id="photo-zoom-in" type="button" aria-label="사진 확대">+</button></div>
+            </div>
+            <input id="photo-input" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif" tabindex="-1" aria-label="프로필 사진 파일 선택">
+
+            <div class="identity-fields">
+              <div class="identity-field"><label for="investigator-name">NAME <span>이름</span></label><input id="investigator-name" name="name" placeholder="당신의 이름" maxlength="24" autocomplete="off" spellcheck="false" required aria-required="true"><svg class="edit-mark" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 10 7-7 2 2-7 7-3 1Z" fill="none" stroke="currentColor" stroke-width=".8"/></svg></div>
+              <div class="identity-field code-field"><label for="code-name">CODE NAME</label><output id="code-name" name="codeName">—</output></div>
+            </div>
+
+            <div class="status-line"><div><span class="field-label">STATUS</span><span class="status-value"><i></i> <span id="status-text">PENDING</span></span></div></div>
+            <div class="card-footer"><div><div class="barcode" id="barcode" aria-hidden="true"></div><span class="serial-number" id="serial-number">HNJ — 000000</span></div><span class="card-warning">DO NOT FALL FOR THE SUBJECT.</span></div>
+          </div>
+          <div class="approved-stamp" id="approved-stamp" aria-hidden="true"><span>HNJ · SPECIAL INVESTIGATION UNIT</span><strong>APPROVED</strong><span>ACCESS GRANTED</span></div>
+        </form>
+        <span class="card-edge" aria-hidden="true"></span>
+      </div>
+
+      <div class="desk-action">
+        <p class="action-caption" id="action-caption">당신의 담당 사건이 지정되었습니다.</p>
+        <button class="issue-button" id="issue-button" type="submit" form="id-form"><span class="button-label">조사관증 발급</span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h15m-5-5 5 5-5 5" stroke="currentColor" stroke-width="1"/></svg></button>
+        <button class="issue-button enter-button" id="enter-button" type="button" hidden><span>조사실 입장</span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h15m-5-5 5 5-5 5" stroke="currentColor" stroke-width="1"/></svg></button>
+        <button class="reset-button" id="reset-button" type="button" hidden><span aria-hidden="true">↺</span>다시 작성</button>
+        <p class="form-message" id="form-message" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Generated photographic look-development plates, not supplied location photographs.
+       Replace these two independent PNGs in assets/ when final photography is ready. -->
+  <section class="opening-scene" id="opening-sequence" data-state="idle" data-footsteps="0" data-audible-steps="0" aria-label="조사실로 향하는 복도" aria-hidden="true" tabindex="-1" hidden>
+    <div class="opening-stage" id="opening-stage">
+      <div class="opening-camera" id="opening-camera">
+        <div class="opening-shot corridor-background" id="corridor-background">
+          <img class="opening-plate" id="corridor-plate" src="assets/corridor-start.png" width="1672" height="941" alt="따뜻한 조명 아래 나무 문이 이어지는 조용한 사무실 복도" decoding="async" draggable="false">
+        </div>
+        <div class="opening-shot door-background" id="door-background">
+          <img class="opening-plate" id="door-plate" src="assets/door-arrival.png" width="1672" height="941" alt="작은 조명 아래 닫혀 있는 월넛 조사실 문" aria-hidden="true" decoding="async" draggable="false">
+        </div>
+      </div>
+      <div class="opening-shade" aria-hidden="true"></div>
+      <!-- NEXT STEP: mount the card slot / door interactions here. No interactions yet.
+           WebGL: use corridor-3d.js mainDoor group and the real wall to its right.
+           Image fallback anchors only: door (0.50, 0.54), slot wall (0.70, 0.57). -->
+      <div class="door-interaction-layer" id="door-interaction-layer" aria-hidden="true"></div>
+    </div>
+  </section>
+  <div class="scene-blackout" id="scene-blackout" aria-hidden="true"></div>
+
+  <!-- Local CC0 material maps. Hidden image elements keep file:// and standalone HTML
+       working without fetch(), CDN requests or an asset server. See assets/pbr/CREDITS.md. -->
+  <div hidden aria-hidden="true">
+    <img data-pbr="wood-color" src="assets/pbr/wood-color.jpg" alt="" decoding="async">
+    <img data-pbr="wood-normal" src="assets/pbr/wood-normal.jpg" alt="" decoding="async">
+    <img data-pbr="wood-roughness" src="assets/pbr/wood-roughness.jpg" alt="" decoding="async">
+    <img data-pbr="wall-color" src="assets/pbr/wall-color.jpg" alt="" decoding="async">
+    <img data-pbr="wall-normal" src="assets/pbr/wall-normal.jpg" alt="" decoding="async">
+    <img data-pbr="wall-roughness" src="assets/pbr/wall-roughness.jpg" alt="" decoding="async">
+    <img data-pbr="floor-color" src="assets/pbr/floor-color.jpg" alt="" decoding="async">
+    <img data-pbr="floor-normal" src="assets/pbr/floor-normal.jpg" alt="" decoding="async">
+    <img data-pbr="floor-roughness" src="assets/pbr/floor-roughness.jpg" alt="" decoding="async">
+  </div>
+
+  <footer class="desk-footer"><button class="sound-button" id="sound-button" type="button" aria-label="효과음 끄기" aria-pressed="true"><svg class="sound-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m8.5 5-4 3H2v4h2.5l4 3V5Z" stroke="currentColor" stroke-width="1"/><path class="sound-waves" d="M12 6.5c2 2 2 5 0 7M14.5 4c3.5 3.5 3.5 8.5 0 12" stroke="currentColor" stroke-width="1"/><path class="sound-muted" d="m12 8 5 5m0-5-5 5" stroke="currentColor" stroke-width="1"/></svg><span id="sound-label">SOUND ON</span></button></footer>
+</body>
+</html>
