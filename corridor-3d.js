@@ -432,7 +432,9 @@
       active = Object.freeze({ render, resize: onResize, getCamera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),
         readerProjection, readerFeedback, handleProjection,
         getRenderer:()=>renderer,
-        attachRoom(roomScene) {roomScene.position.set(0,0,-3.40);scene.add(roomScene);renderer.shadowMap.autoUpdate=true;render();},
+        async attachRoom(roomScene) {roomScene.position.set(0,0,-3.40);scene.add(roomScene);
+          if(renderer.compileAsync)await deadline(renderer.compileAsync(scene,camera),10000,'Connected room shader preparation timed out');
+          renderer.shadowMap.autoUpdate=true;render();},
         openDoor(value){doorProgress=clamp(value);mainDoor.userData.leaf.rotation.y=doorProgress*Math.PI*.55;renderer.shadowMap.needsUpdate=true;render();},
         enterRoom(value){entryProgress=clamp(value);render();if(entryProgress===1)renderer.shadowMap.autoUpdate=false;},
         authView(value) { authProgress=clamp(value); render(); },

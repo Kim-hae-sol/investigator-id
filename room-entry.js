@@ -37,7 +37,7 @@
     busy=true;target.disabled=true;
     try {
       const next=await prepare();if(!next){preparation=null;throw new Error('Room preparation failed');}
-      corridor.attachRoom(next.getScene());root.dataset.state='door-opening';target.hidden=true;doorSound();
+      await corridor.attachRoom(next.getScene());root.dataset.state='door-opening';target.hidden=true;doorSound();
       await animate(1350,t=>corridor.openDoor(t));root.dataset.state='room-entering';
       let step=0;await animate(2600,t=>{corridor.enterRoom(t);if(step<3&&t>=[.13,.43,.72][step])window.dispatchEvent(new CustomEvent('investigation:room-step',{detail:{index:step++}}));});entered=true;root.dataset.state='room';root.setAttribute('aria-label','조사실 내부');corridor.getRenderer().domElement.setAttribute('aria-label','목재 벽과 기록 보드, 따뜻한 조명의 조사실');
       document.querySelector('#reader-target').hidden=true;
