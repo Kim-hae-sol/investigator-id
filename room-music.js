@@ -16,7 +16,7 @@
       gain=ctx.createGain();gain.gain.value=0;
       source.connect(filter).connect(gain).connect(ctx.destination);
       started=true;
-      music.play().catch(error=>console.warn('Room music playback:',error.message));
+      music.play().catch(error=>console.warn('Room music playback:',error.name,error.message));
       mix();
     }catch(error){failed=true;console.warn('Room music setup:',error.message);}
   }
@@ -27,13 +27,13 @@
     const audible=enabled();
     // Distant, low-passed music begins halfway down the corridor.
     filter.frequency.setTargetAtTime(220+distance*160+door*6200,t,.12);
-    gain.gain.setTargetAtTime(audible?(distance*(.06+.05*distance)*(1-door)+door*.52):0,t,.18);
+    gain.gain.setTargetAtTime(audible?(distance*(.16+.09*distance)*(1-door)+door*.72):0,t,.18);
     if(audible&&music.paused)music.play().catch(()=>{});
   }
   function setCorridorProgress(p){progress=Math.max(0,Math.min(1,p));if(progress>.40)prepare();mix();}
   function setDoorOpen(v){door=Math.max(0,Math.min(1,v));prepare();mix();}
   function sync(){if(enabled())prepare();mix();}
-  window.addEventListener('investigation:corridor-progress',e=>setCorridorProgress(e.detail.progress));
+  // Called synchronously from the visitor's 'enter room' click. Starting silent playback\n  // here avoids browser autoplay blocking when the walk animation later begins.\n  window.addEventListener('investigation:enter',()=>{prepare();});\n  window.addEventListener('investigation:corridor-progress',e=>setCorridorProgress(e.detail.progress));
   window.addEventListener('investigation:arrived',()=>setCorridorProgress(1));
   document.querySelector('#sound-button')?.addEventListener('click',()=>queueMicrotask(sync));
   document.addEventListener('visibilitychange',sync);
