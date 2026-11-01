@@ -2,3 +2,6 @@
 .door-handle-target{position:absolute;width:68px;height:54px;transform:translate(-50%,-50%);background:transparent;border:0;border-radius:4px;padding:0;pointer-events:auto;cursor:pointer;touch-action:manipulation}
 .door-handle-target[hidden]{display:none}
 .door-handle-target:focus-visible{outline:1px solid #d2b88688;outline-offset:4px}
+.room-gaze{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:5;background:none;border:0;border-bottom:1px solid #c9b68d35;padding:7px 2px;color:#c8bc9f99;font-family:inherit;font-size:12px;line-height:1.5;letter-spacing:.08em;cursor:pointer;transition:color .2s,border-color .2s}
+.room-gaze:hover,.room-gaze:focus-visible{color:#e8dcc1;border-bottom-color:#e8dcc199;outline:none}
+.room-gaze[hidden]{display:none}

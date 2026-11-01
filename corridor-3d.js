@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const SPACE = Object.freeze({ width: 2.48, height: 2.94, length: 13.8, doorPitch: 2.10,
-    eye: 1.61, startZ: 7.25, endZ: 3.20, fov: 58, targetY: 1.41 });
+    eye: 1.61, startZ: 7.25, endZ: 3.20, fov: 51, targetY: 1.41 });
   const clamp = x => Math.max(0, Math.min(1, x));
   // Short cosine acceleration, a steady walking pace, then a longer soft stop.
   // The integrated velocity has no speed discontinuity at either end of the four-second shot.
@@ -40,11 +40,12 @@
     try { renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' }); }
     catch { return null; }
     try {
-      await deadline(Promise.all([...document.querySelectorAll('[data-pbr]')].map(image => image.decode())), 7000, 'Material loading timed out');
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
+      await deadline(Promise.all([...document.querySelectorAll('[data-pbr]')].filter(image=>/^(joinery|wall|floor)-/.test(image.dataset.pbr)).map(image => image.decode())), 20000, 'Material loading timed out');
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
       renderer.outputColorSpace = T.SRGBColorSpace;
       renderer.toneMapping = T.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.02;
+      window.HNJCinema?.install(renderer);
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = T.PCFSoftShadowMap;
       renderer.shadowMap.autoUpdate = false;
@@ -79,17 +80,17 @@
           map: texture(role, 'color', rx, ry, vertical),
           normalMap: texture(role, 'normal', rx, ry, vertical), normalScale: new T.Vector2(normal, normal),
           roughnessMap: texture(role, 'roughness', rx, ry, vertical), roughness,
-          metalness: 0, envMapIntensity: .35 });
+          metalness: 0, envMapIntensity: role==='joinery'?.18:.35 });
       }
       // The same local maps are reused at physical scales, rather than stretched over a whole wall.
-      const wood = pbr('wood', '#805b3f', .88, .14, 1.3, .8, true);
-      const woodPanel = pbr('wood', '#856047', .90, .13, 1.3, .8, true);
-      const woodRail = pbr('wood', '#6c4d35', .90, .12, 1.8, 1, false);
-      const woodTrim = pbr('wood', '#62452f', .88, .12, 1, 1, true);
-      const wallSide = pbr('wall', '#b8b6ae', 1, .055, SPACE.length / 1.2, SPACE.height / 1.2);
-      const wallEnd = pbr('wall', '#bdbab1', 1, .055, SPACE.width / 1.2, SPACE.height / 1.2);
-      const ceiling = pbr('wall', '#a6a59d', 1, .035, SPACE.width, SPACE.length);
-      const floor = pbr('floor', '#92948e', .94, .09, SPACE.width / 2.56, SPACE.length / 2.56);
+      const wood = pbr('joinery', '#bdad98', .64, .22, .55, 1.15, true);
+      const woodPanel = pbr('joinery', '#c4b29b', .65, .20, .48, 1.0, true);
+      const woodRail = pbr('joinery', '#a9957b', .63, .16, .8, .2, false);
+      const woodTrim = pbr('joinery', '#a79783', .63, .17, .35, 1, true);
+      const wallSide = pbr('wall', '#72766e', 1, .055, SPACE.length / 1.2, SPACE.height / 1.2);
+      const wallEnd = pbr('wall', '#85887e', 1, .055, SPACE.width / 1.2, SPACE.height / 1.2);
+      const ceiling = pbr('wall', '#65675e', 1, .035, SPACE.width, SPACE.length);
+      const floor = pbr('floor', '#b9b9ae', .82, .12, SPACE.width / 2.56, SPACE.length / 2.56);
       ceiling.map = null;
       const brass = new T.MeshStandardMaterial({ color: '#a58b60', metalness: .80, roughness: .42, envMapIntensity: .75 });
       const darkMetal = new T.MeshStandardMaterial({ color: '#302d26', metalness: .55, roughness: .62, envMapIntensity: .35 });
@@ -101,7 +102,7 @@
           shader.fragmentShader = shader.fragmentShader.replace('#include <roughnessmap_fragment>',
             `#include <roughnessmap_fragment>\nroughnessFactor = max(roughnessFactor, ${minimumRoughness.toFixed(2)});`);
           shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>',
-            `#include <map_fragment>\nfloat neutral = dot(diffuseColor.rgb, vec3(.2126,.7152,.0722));\ndiffuseColor.rgb = mix(vec3(neutral), diffuseColor.rgb, ${saturation.toFixed(2)});`);
+            `#include <map_fragment>\nfloat neutral = dot(diffuseColor.rgb, vec3(.2126,.7152,.0722));\ndiffuseColor.rgb = ${timber?'vec3(.80,.65,.49)*(neutral*.48+.014)':'mix(vec3(neutral), diffuseColor.rgb, '+saturation.toFixed(2)+')'};`);
           if (timber) {
             // All three PBR maps shift together per repeated door; no altered bitmap assets are needed.
             shader.vertexShader = '#ifdef USE_INSTANCING\nattribute vec2 textureShift;\n#endif\n' + shader.vertexShader;
@@ -111,8 +112,8 @@
         };
         material.customProgramCacheKey = () => `hnj-surface-${minimumRoughness}-${saturation}-${timber}`;
       }
-      woodMaterials.forEach(m => finishSurface(m, .63, .89, true));
-      finishSurface(floor, .70, .46);
+      woodMaterials.forEach(m => finishSurface(m, .66, .72, true));
+      finishSurface(floor, .68, .35);
       finishSurface(wallSide, .87, .75); finishSurface(wallEnd, .87, .75);
       finishSurface(ceiling, .90, .75);
 
@@ -157,11 +158,26 @@
         if (!geometry.has(key)) {
           let g;
           if (bevel) {
-            const shape = new T.Shape(); const a = w / 2 - bevel, b = h / 2 - bevel;
-            shape.moveTo(-a, -b); shape.lineTo(a, -b); shape.lineTo(a, b); shape.lineTo(-a, b); shape.closePath();
-            g = new T.ExtrudeGeometry(shape, { depth: d - 2 * bevel, bevelEnabled: true,
-              bevelThickness: bevel, bevelSize: bevel, bevelSegments: 1, steps: 1, curveSegments: 1 });
-            g.translate(0, 0, -d / 2 + bevel);
+            // Rounded cuboid with normalized face UVs. Extrusion UVs previously stretched
+            // the wood over long edges and left the vertical corners perfectly square.
+            const r=Math.min(bevel,w*.24,h*.24,d*.24),half=[w/2,h/2,d/2],core=half.map(v=>v-r);
+            const vertices=[],normals=[],uvs=[],indices=[];
+            const grid=halfSize=>[-halfSize,-halfSize+r/3,-halfSize+r*2/3,-halfSize+r,halfSize-r,halfSize-r*2/3,halfSize-r/3,halfSize];
+            const faces=[[[1,0,0],[0,0,-1],[0,1,0],0,2,1],[[-1,0,0],[0,0,1],[0,1,0],0,2,1],
+              [[0,1,0],[1,0,0],[0,0,-1],1,0,2],[[0,-1,0],[1,0,0],[0,0,1],1,0,2],
+              [[0,0,1],[1,0,0],[0,1,0],2,0,1],[[0,0,-1],[-1,0,0],[0,1,0],2,0,1]];
+            for(const [n,u,v,a,ui,vi] of faces){const gx=grid(half[ui]),gy=grid(half[vi]),base=vertices.length/3;
+              for(let iy=0;iy<gy.length;iy++)for(let ix=0;ix<gx.length;ix++){
+                const point=new T.Vector3(...n).multiplyScalar(half[a]).addScaledVector(new T.Vector3(...u),gx[ix]).addScaledVector(new T.Vector3(...v),gy[iy]);
+                const c=new T.Vector3(...core.map((value,j)=>Math.max(-value,Math.min(value,point.getComponent(j)))));
+                const normal=point.clone().sub(c).normalize();point.copy(c).addScaledVector(normal,r);
+                vertices.push(point.x,point.y,point.z);normals.push(normal.x,normal.y,normal.z);
+                uvs.push(gx[ix]/(half[ui]*2)+.5,gy[iy]/(half[vi]*2)+.5);
+              }
+              for(let iy=0;iy<gy.length-1;iy++)for(let ix=0;ix<gx.length-1;ix++){const a=base+iy*gx.length+ix,b=a+1,c=a+gx.length,d=c+1;indices.push(a,b,c,b,d,c);}
+            }
+            g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(vertices,3));
+            g.setAttribute('normal',new T.Float32BufferAttribute(normals,3));g.setAttribute('uv',new T.Float32BufferAttribute(uvs,2));g.setIndex(indices);
           } else g = new T.BoxGeometry(w, h, d);
           geometry.set(key, g);
         }
@@ -174,11 +190,30 @@
         const m = new T.Mesh(geometry.get(key), material);
         m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; parent.add(m); return m;
       }
-      function rectangleFrame(parent, w, h, y, z, thickness, material) {
-        box(thickness, h, .025, -w / 2 + thickness / 2, y, z, material, parent, .004);
-        box(thickness, h, .025, w / 2 - thickness / 2, y, z, material, parent, .004);
-        box(w - 2 * thickness, thickness, .025, 0, y + h / 2 - thickness / 2, z, material, parent, .004);
-        box(w - 2 * thickness, thickness, .025, 0, y - h / 2 + thickness / 2, z, material, parent, .004);
+      // Continuous mitred moulding: real ogee/bead cross section, not four flat strips.
+      // Each rectangular ring follows the same profile so corners meet without overlap.
+      function rectangleFrame(parent,w,h,y,z,thickness,material,openBottom=false){
+        const key=`moulding/${w}/${h}/${thickness}/${openBottom}`;
+        if(!geometry.has(key)){
+          const profile=[[0,0],[.06,.001],[.13,.004],[.20,.006],[.28,.0065],[.36,.006],
+            [.45,.004],[.54,.003],[.63,.004],[.70,.008],[.76,.011],[.83,.012],[.90,.010],[1,0]];
+          const positions=[],uv=[],index=[];
+          for(let side=0;side<4;side++){
+            if(openBottom&&side===0)continue;
+            const base=positions.length/3;
+            for(const [inset,depth] of profile){const a=w/2-inset*thickness,b=h/2-inset*thickness;
+              const corners=[[-a,-b],[a,-b],[a,b],[-a,b]];
+              for(let end=0;end<2;end++){
+                const [x,yy]=corners[(side+end)%4];positions.push(x,yy,depth*Math.min(2,thickness/.032));
+                // Each mitred member has its own longitudinal grain, including the head.
+                uv.push(end*(side%2?h:w)/.85,inset*thickness/.85);
+              }
+            }
+            for(let j=0;j<profile.length-1;j++){const a=base+j*2,b=a+1,c=a+2,d=a+3;index.push(a,b,c,b,d,c);}
+          }
+          const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(positions,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(index);g.computeVertexNormals();geometry.set(key,g);
+        }
+        const m=new T.Mesh(geometry.get(key),material);m.position.set(0,y,z);m.castShadow=m.receiveShadow=true;parent.add(m);return m;
       }
       function door(x, z, rotation = 0, main = false) {
         const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = rotation; scene.add(g);
@@ -191,6 +226,7 @@
         rectangleFrame(g, .965, .51, .38, .071, .032, woodTrim);
         rectangleFrame(g, .904, 1.466, 1.48, .080, .009, woodRail);
         rectangleFrame(g, .904, .446, .38, .080, .009, woodRail);
+        const leafGeometryEnd=g.children.length;
         box(.112, 2.48, .14, -.644, 1.24, .05, woodTrim, g, .006);
         box(.112, 2.48, .14, .644, 1.24, .05, woodTrim, g, .006);
         box(1.42, .15, .15, 0, 2.43, .05, woodRail, g, .006);
@@ -201,8 +237,8 @@
         const rosette = cylinder(.043, .043, .018, .45, 1.04, .075, brass, g); rosette.rotation.x = Math.PI / 2;
         if (!geometry.has('door-lever')) geometry.set('door-lever', new T.TubeGeometry(new T.CatmullRomCurve3([
           new T.Vector3(.45, 1.04, .09), new T.Vector3(.45, 1.04, .14),
-          new T.Vector3(.40, 1.035, .155), new T.Vector3(.28, 1.035, .155)
-        ]), 18, .0105, 8, false));
+          new T.Vector3(.40, 1.035, .155), new T.Vector3(.28, 1.035, .155),new T.Vector3(.265,1.035,.143)
+        ]), 32, .0105, 12, false));
         const lever = new T.Mesh(geometry.get('door-lever'), brass); lever.castShadow = true; g.add(lever);
         for (const y of [1.014, 1.066]) {
           const screw = cylinder(.004, .004, .004, .45, y, .086, brass, g, 12); screw.rotation.x = Math.PI / 2;
@@ -215,9 +251,16 @@
         if (main) {
           g.children[0].visible=false;
           const leaf=new T.Group();leaf.position.x=-.58;leaf.name='hinged-door-leaf';
-          const moving=g.children.filter((m,i)=>(i>=1&&i<=19)||m===lever||(m.position.x>.20&&m.position.y>.9&&m.position.y<1.12));
+          const moving=g.children.filter((m,i)=>(i>=1&&i<leafGeometryEnd)||m===lever||(m.position.x>.20&&m.position.y>.9&&m.position.y<1.12));
           g.add(leaf);for(const m of moving){g.remove(m);m.position.x+=.58;leaf.add(m);}g.userData.leaf=leaf;
         } else { g.userData.variant = sideDoors.length; sideDoors.push(g); }
+        rectangleFrame(g,1.42,2.55,1.27,.122,.075,woodTrim,true);
+        // Three-part jamb reveal and strike plate provide scale at the latch.
+        box(.018,2.36,.030,.590,1.18,.058,woodRail,g,.002);
+        box(.018,2.36,.030,-.590,1.18,.058,woodRail,g,.002);
+        box(.020,.125,.035,.600,1.04,.077,brass,g,.002);
+        box(.021,.034,.009,.601,1.04,.098,gap,g,.001);
+
         return g;
       }
 
@@ -245,6 +288,35 @@
       box(SPACE.width, .10, .12, 0, SPACE.height - .06, .02, ceiling);
       contact(.18, SPACE.width, 0, .09, -.044, 0, Math.PI / 2);
       const mainDoor = door(0, .045, 0, true);
+
+      // Continuous walnut wainscot, recessed fields, stone border and restrained brass reveals.
+      // These are architectural members with real thickness, not baked fake door photographs.
+      for(const sign of [-1,1]){
+        box(.038,1.05,SPACE.length,sign*(half-.022),.525,centreZ,woodPanel);
+        box(.070,.075,SPACE.length,sign*(half-.052),1.07,centreZ,woodRail,scene,.006);
+        box(.076,.009,SPACE.length,sign*(half-.057),1.113,centreZ,brass);
+        for(let z=.46;z<SPACE.length;z+=.70){
+          const field=box(.018,.71,.57,sign*(half-.050),.56,z,wood,scene,.003);
+          box(.028,.025,.60,sign*(half-.065),.19,z,woodTrim,scene,.003);
+          box(.028,.025,.60,sign*(half-.065),.93,z,woodTrim,scene,.003);
+          box(.028,.76,.025,sign*(half-.065),.56,z-.29,woodTrim,scene,.003);
+        }
+        box(.135,.005,SPACE.length,sign*(half-.10),.007,centreZ,darkMetal);
+        for(let z=.6;z<SPACE.length;z+=SPACE.doorPitch){
+          // Solid piers and stepped ceiling soffits break long, perfectly flat wall planes.
+          box(.065,1.79,.075,sign*(half-.032),2.0,z,woodTrim,scene,.004);
+        }
+      }
+      // Ceiling bays align with the doors; ivory inset fields sit behind dark cornices.
+      for(let z=.58;z<SPACE.length;z+=2.15){
+        box(SPACE.width,.10,.10,0,SPACE.height-.07,z,woodRail,scene,.004);
+        for(const sign of [-1,1])box(.14,.12,2.12,sign*(half-.12),SPACE.height-.09,z+1.02,woodTrim,scene,.004);
+      }
+      const plaqueCanvas=document.createElement('canvas');plaqueCanvas.width=512;plaqueCanvas.height=128;
+      const pc=plaqueCanvas.getContext('2d');pc.fillStyle='#292a25';pc.fillRect(0,0,512,128);pc.strokeStyle='#9c8865';pc.lineWidth=3;pc.strokeRect(7,7,498,114);pc.fillStyle='#c5b48f';pc.font='26px Georgia';pc.textAlign='center';pc.fillText('RECORDS  /  04',256,76);
+      const plaqueMap=new T.CanvasTexture(plaqueCanvas);plaqueMap.colorSpace=T.SRGBColorSpace;textureCache.set('door-plaque',plaqueMap);
+      const plaque=new T.MeshStandardMaterial({map:plaqueMap,metalness:.35,roughness:.48});
+      box(.36,.09,.008,0,1.97,.093,plaque,mainDoor.userData.leaf,.003).position.x=.58;
 
       // STEP 03: bottom-entry nickel reader, mounted on the existing end wall.
       // The 140 mm mouth accepts the top edge of a portrait card moving upward.
@@ -308,7 +380,7 @@
       }
 
       // Neutral ambient bounce preserves visibility; practical fixtures create pools and quieter gaps.
-      scene.add(new T.HemisphereLight('#e1e2db', '#393831', .21));
+      scene.add(new T.HemisphereLight('#c6cbd0', '#40382f', .30));
       scene.add(new T.AmbientLight('#c1c0b6', .035));
       function lamp(z, index) {
         const y = SPACE.height - .32;
@@ -322,9 +394,9 @@
         rim.rotation.x = Math.PI/2; rim.position.set(0,y-.103,z); scene.add(rim);
         const diffuser = cylinder(.178,.178,.012,0,y-.104,z,bulb,scene,32); diffuser.castShadow = false;
         if (z > SPACE.startZ + 1.8) return;
-        const point = new T.PointLight('#fff0d9',4.8,4.3,2);
+        const point = new T.PointLight('#ffe4bf',5.0,4.3,2);
         point.position.set(0,y-.16,z); scene.add(point);
-        const spot = new T.SpotLight('#fff1de',19,5.4,.58,.85,2);
+        const spot = new T.SpotLight('#ffe8c9',24,5.4,.68,.93,2);
         spot.position.copy(point.position); spot.target.position.set(0,0,z-.1);
         spot.castShadow = index < 2;
         if (spot.castShadow) {
@@ -335,6 +407,14 @@
       }
       let lampCount = 0;
       for (let z = 1.65; z < SPACE.length - .6; z += 2.15) lamp(z,lampCount++);
+      for(const sign of [-1,1])for(let z=2.40;z<SPACE.startZ+1;z+=4.20){
+        const g=new T.Group();g.position.set(sign*(half-.08),1.94,z);g.rotation.y=sign>0?-Math.PI/2:Math.PI/2;scene.add(g);
+        box(.11,.29,.035,0,0,0,darkMetal,g,.008);
+        box(.026,.12,.16,0,-.08,.08,brass,g,.004);
+        const glass=cylinder(.055,.055,.24,0,.04,.14,bulb,g,48);glass.castShadow=false;
+        for(const y of [-.09,.17])cylinder(.070,.070,.025,0,y,.14,brass,g,32);
+        const light=new T.PointLight('#ffe3ba',1.5,2.2,2);light.position.set(sign*(half-.28),2.0,z);scene.add(light);
+      }
       // A small practical picture light, above the investigation-room door, rather than a theatrical cone.
       box(.34,.035,.07,0,2.72,.075,darkMetal,scene,.004);
       box(.39,.045,.13,0,2.685,.15,brass,scene,.005);
@@ -367,7 +447,7 @@
         scene.add(mirror);
       }
       stage.prepend(canvas);
-      let progress = 0, bob = 0, sway = 0, lost = false, authProgress = 0, doorProgress = 0, entryProgress = 0;
+      let progress = 0, bob = 0, sway = 0, lost = false, authProgress = 0, doorProgress = 0, entryProgress = 0, roomPose = null, roomLights = [], corridorLights = [];
       const root = document.querySelector('#opening-sequence');
       function resize() {
         const rect = stage.getBoundingClientRect();
@@ -390,10 +470,11 @@
           camera.lookAt(0,T.MathUtils.lerp(SPACE.targetY,1.10,entryProgress),T.MathUtils.lerp(0,-3.95,entryProgress));
           camera.fov=T.MathUtils.lerp(SPACE.fov,48,entryProgress);camera.updateProjectionMatrix();
         }
+        if(roomPose){camera.position.fromArray(roomPose.position);camera.lookAt(...roomPose.target);camera.fov=roomPose.fov;camera.updateProjectionMatrix();}
         renderer.render(scene, camera);
         root.dataset.cameraZ = camera.position.z.toFixed(3);
         root.dataset.renderer = 'webgl';
-        root.dataset.drawCalls = String(renderer.info.render.calls);
+        root.dataset.drawCalls = String(renderer.userData?.worldCalls||renderer.info.render.calls);
         root.dataset.sideDoors = String(sideDoors.length);
         root.dataset.lightFixtures = String(lampCount);
         root.dataset.authCamera = authProgress.toFixed(3);
@@ -432,11 +513,13 @@
       active = Object.freeze({ render, resize: onResize, getCamera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),
         readerProjection, readerFeedback, handleProjection,
         getRenderer:()=>renderer,
-        async attachRoom(roomScene) {roomScene.position.set(0,0,-3.40);scene.add(roomScene);
+        roomPose(pose){roomPose=pose;render();},
+        async attachRoom(roomScene) {roomScene.position.set(0,0,-3.40);corridorLights=[];scene.traverse(o=>{if(o.isLight)corridorLights.push([o,o.intensity]);});scene.add(roomScene);
+          roomLights=[];roomScene.traverse(o=>{if(o.isLight){roomLights.push([o,o.intensity]);o.intensity=0;}});
           if(renderer.compileAsync)await deadline(renderer.compileAsync(scene,camera),10000,'Connected room shader preparation timed out');
           renderer.shadowMap.autoUpdate=true;render();},
-        openDoor(value){doorProgress=clamp(value);mainDoor.userData.leaf.rotation.y=doorProgress*Math.PI*.55;renderer.shadowMap.needsUpdate=true;render();},
-        enterRoom(value){entryProgress=clamp(value);render();if(entryProgress===1)renderer.shadowMap.autoUpdate=false;},
+        openDoor(value){doorProgress=clamp(value);roomLights.forEach(([light,power])=>{light.intensity=power*clamp(doorProgress*3);});mainDoor.userData.leaf.rotation.y=doorProgress*Math.PI*.55;renderer.shadowMap.needsUpdate=true;render();},
+        enterRoom(value){entryProgress=clamp(value);corridorLights.forEach(([light,power])=>{light.intensity=power*(1-clamp((entryProgress-.45)/.55));});render();if(entryProgress===1)renderer.shadowMap.autoUpdate=false;},
         authView(value) { authProgress=clamp(value); render(); },
         // room-entry.js gates the hinged leaf and room approach on HNJAccess.doorUnlocked.
         mainDoor, reader, dispose() {

@@ -27,3 +27,15 @@ Reflector에는 약한 흐림과 낮은 불투명도를 적용한 셰이더를 �
 
 복도 개선에서는 원본 JPEG를 유지하고 물리적 반복 크기, 인스턴스별 목재 UV 위치·미세 색차,
 셰이더의 최소 거칠기와 채도를 조절했습니다. CanvasTexture는 문틀·모서리 접촉 음영용 그라데이션에만 사용합니다.
+
+## 시네마틱 리뉴얼 재질 — 2026-11-01
+
+아래 세 세트는 2K JPG 원본을 추가 확보했습니다. 모두 Poly Haven CC0입니다.
+- `joinery-*`: [Dark Wood](https://polyhaven.com/a/dark_wood) — Dario Barresi / Dimitrios Savva / Rico Cilliers. 복도와 방의 공통 월넛 마감. 원본의 붉은 색감·결 대비는 런타임 셰이더에서 절제합니다.
+- `leather-*`: [Brown Leather](https://polyhaven.com/a/brown_leather) — Rob Tuytel. 책상 블로터 등. color의 원본 파일명은 `brown_leather_albedo_2k.jpg`입니다.
+- `parquet-*`: [Wood Floor](https://polyhaven.com/a/wood_floor) — Dimitrios Savva. 조사실 바닥.
+
+`cinematic-renderer.js`는 로컬 HDR 렌더 타깃, 16-sample depth AO, ACES 계열 톤 매핑과 미세한 색보정을 적용합니다.
+실제 HDRI나 라이트맵을 확보한 것처럼 표기하지 않습니다. 현재 환경 반사는 Canvas light card를 사용하며,
+실제 간접광/GI, 레이 트레이싱, 사전 렌더링 영상은 구현하지 않았습니다.
+상단의 초기 단계 문 열기 미구현 설명은 과거 기록이며, 현재 문 열기/연결은 room-entry.js가 담당합니다.
