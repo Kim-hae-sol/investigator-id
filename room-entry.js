@@ -72,7 +72,7 @@
     try {
       const next=await prepare();if(!next){preparation=null;throw new Error('Room preparation failed');}
       await corridor.attachRoom(next.getScene());root.dataset.state='door-opening';target.hidden=true;doorSound();
-      await animate(1350,t=>corridor.openDoor(t));root.dataset.state='room-entering';
+      await animate(1350,t=>{corridor.openDoor(t);window.HNJRoomMusic?.setDoorOpen(t);});root.dataset.state='room-entering';
       let step=0;await animate(2600,t=>{corridor.enterRoom(t);if(step<3&&t>=[.13,.43,.72][step])window.dispatchEvent(new CustomEvent('investigation:room-step',{detail:{index:step++}}));});
       root.dataset.state='room-seating';
       const approach={position:[0,1.70,-.30],target:[0,1.10,-3.95],fov:48},seated=worldPose('seated');
