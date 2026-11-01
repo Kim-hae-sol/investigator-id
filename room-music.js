@@ -2,31 +2,37 @@
 (() => {
   'use strict';
   let context=null,output=null,filter=null,timer=null,next=0,step=0,started=false,openness=0,walkProgress=0;
-  // Warm major-seventh lounge colors (Cmaj7, Am7, Dm7, G7), no dark sustained drone.
-  const chords=[[261.63,329.63,392,493.88],[220,261.63,329.63,392],[293.66,349.23,440,523.25],[196,246.94,293.66,349.23]];
-  function enabled(){return !!window.HNJ?.audio?.isEnabled()&&!document.hidden;}
-  function note(freq,when,length,volume){
-    const osc=context.createOscillator(),harm=context.createOscillator(),env=context.createGain(),hGain=context.createGain();
-    osc.type='sine';harm.type='sine';osc.frequency.value=freq;harm.frequency.value=freq*2;
-    hGain.gain.value=.045;
-    env.gain.setValueAtTime(.0001,when);
-    env.gain.exponentialRampToValueAtTime(Math.max(.0002,volume),when+.035);
-    env.gain.exponentialRampToValueAtTime(.0001,when+length);
-    osc.connect(env);harm.connect(hGain).connect(env);env.connect(filter);
-    osc.start(when);harm.start(when);osc.stop(when+length+.05);harm.stop(when+length+.05);
-    osc.onended=()=>{osc.disconnect();harm.disconnect();hGain.disconnect();env.disconnect();};
+  // An original, relaxed café-style electric-piano motif, not a sustained ambient drone.
+  // Frequencies describe a light pentatonic melody over cheerful seventh chords.
+  const chords=[
+    [261.63,329.63,392.00,493.88], // Cmaj7
+    [220.00,261.63,329.63,392.00], // Am7
+    [293.66,349.23,440.00,523.25], // Dm7
+    [196.00,246.94,293.66,349.23] // G7
+  ];
+  const melody=[392,440,523.25,440,392,329.63,349.23,392,440,392,329.63,293.66,329.63,392,349.23,329.63];
+  function key(freq,when,length,volume){
+    const fundamental=context.createOscillator(),overtone=context.createOscillator(),gain=context.createGain(),t=context.currentTime;
+    fundamental.type='triangle';overtone.type='sine';
+    fundamental.frequency.setValueAtTime(freq,when);overtone.frequency.setValueAtTime(freq*2,when);
+    const hi=context.createGain();hi.gain.value=.07;
+    fundamental.connect(gain);overtone.connect(hi).connect(gain);gain.connect(filter);
+    gain.gain.setValueAtTime(.0001,when);
+    gain.gain.exponentialRampToValueAtTime(Math.max(.0002,volume),when+.018);
+    gain.gain.exponentialRampToValueAtTime(Math.max(.0002,volume*.32),when+.17);
+    gain.gain.exponentialRampToValueAtTime(.0001,when+length);
+    fundamental.start(when);overtone.start(when);
+    fundamental.stop(when+length+.02);overtone.stop(when+length+.02);
+    fundamental.onended=()=>{fundamental.disconnect();overtone.disconnect();hi.disconnect();gain.disconnect();};
   }
   function schedule(){
     if(!started||!context||!enabled())return;
-    while(next<context.currentTime+.25){
-      const chord=chords[Math.floor(step/4)%chords.length];
-      const n=step%4;
-      if(n===0){
-        // Gentle chord stabs rather than a low sustained minor drone.
-        chord.forEach((f,i)=>note(f,next+i*.025,1.05,.012));
-      } else if(n===2)note(chord[2]*2,next,.43,.010);
-      else note(chord[n===1?1:3],next,.55,.009);
-      next+=.66;step++;
+    while(next<context.currentTime+.30){
+      const bar=Math.floor(step/8)%chords.length;
+      const pos=step%8;
+      if(pos===0)chords[bar].forEach((f,i)=>key(f,next+i*.035,1.45,.007));
+      if(pos%2===0)key(melody[step%melody.length],next,.29,.016);
+      next+=.33;step++;
     }
   }
   function ensure(){
