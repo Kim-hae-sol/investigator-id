@@ -1,8 +1,8 @@
 /* Original Lexin_Music recording provided by the site owner.
-   The MP3 must be uploaded to assets/lexin_music-quirky-romantic-spy-121840.mp3. */
+   The MP3 must be uploaded to assets/lexin_music-quirky-romantic-spy-121840%20(1).mp3. */
 (() => {
   'use strict';
-  const music=new Audio('assets/lexin_music-quirky-romantic-spy-121840.mp3');
+  const music=new Audio('assets/lexin_music-quirky-romantic-spy-121840%20(1).mp3');
   music.loop=true;music.preload='none';
   let ctx,source,filter,gain,progress=0,door=0,started=false,failed=false;
   const enabled=()=>!!window.HNJ?.audio?.isEnabled()&&!document.hidden;
