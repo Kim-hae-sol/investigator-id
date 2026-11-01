@@ -223,6 +223,7 @@
           root.dataset.stepDriftMs = worstDrift.toFixed(1);
         }
         renderWalk(elapsed / OPENING.walk, elapsed);
+        window.dispatchEvent(new CustomEvent('investigation:corridor-progress',{detail:{progress:elapsed/OPENING.walk}}));
         root.dataset.frames = String(++frames);
         if (elapsed < OPENING.walk) requestAnimationFrame(frame);
         else { settleAtDoor(); resolve(); }
