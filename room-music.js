@@ -1,45 +1,64 @@
-/* Original Lexin_Music recording provided by the site owner.
-   The MP3 must be uploaded to assets/lexin_music-quirky-romantic-spy-121840%20(1).mp3. */
+/* Original MP3 supplied by the project owner. Native audio playback avoids
+   silent Web Audio routing when an AudioContext cannot output on the device. */
 (() => {
   'use strict';
-  const music=new Audio('assets/lexin_music-quirky-romantic-spy-121840%20(1).mp3');
-  music.loop=true;music.preload='none';
-  let ctx,source,filter,gain,progress=0,door=0,started=false,failed=false;
+  const root=document.querySelector('#opening-sequence');
+  const music=new Audio();
+  music.src=new URL('assets/lexin_music-quirky-romantic-spy-121840%20(1).mp3',document.baseURI).href;
+  music.preload='auto';
+  music.loop=true;
+  let started=false,progress=0,door=0,playPending=false,lastError='';
+  const clamp=v=>Math.min(1,Math.max(0,v));
   const enabled=()=>!!window.HNJ?.audio?.isEnabled()&&!document.hidden;
-  function prepare(){
-    if(failed||started||!enabled())return;
-    try {
-      ctx=window.HNJ.audio.getContext();
-      if(!ctx)return;
-      source=ctx.createMediaElementSource(music);
-      filter=ctx.createBiquadFilter();filter.type='lowpass';filter.Q.value=.5;
-      gain=ctx.createGain();gain.gain.value=0;
-      source.connect(filter).connect(gain).connect(ctx.destination);
+  const state=value=>{if(root)root.dataset.musicStatus=value;};
+  function update(){
+    const distance=clamp((progress-.43)/.57);
+    // Already playing (silently) from the entry click: emerge mid-corridor.
+    const corridorVolume=distance*(.045+.095*distance);
+    const desired=clamp(corridorVolume*(1-door)+door*.48);
+    music.volume=enabled()?desired:0;
+    music.muted=!enabled();
+    if(started&&!music.paused&&root)root.dataset.musicVolume=music.volume.toFixed(3);
+  }
+  function play(){
+    if(!started||!enabled()||playPending||!music.paused)return;
+    try{
+      playPending=true;
+      state('starting');
+      const promise=music.play();
+      if(promise&&typeof promise.then==='function'){
+        promise.then(()=>{playPending=false;lastError='';state('playing');update();},
+          error=>{playPending=false;lastError=error?.name||'play-failed';state('blocked-'+lastError);console.warn('Room music:',error);});
+      }else{playPending=false;state('playing');update();}
+    }catch(error){playPending=false;lastError=error?.name||'play-failed';state('error-'+lastError);console.warn('Room music:',error);}
+  }
+  function begin(){
+    if(!started){
       started=true;
-      music.play().catch(error=>console.warn('Room music playback:',error.name,error.message));
-      mix();
-    }catch(error){failed=true;console.warn('Room music setup:',error.message);}
+      music.volume=0;
+      music.muted=false;
+      state('ready');
+    }
+    // Invoked synchronously by the existing investigation-entry button.
+    play();
+    update();
   }
-  function mix(){
-    if(!started)return;
-    const distance=Math.max(0,Math.min(1,(progress-.43)/.57));
-    const t=ctx.currentTime;
-    const audible=enabled();
-    // Distant, low-passed music begins halfway down the corridor.
-    filter.frequency.setTargetAtTime(220+distance*160+door*6200,t,.12);
-    gain.gain.setTargetAtTime(audible?(distance*(.16+.09*distance)*(1-door)+door*.72):0,t,.18);
-    if(audible&&music.paused)music.play().catch(()=>{});
+  function setCorridorProgress(value){
+    progress=clamp(value);
+    if(progress>.43&&!started)begin();
+    update();
   }
-  function setCorridorProgress(p){progress=Math.max(0,Math.min(1,p));if(progress>.40)prepare();mix();}
-  function setDoorOpen(v){door=Math.max(0,Math.min(1,v));prepare();mix();}
-  function sync(){if(enabled())prepare();mix();}
-  // Called synchronously from the visitor's 'enter room' click. Starting silent playback
-  // here avoids browser autoplay blocking when the walk animation later begins.
-  window.addEventListener('investigation:enter',()=>{prepare();});
-  window.addEventListener('investigation:corridor-progress',e=>setCorridorProgress(e.detail.progress));
+  function setDoorOpen(value){door=clamp(value);update();}
+  function sync(){update();if(started&&enabled()&&music.paused)play();}
+  window.addEventListener('investigation:enter',begin);
+  window.addEventListener('investigation:corridor-progress',event=>setCorridorProgress(event.detail.progress));
   window.addEventListener('investigation:arrived',()=>setCorridorProgress(1));
   document.querySelector('#sound-button')?.addEventListener('click',()=>queueMicrotask(sync));
   document.addEventListener('visibilitychange',sync);
-  music.addEventListener('error',()=>console.warn('Room music MP3 not yet available at',music.src));
-  window.HNJRoomMusic=Object.freeze({setCorridorProgress,setDoorOpen});
+  music.addEventListener('error',()=>{lastError='media-'+(music.error?.code||'unknown');state(lastError);console.warn('Room music load failed:',music.src,music.error);});
+  music.addEventListener('playing',()=>{state('playing');update();});
+  music.addEventListener('pause',()=>{if(started)state('paused');});
+  // Retry only following another deliberate user interaction if autoplay was blocked.
+  document.addEventListener('pointerdown',()=>{if(started&&enabled()&&music.paused&&!playPending)play();},{passive:true});
+  window.HNJRoomMusic=Object.freeze({setDoorOpen,setCorridorProgress,status:()=>({started,paused:music.paused,volume:music.volume,src:music.src,error:lastError})});
 })();
