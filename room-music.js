@@ -6,7 +6,19 @@
   const music=new Audio();
   music.src=new URL('assets/lexin_music-quirky-romantic-spy-121840%20(1).mp3',document.baseURI).href;
   music.preload='auto';
-  music.loop=true;
+  music.loop=false;
+  const INTRO_SKIP_SECONDS=18; // Begin with the warmer, fuller melody rather than the exposed intro.
+  let introSeeked=false;
+  function skipIntro(){
+    if(introSeeked||!Number.isFinite(music.duration)||music.duration<=INTRO_SKIP_SECONDS+5)return;
+    try{music.currentTime=INTRO_SKIP_SECONDS;introSeeked=true;}catch(error){console.warn('Room music intro seek:',error);}
+  }
+  music.addEventListener('loadedmetadata',skipIntro);
+  music.addEventListener('ended',()=>{
+    if(!started||!enabled())return;
+    music.currentTime=INTRO_SKIP_SECONDS;
+    music.play().catch(error=>console.warn('Room music loop:',error));
+  });
   let started=false,progress=0,door=0,playPending=false,lastError='';
   const clamp=v=>Math.min(1,Math.max(0,v));
   const enabled=()=>!!window.HNJ?.audio?.isEnabled()&&!document.hidden;
@@ -14,8 +26,8 @@
   function update(){
     const distance=clamp((progress-.43)/.57);
     // Already playing (silently) from the entry click: emerge mid-corridor.
-    const corridorVolume=distance*(.045+.095*distance);
-    const desired=clamp(corridorVolume*(1-door)+door*.48);
+    const corridorVolume=distance*(.012+.030*distance);
+    const desired=clamp(corridorVolume*(1-door)+door*.16);
     music.volume=enabled()?desired:0;
     music.muted=!enabled();
     if(started&&!music.paused&&root)root.dataset.musicVolume=music.volume.toFixed(3);
@@ -37,6 +49,7 @@
       started=true;
       music.volume=0;
       music.muted=false;
+      skipIntro();
       state('ready');
     }
     // Invoked synchronously by the existing investigation-entry button.
