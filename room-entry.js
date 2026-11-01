@@ -41,7 +41,7 @@
   function seatSound(){
     if(!window.HNJ?.audio?.isEnabled()||document.hidden)return;
     const c=window.HNJ.audio.getContext();if(!c)return;
-    const now=c.currentTime,duration=.34;
+    const now=c.currentTime,duration=.42;
     const buffer=c.createBuffer(1,Math.ceil(c.sampleRate*duration),c.sampleRate);
     const data=buffer.getChannelData(0);
     // Soft broadband contact; no oscillator or descending pitch (which sounded cartoonish).
@@ -49,14 +49,14 @@
       const t=i/c.sampleRate;
       const body=Math.exp(-Math.pow((t-.065)/.070,2));
       const fabric=Math.exp(-Math.pow((t-.115)/.085,2));
-      data[i]=(Math.random()*2-1)*(.85*body+.25*fabric);
+      data[i]=(Math.random()*2-1)*(1.0*body+.45*fabric);
     }
     const source=c.createBufferSource(),low=c.createBiquadFilter(),gain=c.createGain();
     source.buffer=buffer;
-    low.type='lowpass';low.frequency.value=320;low.Q.value=.55;
+    low.type='lowpass';low.frequency.value=1050;low.Q.value=.7;
     gain.gain.setValueAtTime(0,now);
-    gain.gain.linearRampToValueAtTime(.14,now+.055);
-    gain.gain.linearRampToValueAtTime(.085,now+.11);
+    gain.gain.linearRampToValueAtTime(.45,now+.055);
+    gain.gain.linearRampToValueAtTime(.24,now+.11);
     gain.gain.linearRampToValueAtTime(0,now+duration);
     source.connect(low).connect(gain).connect(c.destination);
     const mute=()=>{if(!window.HNJ.audio.isEnabled())gain.gain.setTargetAtTime(0,c.currentTime,.008);};
