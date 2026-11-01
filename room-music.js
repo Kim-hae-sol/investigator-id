@@ -2,14 +2,15 @@
 (() => {
   'use strict';
   let context=null,output=null,filter=null,timer=null,next=0,step=0,started=false,openness=0;
-  const chords=[[196,233.08,293.66],[174.61,220,261.63],[164.81,196,261.63],[174.61,220,293.66]];
+  // Warm major-seventh lounge colors (Cmaj7, Am7, Dm7, G7), no dark sustained drone.
+  const chords=[[261.63,329.63,392,493.88],[220,261.63,329.63,392],[293.66,349.23,440,523.25],[196,246.94,293.66,349.23]];
   function enabled(){return !!window.HNJ?.audio?.isEnabled()&&!document.hidden;}
   function note(freq,when,length,volume){
     const osc=context.createOscillator(),harm=context.createOscillator(),env=context.createGain(),hGain=context.createGain();
     osc.type='sine';harm.type='sine';osc.frequency.value=freq;harm.frequency.value=freq*2;
-    hGain.gain.value=.12;
+    hGain.gain.value=.045;
     env.gain.setValueAtTime(.0001,when);
-    env.gain.exponentialRampToValueAtTime(Math.max(.0002,volume),when+.12);
+    env.gain.exponentialRampToValueAtTime(Math.max(.0002,volume),when+.035);
     env.gain.exponentialRampToValueAtTime(.0001,when+length);
     osc.connect(env);harm.connect(hGain).connect(env);env.connect(filter);
     osc.start(when);harm.start(when);osc.stop(when+length+.05);harm.stop(when+length+.05);
@@ -20,9 +21,12 @@
     while(next<context.currentTime+.25){
       const chord=chords[Math.floor(step/4)%chords.length];
       const n=step%4;
-      if(n===0)chord.forEach((f,i)=>note(f/2,next,2.8,.012));
-      note(chord[[0,2,1,2][n]],next,.85,.019);
-      next+=.74;step++;
+      if(n===0){
+        // Gentle chord stabs rather than a low sustained minor drone.
+        chord.forEach((f,i)=>note(f,next+i*.025,1.05,.012));
+      } else if(n===2)note(chord[2]*2,next,.43,.010);
+      else note(chord[n===1?1:3],next,.55,.009);
+      next+=.66;step++;
     }
   }
   function ensure(){
