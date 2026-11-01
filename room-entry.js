@@ -35,6 +35,42 @@
     const mute=()=>{if(!window.HNJ.audio.isEnabled())gain.gain.setTargetAtTime(0,c.currentTime,.01);};
     document.querySelector('#sound-button').addEventListener('click',mute);
   }
+  // Subtle chair contact: a short wooden creak and cushioned seat impact.
+  // Synthesized locally so the site does not need an extra audio download.
+  function seatSound(){
+    if(!window.HNJ?.audio?.isEnabled()||document.hidden)return;
+    const c=window.HNJ.audio.getContext();if(!c)return;
+    const now=c.currentTime, duration=.52;
+    const noise=c.createBuffer(1,Math.ceil(c.sampleRate*duration),c.sampleRate);
+    const data=noise.getChannelData(0);
+    for(let i=0;i<data.length;i++){
+      const t=i/c.sampleRate;
+      data[i]=(Math.random()*2-1)*(Math.exp(-t*22)*.8+Math.exp(-Math.max(0,t-.10)*14)*(t>.10?.20:0));
+    }
+    const source=c.createBufferSource(),low=c.createBiquadFilter(),gain=c.createGain();
+    source.buffer=noise;low.type='lowpass';
+    low.frequency.setValueAtTime(900,now);
+    low.frequency.exponentialRampToValueAtTime(210,now+duration);
+    gain.gain.setValueAtTime(.0001,now);
+    gain.gain.exponentialRampToValueAtTime(.115,now+.025);
+    gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
+    source.connect(low).connect(gain).connect(c.destination);
+    const creak=c.createOscillator(),creakGain=c.createGain();
+    creak.type='triangle';
+    creak.frequency.setValueAtTime(175,now+.07);
+    creak.frequency.exponentialRampToValueAtTime(90,now+.39);
+    creakGain.gain.setValueAtTime(.0001,now);
+    creakGain.gain.setValueAtTime(.0001,now+.07);
+    creakGain.gain.exponentialRampToValueAtTime(.025,now+.13);
+    creakGain.gain.exponentialRampToValueAtTime(.0001,now+.4);
+    creak.connect(creakGain).connect(c.destination);
+    source.start(now);source.stop(now+duration);
+    creak.start(now+.07);creak.stop(now+.4);
+    const cleanup=()=>{source.disconnect();low.disconnect();gain.disconnect();creak.disconnect();creakGain.disconnect();document.querySelector('#sound-button')?.removeEventListener('click',mute);};
+    source.addEventListener('ended',cleanup,{once:true});
+    const mute=()=>{if(!window.HNJ.audio.isEnabled()){gain.gain.setTargetAtTime(0,c.currentTime,.01);creakGain.gain.setTargetAtTime(0,c.currentTime,.01);}};
+    document.querySelector('#sound-button')?.addEventListener('click',mute);
+  }
   function worldPose(name){const v=room.getViewPose(name);return {position:[v.position[0],v.position[1],v.position[2]-3.4],target:[v.target[0],v.target[1],v.target[2]-3.4],fov:v.fov};}
   function interpolate(a,b,t){return {position:a.position.map((v,i)=>v+(b.position[i]-v)*t),target:a.target.map((v,i)=>v+(b.target[i]-v)*t),fov:a.fov+(b.fov-a.fov)*t};}
   async function look(down){
@@ -56,7 +92,8 @@
       let step=0;await animate(2600,t=>{corridor.enterRoom(t);if(step<3&&t>=[.13,.43,.72][step])window.dispatchEvent(new CustomEvent('investigation:room-step',{detail:{index:step++}}));});
       root.dataset.state='room-seating';
       const approach={position:[0,1.70,-.30],target:[0,1.10,-3.95],fov:48},seated=worldPose('seated');
-      await animate(2200,t=>{const pose=interpolate(approach,seated,t);pose.position[0]=Math.sin(t*Math.PI)*.30;const lower=Math.max(0,(t-.42)/.58);pose.position[1]=1.70-(1.70-seated.position[1])*lower*lower*(3-2*lower);corridor.roomPose(pose);});
+      let seatPlayed=false;
+      await animate(2200,t=>{const pose=interpolate(approach,seated,t);pose.position[0]=Math.sin(t*Math.PI)*.30;const lower=Math.max(0,(t-.42)/.58);pose.position[1]=1.70-(1.70-seated.position[1])*lower*lower*(3-2*lower);corridor.roomPose(pose);if(!seatPlayed&&t>=.82){seatPlayed=true;seatSound();}});
       entered=true;root.dataset.state='room';root.dataset.roomView='seated';gaze.hidden=false;root.setAttribute('aria-label','조사실 내부');corridor.getRenderer().domElement.setAttribute('aria-label','목재 벽과 기록 보드, 따뜻한 조명의 조사실');
       document.querySelector('#reader-target').hidden=true;
       window.dispatchEvent(new CustomEvent('investigation:room-entered',{detail:window.HNJ.getIdentity()}));
