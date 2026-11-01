@@ -38,25 +38,28 @@
   // Subtle chair contact: a short wooden creak and cushioned seat impact.
   // Synthesized locally so the site does not need an extra audio download.
   // A quiet, non-tonal fabric/cushion impact when the investigator sits.
+  // Soft upholstered chair landing: filtered fabric rustle, no impact or pitch sweep.
   function seatSound(){
     if(!window.HNJ?.audio?.isEnabled()||document.hidden)return;
     const c=window.HNJ.audio.getContext();if(!c)return;
-    const now=c.currentTime,duration=.42;
+    const now=c.currentTime,duration=.55;
     const buffer=c.createBuffer(1,Math.ceil(c.sampleRate*duration),c.sampleRate);
     const data=buffer.getChannelData(0);
-    // Soft broadband contact; no oscillator or descending pitch (which sounded cartoonish).
+    // Slow cushion compression, overlapping gentle fabric movement.
+    let smoothed=0;
     for(let i=0;i<data.length;i++){
       const t=i/c.sampleRate;
-      const body=Math.exp(-Math.pow((t-.065)/.070,2));
-      const fabric=Math.exp(-Math.pow((t-.115)/.085,2));
-      data[i]=(Math.random()*2-1)*(1.0*body+.45*fabric);
+      smoothed=smoothed*.85+(Math.random()*2-1)*.15;
+      const compression=Math.exp(-Math.pow((t-.19)/.15,2));
+      const rustle=Math.exp(-Math.pow((t-.31)/.12,2));
+      data[i]=smoothed*(compression*.74+rustle*.30);
     }
     const source=c.createBufferSource(),low=c.createBiquadFilter(),gain=c.createGain();
     source.buffer=buffer;
-    low.type='lowpass';low.frequency.value=1050;low.Q.value=.7;
+    low.type='lowpass';low.frequency.value=650;low.Q.value=.5;
     gain.gain.setValueAtTime(0,now);
-    gain.gain.linearRampToValueAtTime(.45,now+.055);
-    gain.gain.linearRampToValueAtTime(.24,now+.11);
+    gain.gain.linearRampToValueAtTime(.13,now+.16);
+    gain.gain.linearRampToValueAtTime(.11,now+.28);
     gain.gain.linearRampToValueAtTime(0,now+duration);
     source.connect(low).connect(gain).connect(c.destination);
     const mute=()=>{if(!window.HNJ.audio.isEnabled())gain.gain.setTargetAtTime(0,c.currentTime,.008);};
