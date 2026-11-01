@@ -33,7 +33,10 @@
   function setCorridorProgress(p){progress=Math.max(0,Math.min(1,p));if(progress>.40)prepare();mix();}
   function setDoorOpen(v){door=Math.max(0,Math.min(1,v));prepare();mix();}
   function sync(){if(enabled())prepare();mix();}
-  // Called synchronously from the visitor's 'enter room' click. Starting silent playback\n  // here avoids browser autoplay blocking when the walk animation later begins.\n  window.addEventListener('investigation:enter',()=>{prepare();});\n  window.addEventListener('investigation:corridor-progress',e=>setCorridorProgress(e.detail.progress));
+  // Called synchronously from the visitor's 'enter room' click. Starting silent playback
+  // here avoids browser autoplay blocking when the walk animation later begins.
+  window.addEventListener('investigation:enter',()=>{prepare();});
+  window.addEventListener('investigation:corridor-progress',e=>setCorridorProgress(e.detail.progress));
   window.addEventListener('investigation:arrived',()=>setCorridorProgress(1));
   document.querySelector('#sound-button')?.addEventListener('click',()=>queueMicrotask(sync));
   document.addEventListener('visibilitychange',sync);
