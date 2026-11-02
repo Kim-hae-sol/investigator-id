@@ -5,7 +5,7 @@
   const root=document.querySelector('#opening-sequence');
   const music=new Audio();
   music.src=new URL('assets/tunetank-jazz-spy-music-349626.mp3',document.baseURI).href;
-  music.preload='auto';
+  music.preload='none'; // Do not compete with 3D texture and shader preparation at page load.
   music.loop=false;
   const INTRO_SKIP_SECONDS=0; // Play Tunetank Jazz Spy Music from the beginning.
   let introSeeked=false;
