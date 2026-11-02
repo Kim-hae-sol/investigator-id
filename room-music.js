@@ -4,24 +4,13 @@
   'use strict';
   const root=document.querySelector('#opening-sequence');
   const music=new Audio();
-  const currentTrack='assets/lexin_music-quirky-romantic-spy-121840%20(1).mp3';
-  const requestedTrack='assets/jazz-spy-music-349626.mp3';
-  music.src=new URL(currentTrack,document.baseURI).href;
+  // Use the confirmed, uploaded Tunetank audio file directly.
+  const track='assets/tunetank-jazz-spy-music-349626.mp3';
+  music.src=new URL(track,document.baseURI).href;
   music.preload='auto';
   music.loop=false;
-  // Retain the old song until the requested MP3 is actually present; do not break playback.
-  let introSkipSeconds=18;
-  fetch(new URL(requestedTrack,document.baseURI).href,{method:'HEAD',cache:'no-store'})
-    .then(response=>{
-      if(!response.ok||started)return;
-      music.src=new URL(requestedTrack,document.baseURI).href;
-      introSkipSeconds=0; // Play the selected Jazz Spy Music from its original beginning.
-      introSeeked=true;
-      music.load();
-      state('new-track-ready');
-    })
-    .catch(()=>{});
-  let introSeeked=false;
+  const introSkipSeconds=0;
+  let introSeeked=true;
   function skipIntro(){
     if(introSeeked||!Number.isFinite(music.duration)||music.duration<=introSkipSeconds+5)return;
     try{music.currentTime=introSkipSeconds;introSeeked=true;}catch(error){console.warn('Room music intro seek:',error);}
