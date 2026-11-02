@@ -4,19 +4,32 @@
   'use strict';
   const root=document.querySelector('#opening-sequence');
   const music=new Audio();
-  music.src=new URL('assets/lexin_music-quirky-romantic-spy-121840%20(1).mp3',document.baseURI).href;
+  const currentTrack='assets/lexin_music-quirky-romantic-spy-121840%20(1).mp3';
+  const requestedTrack='assets/jazz-spy-music-349626.mp3';
+  music.src=new URL(currentTrack,document.baseURI).href;
   music.preload='auto';
   music.loop=false;
-  const INTRO_SKIP_SECONDS=18; // Begin with the warmer, fuller melody rather than the exposed intro.
+  // Retain the old song until the requested MP3 is actually present; do not break playback.
+  let introSkipSeconds=18;
+  fetch(new URL(requestedTrack,document.baseURI).href,{method:'HEAD',cache:'no-store'})
+    .then(response=>{
+      if(!response.ok||started)return;
+      music.src=new URL(requestedTrack,document.baseURI).href;
+      introSkipSeconds=0; // Play the selected Jazz Spy Music from its original beginning.
+      introSeeked=true;
+      music.load();
+      state('new-track-ready');
+    })
+    .catch(()=>{});
   let introSeeked=false;
   function skipIntro(){
-    if(introSeeked||!Number.isFinite(music.duration)||music.duration<=INTRO_SKIP_SECONDS+5)return;
-    try{music.currentTime=INTRO_SKIP_SECONDS;introSeeked=true;}catch(error){console.warn('Room music intro seek:',error);}
+    if(introSeeked||!Number.isFinite(music.duration)||music.duration<=introSkipSeconds+5)return;
+    try{music.currentTime=introSkipSeconds;introSeeked=true;}catch(error){console.warn('Room music intro seek:',error);}
   }
   music.addEventListener('loadedmetadata',skipIntro);
   music.addEventListener('ended',()=>{
     if(!started||!enabled())return;
-    music.currentTime=INTRO_SKIP_SECONDS;
+    music.currentTime=introSkipSeconds;
     music.play().catch(error=>console.warn('Room music loop:',error));
   });
   let started=false,progress=0,door=0,playPending=false,lastError='';
