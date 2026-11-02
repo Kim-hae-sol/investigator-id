@@ -47,11 +47,16 @@
     source.connect(filter).connect(gain).connect(channel);
     // A physical metal resonance under the latch, buried beneath its transient.
     const nodes=[source,filter,gain];
+    // The reader is close to the listener. Keep its dry transient dominant and
+    // place only a quiet, high-cut early reflection on the wall behind it.
+    const wall=ctx.createDelay(.1),damping=ctx.createBiquadFilter(),wet=ctx.createGain();
+    wall.delayTime.value=.027;damping.type='lowpass';damping.frequency.value=1800;wet.gain.value=friction?.018:.035;
+    gain.connect(wall).connect(damping).connect(wet).connect(channel);nodes.push(wall,damping,wet);
     if(!friction) for(const frequency of [367,813,1327]) {
       const resonator=ctx.createBiquadFilter();resonator.type='bandpass';resonator.frequency.value=frequency;resonator.Q.value=8;
       const level=ctx.createGain();level.gain.value=.12;source.connect(resonator).connect(level).connect(channel);nodes.push(resonator,level);
     }
-    source.start();source.onended=()=>nodes.forEach(n=>n.disconnect());
+    source.start();source.onended=()=>setTimeout(()=>nodes.forEach(n=>n.disconnect()),80);
     layer.dataset.lastSound=kind;layer.dataset.soundEvents=String(Number(layer.dataset.soundEvents||0)+1);
   }
   // RAF durations pause in background tabs, so return and insertion cannot jump ahead unseen.

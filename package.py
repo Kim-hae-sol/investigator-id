@@ -30,7 +30,7 @@ def package(output_dir):
     if replaced != 1:
         raise ValueError('Expected exactly one embedded shoe Foley payload')
     files = ['index.html', 'styles.css', 'app.js', 'opening.css', 'opening.js', 'cinematic-renderer.js', 'chair-asset.js', 'table-asset.js', 'static-model.js', 'corridor-3d.js', 'interrogation-room.js',
-             'access.css', 'access.js', 'room-entry.css', 'room-entry.js', 'vendor/three.local.js', 'vendor/reflector.local.js', 'vendor/THREE-LICENSE.txt']
+             'access.css', 'access.js', 'room-entry.css', 'room-entry.js', 'room-music.js', 'vendor/three.local.js', 'vendor/reflector.local.js', 'vendor/THREE-LICENSE.txt']
     for name in files:
         src, dst = source / name, target / name
         dst.parent.mkdir(parents=True, exist_ok=True)
@@ -49,16 +49,21 @@ def package(output_dir):
     shutil.copy2(project / 'VISUAL-RENEWAL.md', target / 'VISUAL-RENEWAL.md')
     if (project / 'FORM-REALISM.md').exists():
         shutil.copy2(project / 'FORM-REALISM.md', target / 'FORM-REALISM.md')
+    if (project / 'CORRIDOR-RHYTHM.md').exists():
+        shutil.copy2(project / 'CORRIDOR-RHYTHM.md', target / 'CORRIDOR-RHYTHM.md')
     if Path(__file__).resolve() != (target / 'package.py').resolve():
         shutil.copy2(__file__, target / 'package.py')
 
     html = (source / 'index.html').read_text()
     for name in ('styles.css', 'opening.css', 'access.css', 'room-entry.css'):
         css = (source / name).read_text().replace('@charset "UTF-8";', '', 1)
-        html = html.replace(f'<link rel="stylesheet" href="{name}">', '<style>\n' + css + '\n</style>')
+        html = re.sub(r'<link rel="stylesheet" href="' + re.escape(name) + r'(?:\?[^"<>]*)?">', lambda _: '<style>\n' + css + '\n</style>', html)
     scripts = []
-    for name in ('app.js', 'vendor/three.local.js', 'vendor/reflector.local.js', 'cinematic-renderer.js', 'chair-asset.js', 'table-asset.js', 'static-model.js', 'corridor-3d.js', 'interrogation-room.js', 'opening.js', 'access.js', 'room-entry.js'):
+    for name in ('app.js', 'vendor/three.local.js', 'vendor/reflector.local.js', 'cinematic-renderer.js', 'chair-asset.js', 'table-asset.js', 'static-model.js', 'corridor-3d.js', 'interrogation-room.js', 'opening.js', 'access.js', 'room-music.js', 'room-entry.js'):
         js = opening_js if name == 'opening.js' else (source / name).read_text()
+        if name == 'room-music.js':
+            audio = 'assets/tunetank-jazz-spy-music-349626.mp3'
+            js = js.replace(audio, 'data:audio/mpeg;base64,' + base64.b64encode((source / audio).read_bytes()).decode('ascii'))
         if '</script' in js.lower():
             raise ValueError('Inline script contains a closing script tag')
         html = re.sub(r'<script src="' + re.escape(name) + r'(?:\?[^"<>]*)?" defer></script>', '', html)
@@ -79,6 +84,8 @@ def package(output_dir):
             archive.write(target / name, 'investigator-id/' + name)
         if (target / 'FORM-REALISM.md').exists():
             archive.write(target / 'FORM-REALISM.md', 'investigator-id/FORM-REALISM.md')
+        if (target / 'CORRIDOR-RHYTHM.md').exists():
+            archive.write(target / 'CORRIDOR-RHYTHM.md', 'investigator-id/CORRIDOR-RHYTHM.md')
         for asset in sorted((target / 'assets').rglob('*')):
             if asset.is_file():
                 archive.write(asset, 'investigator-id/' + str(asset.relative_to(target)))

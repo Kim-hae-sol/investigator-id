@@ -9,7 +9,7 @@
   // Short cosine acceleration, a steady walking pace, then a longer soft stop.
   // The integrated velocity has no speed discontinuity at either end of the four-second shot.
   const travelAt = value => {
-    const t = clamp(value), a = .10, b = .18, v = 1 / (1 - (a + b) / 2);
+    const t = clamp(value), a = .14, b = .25, v = 1 / (1 - (a + b) / 2);
     if (t < a) return v * .5 * (t - a / Math.PI * Math.sin(Math.PI * t / a));
     if (t > 1 - b) { const r = 1 - t; return 1 - v * .5 * (r - b / Math.PI * Math.sin(Math.PI * r / b)); }
     return v * (t - a / 2);
@@ -380,7 +380,7 @@
       }
 
       // Neutral ambient bounce preserves visibility; practical fixtures create pools and quieter gaps.
-      scene.add(new T.HemisphereLight('#c6cbd0', '#40382f', .30));
+      scene.add(new T.HemisphereLight('#c6cbd0', '#40382f', .33));
       scene.add(new T.AmbientLight('#c1c0b6', .035));
       function lamp(z, index) {
         const y = SPACE.height - .32;
@@ -392,11 +392,12 @@
         shade.position.set(0,y,z); shade.castShadow = true; scene.add(shade);
         const rim = new T.Mesh(new T.TorusGeometry(.20,.005,8,32),brass);
         rim.rotation.x = Math.PI/2; rim.position.set(0,y-.103,z); scene.add(rim);
-        const diffuser = cylinder(.178,.178,.012,0,y-.104,z,bulb,scene,32); diffuser.castShadow = false;
+        const diffuserFinish=bulb.clone();diffuserFinish.emissiveIntensity=[1.55,1.26,1.48,1.55][index%4];
+        const diffuser = cylinder(.178,.178,.012,0,y-.104,z,diffuserFinish,scene,32); diffuser.castShadow = false;
         if (z > SPACE.startZ + 1.8) return;
-        const point = new T.PointLight('#ffe4bf',5.0,4.3,2);
+        const point = new T.PointLight('#ffe4bf',[4.1,2.4,3.8,3.9][index%4],4.0,2);
         point.position.set(0,y-.16,z); scene.add(point);
-        const spot = new T.SpotLight('#ffe8c9',24,5.4,.68,.93,2);
+        const spot = new T.SpotLight('#ffe8c9',[24,14.5,21,21][index%4],5.2,.72,.97,2);
         spot.position.copy(point.position); spot.target.position.set(0,0,z-.1);
         spot.castShadow = index < 2;
         if (spot.castShadow) {
@@ -411,21 +412,23 @@
         const g=new T.Group();g.position.set(sign*(half-.08),1.94,z);g.rotation.y=sign>0?-Math.PI/2:Math.PI/2;scene.add(g);
         box(.11,.29,.035,0,0,0,darkMetal,g,.008);
         box(.026,.12,.16,0,-.08,.08,brass,g,.004);
-        const glass=cylinder(.055,.055,.24,0,.04,.14,bulb,g,48);glass.castShadow=false;
+        const bay=Math.round((z-2.40)/4.20),nearKey=(bay%2===0?sign<0:sign>0);
+        const glassFinish=bulb.clone();glassFinish.emissiveIntensity=nearKey?1.55:1.12;
+        const glass=cylinder(.055,.055,.24,0,.04,.14,glassFinish,g,48);glass.castShadow=false;
         for(const y of [-.09,.17])cylinder(.070,.070,.025,0,y,.14,brass,g,32);
-        const light=new T.PointLight('#ffe3ba',1.5,2.2,2);light.position.set(sign*(half-.28),2.0,z);scene.add(light);
+        const light=new T.PointLight('#ffe3ba',nearKey?1.7:.82,2.25,2);light.position.set(sign*(half-.28),2.0,z);scene.add(light);
       }
       // A small practical picture light, above the investigation-room door, rather than a theatrical cone.
       box(.34,.035,.07,0,2.72,.075,darkMetal,scene,.004);
       box(.39,.045,.13,0,2.685,.15,brass,scene,.005);
       const doorDiffuser = box(.32,.008,.085,0,2.661,.17,bulb); doorDiffuser.castShadow = false;
-      const doorGlow = new T.PointLight('#fff0db',.7,2.7,2); doorGlow.position.set(0,2.63,.32); scene.add(doorGlow);
-      const doorWash = new T.SpotLight('#fff0dd',5.4,4.0,.82,1,2);
+      const doorGlow = new T.PointLight('#fff0db',.9,2.7,2); doorGlow.position.set(0,2.63,.32); scene.add(doorGlow);
+      const doorWash = new T.SpotLight('#fff0dd',10.6,4.2,.88,1,2);
       doorWash.position.set(0,2.63,.42); doorWash.target.position.set(0,1.25,.03);
       doorWash.castShadow = true; doorWash.shadow.mapSize.set(1024,1024);
       doorWash.shadow.bias = -.00010; doorWash.shadow.normalBias = .008; doorWash.shadow.radius = 3;
       doorWash.shadow.camera.near = .1; doorWash.shadow.camera.far = 5; scene.add(doorWash,doorWash.target);
-      const doorBounce = new T.PointLight('#dedbd1',2.0,2.6,2);
+      const doorBounce = new T.PointLight('#dedbd1',1.25,2.6,2);
       doorBounce.position.set(0,1.1,1.0); scene.add(doorBounce);
 
       // Faint, blurred planar reflection; diffuse stone texture and shadows remain dominant.
@@ -459,12 +462,12 @@
         if (lost) return;
         progress = clamp(value); bob = bounce; sway = lateral;
         const travel = travelAt(progress);
-        camera.position.set(lateral * .0014, SPACE.eye - bounce * .0028,
+        camera.position.set(lateral * .012, SPACE.eye - bounce * .009,
           T.MathUtils.lerp(SPACE.startZ, SPACE.endZ, travel));
         if (authProgress > 0) {
           camera.position.lerp(new T.Vector3(.97,1.23,.73),authProgress);
           camera.lookAt(T.MathUtils.lerp(0,.97,authProgress),T.MathUtils.lerp(SPACE.targetY,1.20,authProgress),0);
-        } else camera.lookAt(lateral * .0003, SPACE.targetY, 0);
+        } else camera.lookAt(lateral * .002, SPACE.targetY, 0);
         if(entryProgress>0) {
           camera.position.set(0,T.MathUtils.lerp(SPACE.eye,1.70,entryProgress),T.MathUtils.lerp(SPACE.endZ,-.30,entryProgress));
           camera.lookAt(0,T.MathUtils.lerp(SPACE.targetY,1.10,entryProgress),T.MathUtils.lerp(0,-3.95,entryProgress));
@@ -473,6 +476,7 @@
         if(roomPose){camera.position.fromArray(roomPose.position);camera.lookAt(...roomPose.target);camera.fov=roomPose.fov;camera.updateProjectionMatrix();}
         renderer.render(scene, camera);
         root.dataset.cameraZ = camera.position.z.toFixed(3);
+        root.dataset.cameraX = camera.position.x.toFixed(4);root.dataset.cameraY = camera.position.y.toFixed(4);
         root.dataset.renderer = 'webgl';
         root.dataset.drawCalls = String(renderer.userData?.worldCalls||renderer.info.render.calls);
         root.dataset.sideDoors = String(sideDoors.length);

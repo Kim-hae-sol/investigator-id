@@ -1,4 +1,4 @@
-/* Same-page opening: issued ID -> corridor -> five steps -> closed door.
+/* Same-page opening: issued ID -> corridor -> six measured steps -> closed door.
    Reader authentication is connected by access.js; the door remains closed. */
 (() => {
   'use strict';
@@ -21,7 +21,7 @@
   // The true 3D camera lives in corridor-3d.js / SPACE; the photo scale below is fallback-only.
   const OPENING = Object.freeze({
     fadeOut: 720, quiet: 170, walk: 4000,
-    steps: Object.freeze([280, 1030, 1780, 2530, 3280]), stepBob: 570,
+    steps: Object.freeze([260, 875, 1490, 2105, 2720, 3335]), stepBob: 530,
     corridorScale: [1.015, 1.65], corridorOffsetY: 6
   });
 
@@ -31,11 +31,13 @@
   let master = null;
   let masterContext = null;
   let stepCount = 0;
+  const footContactAt = [];
   let audibleSteps = 0;
   let worstDrift = 0;
   let shoeBuffer = null;
   let shoeDecode = null;
   let spatialScene = null;
+  let corridorAir = null;
   let scenePreparation = null;
   function prepareScene() {
     if (!scenePreparation) scenePreparation = (window.HNJCorridor3D?.create($('#opening-stage')) || Promise.resolve(null))
@@ -126,6 +128,7 @@
     // The original button and preference remain the single source of truth.
     const enabled = window.HNJ?.audio.isEnabled() && !document.hidden;
     if (enabled) audioOutput();
+    if(enabled&&phase==='walking'&&!corridorAir)startAir();
     if (master && masterContext) {
       master.gain.cancelScheduledValues(masterContext.currentTime);
       master.gain.setTargetAtTime(enabled ? .8 : 0, masterContext.currentTime, .008);
@@ -134,7 +137,7 @@
   soundButton.addEventListener('click', syncSound);
   document.addEventListener('visibilitychange', syncSound);
 
-  function shoeStep(index) {
+  function shoeStep(index, corridorProgress = null) {
     if (document.hidden) return false;
     const audio = audioOutput();
     if (!audio || !shoeBuffer || audio.context.state !== 'running') return false;
@@ -146,6 +149,7 @@
     const position = context.createStereoPanner();
     const reflection = context.createDelay(.1);
     const reflectedLevel = context.createGain();
+    const isCorridor=corridorProgress!==null,p=isCorridor?clamp(corridorProgress):0;
     source.buffer = shoeBuffer;
     body.type = 'highpass';
     body.frequency.value = 140;
@@ -153,20 +157,40 @@
     level.gain.value = .60;
     position.pan.value = index % 2 ? .065 : -.065;
     // Light hard-floor heel/sole contact; no added bass, just a very quiet short reflection.
-    reflection.delayTime.value = .045;
-    reflectedLevel.gain.value = .05;
+    reflection.delayTime.value = isCorridor?mix(.058,.031,p):.045;
+    reflectedLevel.gain.value = isCorridor?mix(.065,.035,p):.05;
     source.connect(body).connect(level).connect(position).connect(output);
-    level.connect(reflection).connect(reflectedLevel).connect(output);
+    const air=isCorridor?context.createBiquadFilter():null;
+    if(air){air.type='lowpass';air.frequency.value=mix(3200,2300,p);level.connect(reflection).connect(air).connect(reflectedLevel).connect(output);}
+    else level.connect(reflection).connect(reflectedLevel).connect(output);
     source.start(time, (index % 4) * .6, .52);
     source.onended = () => {
       window.setTimeout(() => {
-        [source, body, level, position, reflection, reflectedLevel].forEach(node => node.disconnect());
+        [source, body, level, position, reflection, reflectedLevel,air].filter(Boolean).forEach(node => node.disconnect());
       }, 100);
     };
     return true;
   }
 
+  // Very low-level, unpitched ventilation air. No music or ominous bass drone.
+  // It exists only during the corridor walk and shares the original mute channel.
+  function startAir(){
+    if(corridorAir)return;const audio=audioOutput();if(!audio)return;
+    const {context,output}=audio,source=context.createBufferSource(),filter=context.createBiquadFilter(),gain=context.createGain();
+    const buffer=context.createBuffer(1,Math.ceil(context.sampleRate*1.3),context.sampleRate),data=buffer.getChannelData(0);let seed=73;
+    for(let i=0;i<data.length;i++){seed=(seed*1664525+1013904223)>>>0;data[i]=seed/2147483648-1;}
+    source.buffer=buffer;source.loop=true;filter.type='bandpass';filter.frequency.value=740;filter.Q.value=.38;
+    gain.gain.setValueAtTime(0,context.currentTime);gain.gain.setTargetAtTime(.0028,context.currentTime,.12);
+    source.connect(filter).connect(gain).connect(output);source.start();corridorAir={source,filter,gain,context};
+  }
+  function stopAir(){
+    const a=corridorAir;if(!a)return;corridorAir=null;
+    a.gain.gain.cancelScheduledValues(a.context.currentTime);a.gain.gain.setTargetAtTime(0,a.context.currentTime,.07);
+    a.source.stop(a.context.currentTime+.30);a.source.onended=()=>[a.source,a.filter,a.gain].forEach(n=>n.disconnect());
+  }
+
   function renderWalk(progress, elapsed) {
+    if(corridorAir)corridorAir.gain.gain.setTargetAtTime(mix(.0028,.0015,clamp(progress)),corridorAir.context.currentTime,.12);
     const travel = smooth(progress);
     const scale = mix(...OPENING.corridorScale, travel);
     // A single uninterrupted camera approach: no second photograph appears or fades in.
@@ -175,15 +199,18 @@
     corridor.style.opacity = '1';
     door.style.opacity = '0';
 
-    // Five light, sub-two-pixel impulses share the exact same clock as the footsteps.
-    let bob = 0;
-    let sway = 0;
-    OPENING.steps.forEach((step, index) => {
-      const since = elapsed - step;
-      if (since >= 0 && since < OPENING.stepBob) {
-        const pulse = Math.sin(since / OPENING.stepBob * Math.PI) * (1 - since / OPENING.stepBob);
-        bob += pulse * 1.7;
-        sway += pulse * (index % 2 ? -.55 : .55);
+    // Heel contact, weight transfer and a small pre-contact rise share the Foley clock.
+    // No roll, FOV pulse or noise. Every pulse has zero displacement/velocity at its end.
+    let bob = 0, sway = 0;
+    OPENING.steps.forEach((step,index)=>{
+      // Use the actual audible contact frame when a slow renderer misses the
+      // nominal timestamp, so the head's weight transfer does not lead the heel.
+      const since=elapsed-(footContactAt[index]??step);
+      if(since>=-135&&since<0){const t=(since+135)/135;bob-=.18*Math.sin(Math.PI*t)**2;}
+      if(since>=0&&since<OPENING.stepBob){
+        const q=since/OPENING.stepBob;
+        bob+=Math.sin(2*Math.PI*q)*(1-q)**2;
+        sway+=Math.sin(Math.PI*q)**2*(index%2?-.65:.65);
       }
     });
     camera.style.transform = `translate3d(${sway}px,${bob}px,0)`;
@@ -192,6 +219,7 @@
   }
 
   function settleAtDoor() {
+    stopAir();
     corridor.style.opacity = '1';
     corridor.style.transform = `translateY(${OPENING.corridorOffsetY}%) scale(${OPENING.corridorScale[1]})`;
     door.style.opacity = '0';
@@ -215,8 +243,9 @@
         previous = timestamp;
         elapsed = Math.min(elapsed, OPENING.walk);
         while (stepCount < OPENING.steps.length && elapsed >= OPENING.steps[stepCount]) {
+          footContactAt[stepCount]=elapsed;
           worstDrift = Math.max(worstDrift, elapsed - OPENING.steps[stepCount]);
-          if (shoeStep(stepCount)) audibleSteps++;
+          if (shoeStep(stepCount,elapsed/OPENING.walk)) audibleSteps++;
           stepCount++;
           root.dataset.footsteps = String(stepCount);
           root.dataset.audibleSteps = String(audibleSteps);
@@ -264,12 +293,14 @@
       await fadeBlack(0, 0);
       blackout.classList.remove('is-active');
       state('walking');
+      if(!reducedMotion.matches)startAir();
       await walkToDoor();
       state('arrived');
       root.setAttribute('aria-label', '닫힌 조사실 문 앞');
       // STEP 03: access.js attaches the reader only after the original walk settles.
       window.dispatchEvent(new CustomEvent('investigation:arrived', { detail: identity }));
     } catch (error) {
+      stopAir();
       // Recover to the same issued card if local assets are missing. No dummy page or alert.
       root.hidden = true;
       root.setAttribute('aria-hidden', 'true');
