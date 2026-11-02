@@ -4,7 +4,8 @@
 .opening-scene{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:#090806;overflow:hidden;user-select:none;-webkit-user-select:none}
 .opening-scene[hidden],#issuance-scene[hidden]{display:none}
 .opening-scene:focus{outline:0}
-.opening-stage{position:relative;width:min(100vw,177.7778svh);aspect-ratio:16/9;overflow:clip;isolation:isolate;background:#18130e}
+/* Full-viewport 3D stage: camera.aspect is set from the stage bounds in corridor-3d.js. */
+.opening-stage{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;overflow:clip;isolation:isolate;background:#18130e}
 .corridor-webgl{position:absolute;inset:0;z-index:1;display:block;width:100%;height:100%;pointer-events:none}
 .corridor-webgl[hidden]{display:none}
 .opening-camera{position:absolute;inset:-4px;transform:translate3d(0,0,0);will-change:transform}
@@ -22,9 +23,9 @@ body.opening-active .sound-button{color:#a99f8b}
 body.opening-active .sound-button:hover{color:#e8deca}
 .opening-scene[data-state="arrived"] .opening-camera,.opening-scene[data-state="arrived"] .opening-shot{will-change:auto}
 
-/* A portrait window crops only the side corridors. The complete central door stays visible. */
+/* Portrait also fills the viewport; the perspective camera narrows its horizontal view naturally. */
 @media(max-width:700px) and (orientation:portrait){
-  .opening-stage{width:min(100vw,80svh);aspect-ratio:4/5}
+  .opening-stage{width:100%;height:100%;aspect-ratio:auto}
 }
 @media(prefers-reduced-motion:reduce){
   .opening-camera,.opening-shot{will-change:auto}
