@@ -30,7 +30,7 @@
     const [wide,detail]=await Promise.all([texture(options.wide),options.near&&options.near!==options.wide?texture(options.near):Promise.resolve(null)]);
     const near=detail||wide;
     scene.updateMatrixWorld(true);
-    const materials=[],saved=[],blend={value:0},enabled={value:1};
+    const materials=[],saved=[],blend={value:0},enabled={value:1},screenMode={value:0},screenSize={value:new T.Vector2(1,1)},screenScale={value:1},jitter={value:new T.Vector2()};
     const a=projector(...options.camera),b=projector(...(options.nearCamera||options.camera));
     scene.traverse(mesh=>{
       if(!mesh.isMesh||options.exclude?.(mesh))return;
@@ -41,7 +41,7 @@
         saved.push([mesh,original,mesh.visible]);mesh.visible=false;return;
       }
       const material=new T.ShaderMaterial({toneMapped:false,side:T.DoubleSide,
-        uniforms:{wide:{value:wide},near:{value:near},blend,enabled,
+        uniforms:{wide:{value:wide},near:{value:near},blend,enabled,screenMode,screenSize,screenScale,jitter,
           bindWide:{value:new T.Matrix4().multiplyMatrices(a,mesh.matrixWorld)},
           bindNear:{value:new T.Matrix4().multiplyMatrices(b,mesh.matrixWorld)}},
         vertexShader:`varying vec4 uvWide,uvNear;uniform mat4 bindWide,bindNear;
@@ -51,8 +51,13 @@
           #endif
           uvWide=bindWide*p;uvNear=bindNear*p;
           gl_Position=projectionMatrix*modelViewMatrix*p;}`,
-        fragmentShader:`varying vec4 uvWide,uvNear;uniform sampler2D wide,near;uniform float blend,enabled;
+        fragmentShader:`varying vec4 uvWide,uvNear;uniform sampler2D wide,near;uniform float blend,enabled,screenMode,screenScale;uniform vec2 screenSize,jitter;
           void main(){vec2 a=uvWide.xy/uvWide.w*.5+.5,b=uvNear.xy/uvNear.w*.5+.5;
+            if(screenMode>.5){
+              vec2 uv=gl_FragCoord.xy/screenSize-.5;float aspect=screenSize.x/screenSize.y;
+              uv.x*=min(1.,aspect/(16./9.));uv.y*=min(1.,(16./9.)/aspect);
+              uv=uv/screenScale+.5+jitter;a=uv;b=uv;
+            }
             vec3 x=texture2D(wide,clamp(a,vec2(.001),vec2(.999))).rgb;
             vec3 y=texture2D(near,clamp(b,vec2(.001),vec2(.999))).rgb;
             gl_FragColor=vec4(mix(x,y,blend)*enabled,0.);
@@ -60,7 +65,7 @@
           }`});
       saved.push([mesh,original,mesh.visible]);materials.push(material);mesh.material=material;
     });
-    return {setBlend:v=>{blend.value=v;},setLight:v=>{enabled.value=v;},dispose(){
+    return {setBlend:v=>{blend.value=v;},setScreen:(active,size,scale=1,x=0,y=0)=>{screenMode.value=active?1:0;screenSize.value.copy(size);screenScale.value=scale;jitter.value.set(x,y);},setLight:v=>{enabled.value=v;},dispose(){
       for(const [mesh,material,visible] of saved){mesh.material=material;mesh.visible=visible;}
       materials.forEach(m=>m.dispose());wide.dispose();if(detail)detail.dispose();
     }};

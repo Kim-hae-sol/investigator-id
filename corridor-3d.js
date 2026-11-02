@@ -469,6 +469,8 @@
       stage.prepend(canvas);
       let progress = 0, bob = 0, sway = 0, lost = false, authProgress = 0, doorProgress = 0, entryProgress = 0, roomPose = null, roomLights = [], corridorLights = [];
       const root = document.querySelector('#opening-sequence');
+      const readerRest=reader.matrix.clone(),readerReference=new T.PerspectiveCamera(SPACE.fov,16/9,.06,32);
+      readerReference.position.set(0,SPACE.eye,SPACE.endZ);readerReference.lookAt(0,SPACE.targetY,0);readerReference.updateMatrixWorld();
       function resize() {
         const rect = stage.getBoundingClientRect();
         const w = rect.width || Math.min(innerWidth, innerHeight * 16 / 9);
@@ -480,7 +482,15 @@
         progress = clamp(value); bob = bounce; sway = lateral;
         camera.fov=SPACE.fov;
         const travel = travelAt(progress);
-        photographic?.setBlend(T.MathUtils.smoothstep(travel,.25,.92));
+        if(photographic){
+          // Two photographic walking shots, cut under a brief first-person blink.
+          // Never dissolve mismatched architectural edges while moving.
+          const walking=progress<1&&authProgress===0&&entryProgress===0&&!roomPose;
+          photographic.setBlend(progress<.5?0:1);
+          photographic.setScreen(walking,renderer.getDrawingBufferSize(new T.Vector2()),progress<.5?1+travel*.16:1,lateral*.00035,bounce*.0006);
+          const lid=document.querySelector('.first-person-blink');
+          if(lid&&root.dataset.state==='walking')lid.style.setProperty('--lid',Math.max(0,Math.min(1,(progress-.475)/.018,(.525-progress)/.018)).toFixed(3));
+        }
         camera.position.set(lateral * .012, SPACE.eye - bounce * .009,
           T.MathUtils.lerp(SPACE.startZ, SPACE.endZ, travel));
         if (authProgress > 0) {
@@ -496,6 +506,19 @@
         // Never reveal unphotographed side pixels on ultra-wide displays.
         camera.fov=T.MathUtils.radToDeg(2*Math.atan(Math.tan(T.MathUtils.degToRad(camera.fov)/2)*Math.min(1,(16/9)/camera.aspect)));
         camera.updateProjectionMatrix();
+        if(photographic){
+          const walking=progress<1&&authProgress===0&&entryProgress===0&&!roomPose;
+          reader.visible=!walking||progress>=.5;
+          if(walking&&progress>=.5){
+            // The photographed second shot has its own fixed framing. Keep the
+            // physical reader bolted to that photographed wall until arrival.
+            camera.updateMatrixWorld();reader.matrixAutoUpdate=false;
+            reader.matrix.copy(camera.matrixWorld).multiply(readerReference.matrixWorldInverse).multiply(readerRest);
+            reader.matrixWorldNeedsUpdate=true;
+          }else{
+            reader.matrixAutoUpdate=true;readerRest.decompose(reader.position,reader.quaternion,reader.scale);
+          }
+        }
         renderer.render(scene, camera);
         root.dataset.cameraZ = camera.position.z.toFixed(3);
         root.dataset.cameraX = camera.position.x.toFixed(4);root.dataset.cameraY = camera.position.y.toFixed(4);
