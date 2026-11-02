@@ -4,21 +4,19 @@
   'use strict';
   const root=document.querySelector('#opening-sequence');
   const music=new Audio();
-  // Use the confirmed, uploaded Tunetank audio file directly.
-  const track='assets/tunetank-jazz-spy-music-349626.mp3';
-  music.src=new URL(track,document.baseURI).href;
+  music.src=new URL('assets/lexin_music-quirky-romantic-spy-121840%20(1).mp3',document.baseURI).href;
   music.preload='auto';
   music.loop=false;
-  const introSkipSeconds=0;
-  let introSeeked=true;
+  const INTRO_SKIP_SECONDS=18; // Begin with the warmer, fuller melody rather than the exposed intro.
+  let introSeeked=false;
   function skipIntro(){
-    if(introSeeked||!Number.isFinite(music.duration)||music.duration<=introSkipSeconds+5)return;
-    try{music.currentTime=introSkipSeconds;introSeeked=true;}catch(error){console.warn('Room music intro seek:',error);}
+    if(introSeeked||!Number.isFinite(music.duration)||music.duration<=INTRO_SKIP_SECONDS+5)return;
+    try{music.currentTime=INTRO_SKIP_SECONDS;introSeeked=true;}catch(error){console.warn('Room music intro seek:',error);}
   }
   music.addEventListener('loadedmetadata',skipIntro);
   music.addEventListener('ended',()=>{
     if(!started||!enabled())return;
-    music.currentTime=introSkipSeconds;
+    music.currentTime=INTRO_SKIP_SECONDS;
     music.play().catch(error=>console.warn('Room music loop:',error));
   });
   let started=false,progress=0,door=0,playPending=false,lastError='';
