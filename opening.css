@@ -18,8 +18,8 @@
 .scene-blackout{position:fixed;inset:0;z-index:40;background:#080807;opacity:0;pointer-events:none}
 .scene-blackout.is-active{pointer-events:auto}
 body.opening-active{height:100svh;min-height:100svh;overflow:hidden}
-body.opening-active .desk-footer{position:fixed;z-index:30}
-body.opening-active .sound-button{color:#a99f8b}
+body.opening-active .desk-footer{position:fixed;z-index:30;pointer-events:none}
+body.opening-active .sound-button{color:#a99f8b;pointer-events:auto}
 body.opening-active .sound-button:hover{color:#e8deca}
 .opening-scene[data-state="arrived"] .opening-camera,.opening-scene[data-state="arrived"] .opening-shot{will-change:auto}
 
