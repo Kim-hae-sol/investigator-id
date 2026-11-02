@@ -24,10 +24,9 @@
   const enabled=()=>!!window.HNJ?.audio?.isEnabled()&&!document.hidden;
   const state=value=>{if(root)root.dataset.musicStatus=value;};
   function update(){
-    const distance=clamp((progress-.43)/.57);
-    // Already playing (silently) from the entry click: emerge mid-corridor.
-    const corridorVolume=distance*(.012+.030*distance);
-    const desired=clamp(corridorVolume*(1-door)+door*.16);
+    // Experimental OST cue: corridor stays silent. Music fades in only as the door opens.
+    // The doorway animation already eases 'door' from 0 to 1 over about 1.35 seconds.
+    const desired=clamp(door*.16);
     music.volume=enabled()?desired:0;
     music.muted=!enabled();
     if(started&&!music.paused&&root)root.dataset.musicVolume=music.volume.toFixed(3);
@@ -52,18 +51,26 @@
       skipIntro();
       state('ready');
     }
-    // Invoked synchronously by the existing investigation-entry button.
+    // Triggered during the door-handle click for reliable browser audio permission.
     play();
     update();
   }
   function setCorridorProgress(value){
     progress=clamp(value);
-    if(progress>.43&&!started)begin();
+    // Keep progress reporting for compatibility; do not start music in the corridor.
     update();
   }
   function setDoorOpen(value){door=clamp(value);update();}
   function sync(){update();if(started&&enabled()&&music.paused)play();}
-  window.addEventListener('investigation:enter',begin);
+  // Capture the actual unlocked door-handle click BEFORE the room's async setup.
+  // This is a genuine user gesture, so browsers can start the MP3 silently.
+  document.addEventListener('click',event=>{
+    const handle=event.target?.closest?.('.door-handle-target');
+    if(!handle||handle.hidden||handle.disabled||started)return;
+    const access=window.HNJAccess?.getState?.();
+    if(!access?.doorUnlocked||access.authSceneOpen)return;
+    begin();
+  },true);
   window.addEventListener('investigation:corridor-progress',event=>setCorridorProgress(event.detail.progress));
   window.addEventListener('investigation:arrived',()=>setCorridorProgress(1));
   document.querySelector('#sound-button')?.addEventListener('click',()=>queueMicrotask(sync));
