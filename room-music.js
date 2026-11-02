@@ -4,10 +4,10 @@
   'use strict';
   const root=document.querySelector('#opening-sequence');
   const music=new Audio();
-  music.src=new URL('assets/lexin_music-quirky-romantic-spy-121840%20(1).mp3',document.baseURI).href;
+  music.src=new URL('assets/tunetank-jazz-spy-music-349626.mp3',document.baseURI).href;
   music.preload='auto';
   music.loop=false;
-  const INTRO_SKIP_SECONDS=18; // Begin with the warmer, fuller melody rather than the exposed intro.
+  const INTRO_SKIP_SECONDS=0; // Play Tunetank Jazz Spy Music from the beginning.
   let introSeeked=false;
   function skipIntro(){
     if(introSeeked||!Number.isFinite(music.duration)||music.duration<=INTRO_SKIP_SECONDS+5)return;
