@@ -41,41 +41,9 @@
   // Soft upholstered chair landing: filtered fabric rustle, no impact or pitch sweep.
   // Real soft-chair landing, cropped from the user-supplied recording (1.84s–2.31s).
   // Encoded as a tiny 8 kHz unsigned PCM sample to keep this change self-contained.
-  // Real, lightly edited soft-chair cushion contact from the supplied CC0 recording.
-  // Preload only after door authorization to avoid competing with 3D scene preparation.
-  let chairBuffer=null,chairLoading=null;
-  function prepareChairAudio(){
-    if(chairBuffer)return Promise.resolve(chairBuffer);
-    if(chairLoading)return chairLoading;
-    const url=new URL('assets/seat-cushion-soft-v2.mp3',document.baseURI).href;
-    chairLoading=fetch(url).then(response=>{
-      if(!response.ok)throw new Error('Chair sound HTTP '+response.status);
-      return response.arrayBuffer();
-    }).then(bytes=>{
-      const c=window.HNJ?.audio?.getContext();
-      if(!c)return null;
-      return c.decodeAudioData(bytes);
-    }).then(buffer=>{chairBuffer=buffer;return buffer;})
-      .catch(error=>{console.warn('Chair sound:',error.message);return null;});
-    return chairLoading;
-  }
-  window.addEventListener('investigation:unlocked',()=>{prepareChairAudio();});
-  function seatSound(){
-    if(!window.HNJ?.audio?.isEnabled()||document.hidden)return;
-    const c=window.HNJ.audio.getContext();
-    if(!c||!chairBuffer){prepareChairAudio();return;}
-    const source=c.createBufferSource(),gain=c.createGain();
-    source.buffer=chairBuffer;
-    gain.gain.value=.68; // Soft and subordinate to the foreground room interaction.
-    source.connect(gain).connect(c.destination);
-    const mute=()=>{if(!window.HNJ.audio.isEnabled())gain.gain.setTargetAtTime(0,c.currentTime,.008);};
-    document.querySelector('#sound-button')?.addEventListener('click',mute);
-    source.addEventListener('ended',()=>{
-      source.disconnect();gain.disconnect();
-      document.querySelector('#sound-button')?.removeEventListener('click',mute);
-    },{once:true});
-    source.start();
-  }
+  // Chair sound temporarily disabled: recorded candidates produced audible scraping.
+  // Keep the seating camera animation intact; restore only after approving an unedited clip.
+  function seatSound(){ /* No sound intentionally. */ }
   function worldPose(name){const v=room.getViewPose(name);return {position:[v.position[0],v.position[1],v.position[2]-3.4],target:[v.target[0],v.target[1],v.target[2]-3.4],fov:v.fov};}
   function interpolate(a,b,t){return {position:a.position.map((v,i)=>v+(b.position[i]-v)*t),target:a.target.map((v,i)=>v+(b.target[i]-v)*t),fov:a.fov+(b.fov-a.fov)*t};}
   async function look(down){
