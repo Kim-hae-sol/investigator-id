@@ -6,6 +6,12 @@
   target.setAttribute('aria-label','조사실 문 열고 들어가기');document.querySelector('#door-interaction-layer').append(target);
   let corridor=null,room=null,preparation=null,busy=false,entered=false;
   let lookingDown=false,viewBusy=false;
+  const blink=document.createElement('div');blink.className='first-person-blink';blink.setAttribute('aria-hidden','true');
+  blink.innerHTML='<i></i><i></i>';root.append(blink);
+  function blinkAt(t,centre=.5){
+    const closed=Math.max(0,Math.min(1,(t-(centre-.08))/.06,((centre+.08)-t)/.06));
+    blink.style.setProperty('--lid',closed.toFixed(3));
+  }
   const gaze=document.createElement('button');gaze.type='button';gaze.className='room-gaze';gaze.hidden=true;gaze.textContent='사건 파일 ↓';
   gaze.setAttribute('aria-label','책상 위 사건 파일 내려다보기');root.append(gaze);
   const reduce=matchMedia('(prefers-reduced-motion: reduce)');
@@ -30,7 +36,7 @@
     const gain=c.createGain(),filter=c.createBiquadFilter(),source=c.createBufferSource();
     const b=c.createBuffer(1,c.sampleRate*.75,c.sampleRate),d=b.getChannelData(0);
     for(let i=0;i<d.length;i++){const t=i/c.sampleRate;d[i]=(Math.random()*2-1)*(.5*Math.exp(-t*40)+.08*Math.sin(t*28)**2*Math.exp(-t*3));}
-    source.buffer=b;filter.type='lowpass';filter.frequency.value=1700;gain.gain.value=.19;
+    source.buffer=b;filter.type='lowpass';filter.frequency.value=1200;gain.gain.value=.095;
     source.connect(filter).connect(gain).connect(c.destination);source.start();source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();document.querySelector('#sound-button').removeEventListener('click',mute);};
     const mute=()=>{if(!window.HNJ.audio.isEnabled())gain.gain.setTargetAtTime(0,c.currentTime,.01);};
     document.querySelector('#sound-button').addEventListener('click',mute);
@@ -49,7 +55,12 @@
   async function look(down){
     if(!entered||viewBusy||lookingDown===down)return;viewBusy=true;gaze.disabled=true;
     const from=worldPose(lookingDown?'tabletop':'seated'),to=worldPose(down?'tabletop':'seated');
-    await animate(1050,t=>corridor.roomPose(interpolate(from,to,t)));
+    let changed=false;
+    await animate(1050,t=>{
+      blinkAt(t);
+      if(!changed&&t>=.5){changed=true;corridor.setRoomView?.(down?'tabletop':'seated');}
+      corridor.roomPose(interpolate(from,to,t));corridor.setRoomPan?.((down?-.012:.012)*Math.sin(t*Math.PI));
+    });
     lookingDown=down;root.dataset.roomView=down?'tabletop':'seated';gaze.textContent=down?'정면 보기 ↑':'사건 파일 ↓';
     gaze.setAttribute('aria-label',down?'맞은편 용의자석 바라보기':'책상 위 사건 파일 내려다보기');gaze.disabled=false;viewBusy=false;
   }
@@ -64,11 +75,14 @@
       await animate(1350,t=>{corridor.openDoor(t);window.HNJRoomMusic?.setDoorOpen(t);});root.dataset.state='room-entering';
       let step=0;await animate(2600,t=>{corridor.enterRoom(t);if(step<3&&t>=[.13,.43,.72][step])window.dispatchEvent(new CustomEvent('investigation:room-step',{detail:{index:step++}}));});
       root.dataset.state='room-seating';
-      const approach={position:[0,1.70,-.30],target:[0,1.10,-3.95],fov:48},seated=worldPose('seated');
-      let seatPlayed=false;
-      await animate(2200,t=>{const pose=interpolate(approach,seated,t);pose.position[0]=Math.sin(t*Math.PI)*.30;const lower=Math.max(0,(t-.42)/.58);pose.position[1]=1.70-(1.70-seated.position[1])*lower*lower*(3-2*lower);corridor.roomPose(pose);if(!seatPlayed&&t>=.82){seatPlayed=true;seatSound();}});
-      entered=true;root.dataset.state='room';root.dataset.roomView='seated';gaze.hidden=false;root.setAttribute('aria-label','조사실 내부');corridor.getRenderer().domElement.setAttribute('aria-label','목재 벽과 기록 보드, 따뜻한 조명의 조사실');
+      const approach={position:[0,1.70,-.30],target:[0,1.10,-3.95],fov:48},seated=worldPose('tabletop');
+      let seatPlayed=false,shotChanged=false;
+      await animate(2200,t=>{blinkAt(t,.64);if(!shotChanged&&t>=.64){shotChanged=true;corridor.setRoomView?.('tabletop');}const pose=interpolate(approach,seated,t);pose.position[0]=Math.sin(t*Math.PI)*.12;const lower=Math.max(0,(t-.42)/.58);pose.position[1]=1.70-(1.70-seated.position[1])*lower*lower*(3-2*lower);corridor.roomPose(pose);if(!seatPlayed&&t>=.82){seatPlayed=true;seatSound();}});
+      entered=true;lookingDown=true;root.dataset.state='room';root.dataset.roomView='tabletop';root.setAttribute('aria-label','조사실 내부');corridor.getRenderer().domElement.setAttribute('aria-label','따뜻한 조사실, 사건 파일과 얼굴이 드러나지 않는 맞은편 인물');
       document.querySelector('#reader-target').hidden=true;
+      // The first deliberate look belongs to the investigator's file. The man
+      // has been present throughout entry, rather than appearing on this cue.
+      gaze.textContent='정면 보기 ↑';gaze.setAttribute('aria-label','맞은편 용의자석 바라보기');gaze.hidden=false;
       window.dispatchEvent(new CustomEvent('investigation:room-entered',{detail:window.HNJ.getIdentity()}));
     } catch(error){target.hidden=false;target.disabled=false;console.warn('Room entry:',error.message);}
     finally{busy=false;}
