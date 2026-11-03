@@ -8,11 +8,6 @@
 .opening-stage{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;overflow:clip;isolation:isolate;background:#18130e}
 .corridor-webgl{position:absolute;inset:0;z-index:1;display:block;width:100%;height:100%;pointer-events:none}
 .corridor-webgl[hidden]{display:none}
-.opening-camera{position:absolute;inset:-4px;transform:translate3d(0,0,0);will-change:transform}
-.opening-shot{position:absolute;inset:0;transform-origin:50% 52%;will-change:transform,opacity}
-.opening-plate{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 52%;pointer-events:none;-webkit-user-drag:none}
-.corridor-background{opacity:1;transform:scale(1.015)}
-.door-background{opacity:0;transform:translateY(-1.6%) scale(.60)}
 .opening-shade{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 46%,transparent 40%,#100c0633 100%);z-index:2}
 .door-interaction-layer{position:absolute;inset:0;z-index:3;pointer-events:none}
 .scene-blackout{position:fixed;inset:0;z-index:40;background:#080807;opacity:0;pointer-events:none}
@@ -21,12 +16,8 @@ body.opening-active{height:100svh;min-height:100svh;overflow:hidden}
 body.opening-active .desk-footer{position:fixed;z-index:30;pointer-events:none}
 body.opening-active .sound-button{color:#a99f8b;pointer-events:auto}
 body.opening-active .sound-button:hover{color:#e8deca}
-.opening-scene[data-state="arrived"] .opening-camera,.opening-scene[data-state="arrived"] .opening-shot{will-change:auto}
 
 /* Portrait also fills the viewport; the perspective camera narrows its horizontal view naturally. */
 @media(max-width:700px) and (orientation:portrait){
   .opening-stage{width:100%;height:100%;aspect-ratio:auto}
-}
-@media(prefers-reduced-motion:reduce){
-  .opening-camera,.opening-shot{will-change:auto}
 }

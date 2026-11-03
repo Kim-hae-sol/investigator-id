@@ -8,11 +8,7 @@
 @media(max-height:650px){.room-gaze{bottom:calc(60px + env(safe-area-inset-bottom, 0px))}}
 .room-gaze:hover,.room-gaze:focus-visible{color:#f5ebd9;border-color:#e8dcc199;background:rgba(28,23,17,.92);outline:none}
 .room-gaze[hidden]{display:none}
-/* A quiet physical-scene cue, using the ID issue button's underline language. */
+
+/* Keep the latest quiet underline cue; no photographic cut or eyelid overlay. */
 .room-gaze{background:transparent;border:0;border-bottom:1px solid #c9b68d66;border-radius:0;padding:5px 2px;min-width:96px;color:#c3b69c;text-shadow:0 1px 8px #000}
 .room-gaze:hover,.room-gaze:focus-visible{background:transparent;border-color:#e8dcc1;color:#f5ebd9}
-.first-person-blink{position:fixed;inset:0;z-index:24;pointer-events:none;--lid:0}
-.first-person-blink i{position:absolute;left:0;width:100%;height:51%;background:#080706;transform:scaleY(var(--lid));will-change:transform}
-.first-person-blink i:first-child{top:0;transform-origin:top}
-.first-person-blink i:last-child{bottom:0;transform-origin:bottom}
-@media(prefers-reduced-motion:reduce){.first-person-blink{display:none}}

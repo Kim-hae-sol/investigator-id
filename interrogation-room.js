@@ -76,7 +76,7 @@
       const wood = material('joinery', '#c4b29c', .68, .21, .55, .8);
       const woodDark = material('joinery', '#9f8b74', .72, .20, .45, .75);
       const woodTrim = material('joinery', '#b0a08b', .66, .17, .5, .45);
-      const tableFinish=material('joinery','#ccbaa2',.60,.20,1.35,1.65);
+      const tableFinish=material('joinery','#92725a',.72,.13,1.35,1.65);
       for(const m of [tableFinish,woodDark])for(const t of [m.map,m.normalMap,m.roughnessMap]){t.center.set(.5,.5);t.rotation=Math.PI/2;}
       const wall = material('wall', '#72766e', .96, .10, 3.2, 1.7);
       const floor = material('parquet', '#9f9c8b', .85, .15, 2.7, 3.0);
@@ -194,6 +194,10 @@
         table.children.forEach(m=>m.visible=false);
         const model=window.HNJStaticModel.create(window.HNJTableAsset,'table',{anisotropy,materials:ownedMaterials,geometries,textures});
         model.rotation.y=Math.PI/2;model.scale.set(1.143,.99,1.25);table.add(model);
+        // A real, rounded walnut top over the retained asset frame. Six mm
+        // edge radii catch the key light geometrically, not in a painted image.
+        const top=box(1.46,.045,2.36,0,.7575,0,tableFinish,table,.006);
+        top.name='beveled-walnut-tabletop';
       }
 
       // Two matching but subtly different wooden chairs face each other across the long table axis.

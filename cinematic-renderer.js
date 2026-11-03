@@ -27,15 +27,11 @@
           float distanceTo=length(delta);
           occlusion+=max(0.,dot(n,delta/max(.0001,distanceTo))-.10)*(1.-smoothstep(.02,.42,distanceTo));
         }
-        vec4 plateOrWorld=texture2D(colorMap,vUv);
-        vec3 color=plateOrWorld.rgb*(1.-min(.42,occlusion*.085));
+        vec3 color=texture2D(colorMap,vUv).rgb*(1.-min(.28,occlusion*.065));
         color=aces(color*exposure);
         float l=dot(color,vec3(.2126,.7152,.0722));color=mix(vec3(l),color,.90);
         color*=mix(vec3(.94,.975,1.02),vec3(1.025,1.005,.975),smoothstep(.03,.6,l));
         vec2 edge=(vUv-.5)*vec2(1.,.8);color*=1.-.16*dot(edge,edge);
-        // Projection plates are already exposed/graded. Alpha 0 is an internal
-        // HDR-target tag, not canvas transparency. Real-time metal keeps ACES.
-        color=mix(plateOrWorld.rgb,color,plateOrWorld.a);
         gl_FragColor=vec4(color,1.);
         #include <colorspace_fragment>
       }`});

@@ -449,28 +449,9 @@
         mirror.material.transparent = true; mirror.material.depthWrite = false;
         scene.add(mirror);
       }
-      // A photographic plate is projected onto the existing metre-scale set,
-      // rather than enlarged on a flat screen. The hinged leaf keeps its baked UVs.
-      let photographic=null,roomPhotographic=null;
-      if(window.HNJPlates){
-        try{
-          mirror && (mirror.visible=false);
-          // Handles and plaques are already photographed onto the moving leaf.
-          // A second raised copy would create a double edge in oblique views.
-          const paintedDetails=[];scene.traverse(mesh=>{if(mesh.isMesh&&(mesh.material===brass||mesh.material===plaque))paintedDetails.push(mesh);});
-          photographic=await window.HNJPlates.bake(scene,{
-            wide:window.HNJPlates.assets.corridor,near:window.HNJPlates.assets.arrival,
-            camera:[[0,SPACE.eye,SPACE.startZ],[0,SPACE.targetY,0],SPACE.fov],
-            nearCamera:[[0,SPACE.eye,SPACE.endZ],[0,SPACE.targetY,0],SPACE.fov],
-            exclude:mesh=>{let p=mesh;while(p){if(p===reader)return true;p=p.parent;}return mesh===mirror;}
-          });paintedDetails.forEach(mesh=>{mesh.visible=false;});
-        }catch(error){console.warn('Photographic corridor fallback:',error.message);}
-      }
       stage.prepend(canvas);
       let progress = 0, bob = 0, sway = 0, lost = false, authProgress = 0, doorProgress = 0, entryProgress = 0, roomPose = null, roomLights = [], corridorLights = [];
       const root = document.querySelector('#opening-sequence');
-      const readerRest=reader.matrix.clone(),readerReference=new T.PerspectiveCamera(SPACE.fov,16/9,.06,32);
-      readerReference.position.set(0,SPACE.eye,SPACE.endZ);readerReference.lookAt(0,SPACE.targetY,0);readerReference.updateMatrixWorld();
       function resize() {
         const rect = stage.getBoundingClientRect();
         const w = rect.width || Math.min(innerWidth, innerHeight * 16 / 9);
@@ -480,17 +461,7 @@
       function render(value = progress, bounce = bob, lateral = sway) {
         if (lost) return;
         progress = clamp(value); bob = bounce; sway = lateral;
-        camera.fov=SPACE.fov;
         const travel = travelAt(progress);
-        if(photographic){
-          // Two photographic walking shots, cut under a brief first-person blink.
-          // Never dissolve mismatched architectural edges while moving.
-          const walking=progress<1&&authProgress===0&&entryProgress===0&&!roomPose;
-          photographic.setBlend(progress<.5?0:1);
-          photographic.setScreen(walking,renderer.getDrawingBufferSize(new T.Vector2()),progress<.5?1+travel*.16:1,lateral*.00035,bounce*.0006);
-          const lid=document.querySelector('.first-person-blink');
-          if(lid&&root.dataset.state==='walking')lid.style.setProperty('--lid',Math.max(0,Math.min(1,(progress-.475)/.018,(.525-progress)/.018)).toFixed(3));
-        }
         camera.position.set(lateral * .012, SPACE.eye - bounce * .009,
           T.MathUtils.lerp(SPACE.startZ, SPACE.endZ, travel));
         if (authProgress > 0) {
@@ -503,26 +474,10 @@
           camera.fov=T.MathUtils.lerp(SPACE.fov,48,entryProgress);camera.updateProjectionMatrix();
         }
         if(roomPose){camera.position.fromArray(roomPose.position);camera.lookAt(...roomPose.target);camera.fov=roomPose.fov;camera.updateProjectionMatrix();}
-        // Never reveal unphotographed side pixels on ultra-wide displays.
-        camera.fov=T.MathUtils.radToDeg(2*Math.atan(Math.tan(T.MathUtils.degToRad(camera.fov)/2)*Math.min(1,(16/9)/camera.aspect)));
-        camera.updateProjectionMatrix();
-        if(photographic){
-          const walking=progress<1&&authProgress===0&&entryProgress===0&&!roomPose;
-          reader.visible=!walking||progress>=.5;
-          if(walking&&progress>=.5){
-            // The photographed second shot has its own fixed framing. Keep the
-            // physical reader bolted to that photographed wall until arrival.
-            camera.updateMatrixWorld();reader.matrixAutoUpdate=false;
-            reader.matrix.copy(camera.matrixWorld).multiply(readerReference.matrixWorldInverse).multiply(readerRest);
-            reader.matrixWorldNeedsUpdate=true;
-          }else{
-            reader.matrixAutoUpdate=true;readerRest.decompose(reader.position,reader.quaternion,reader.scale);
-          }
-        }
         renderer.render(scene, camera);
         root.dataset.cameraZ = camera.position.z.toFixed(3);
         root.dataset.cameraX = camera.position.x.toFixed(4);root.dataset.cameraY = camera.position.y.toFixed(4);
-        root.dataset.renderer = 'webgl';
+        root.dataset.renderer = 'webgl';root.dataset.spatialMode='realtime-geometry';
         root.dataset.drawCalls = String(renderer.userData?.worldCalls||renderer.info.render.calls);
         root.dataset.sideDoors = String(sideDoors.length);
         root.dataset.lightFixtures = String(lampCount);
@@ -544,7 +499,7 @@
       window.addEventListener('resize', onResize, { passive: true });
       canvas.addEventListener('webglcontextlost', event => {
         event.preventDefault(); lost = true;
-        canvas.hidden = true; root.dataset.renderer = 'image-fallback';
+        canvas.hidden = true; root.dataset.renderer = 'webgl-unavailable';
       });
       canvas.addEventListener('webglcontextrestored', () => {
         lost = false; canvas.hidden = false; renderer.shadowMap.needsUpdate = true; render();
@@ -559,29 +514,20 @@
       if (gl.isContextLost() || renderer.info.programs.some(program=>program.diagnostics?.runnable===false))
         throw new Error('3D renderer did not produce a valid first frame');
       root.classList.add('has-3d');
-      root.dataset.artDirection=photographic?'photographic-depth-plates':'pbr-fallback';
       active = Object.freeze({ render, resize: onResize, getCamera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),
+        projectWorld(point){const p=new T.Vector3(...point).project(camera),r=stage.getBoundingClientRect();return {x:(p.x+1)*r.width/2,y:(1-p.y)*r.height/2,depth:p.z};},
         readerProjection, readerFeedback, handleProjection,
         getRenderer:()=>renderer,
-        setRoomView(name){roomPhotographic?.view(name);render();},
-        setRoomPan(value){roomPhotographic?.pan(value);render();},
-        roomPose(pose){roomPose=pose;
-          roomPhotographic?.follow({...pose,position:[pose.position[0],pose.position[1],pose.position[2]+3.40],target:[pose.target[0],pose.target[1],pose.target[2]+3.40]},Math.min(16/9,camera.aspect));
-          roomPhotographic?.light(1);render();},
-        async attachRoom(roomScene) {
-          if(roomScene.userData.photoStage&&!roomPhotographic){
-            roomPhotographic=roomScene.userData.photoStage;await roomPhotographic.prepare();roomPhotographic.light(.34);
-          }
-          roomScene.position.set(0,0,-3.40);corridorLights=[];scene.traverse(o=>{if(o.isLight)corridorLights.push([o,o.intensity]);});scene.add(roomScene);
+        roomPose(pose){roomPose=pose;render();},
+        async attachRoom(roomScene) {roomScene.position.set(0,0,-3.40);corridorLights=[];scene.traverse(o=>{if(o.isLight)corridorLights.push([o,o.intensity]);});scene.add(roomScene);
           roomLights=[];roomScene.traverse(o=>{if(o.isLight){roomLights.push([o,o.intensity]);o.intensity=0;}});
           if(renderer.compileAsync)await deadline(renderer.compileAsync(scene,camera),10000,'Connected room shader preparation timed out');
           renderer.shadowMap.autoUpdate=true;render();},
         openDoor(value){doorProgress=clamp(value);roomLights.forEach(([light,power])=>{light.intensity=power*clamp(doorProgress*3);});mainDoor.userData.leaf.rotation.y=doorProgress*Math.PI*.55;renderer.shadowMap.needsUpdate=true;render();},
-        enterRoom(value){entryProgress=clamp(value);roomPhotographic?.light(.34+.66*entryProgress);corridorLights.forEach(([light,power])=>{light.intensity=power*(1-clamp((entryProgress-.45)/.55));});render();if(entryProgress===1)renderer.shadowMap.autoUpdate=false;},
+        enterRoom(value){entryProgress=clamp(value);corridorLights.forEach(([light,power])=>{light.intensity=power*(1-clamp((entryProgress-.45)/.55));});render();if(entryProgress===1)renderer.shadowMap.autoUpdate=false;},
         authView(value) { authProgress=clamp(value); render(); },
         // room-entry.js gates the hinged leaf and room approach on HNJAccess.doorUnlocked.
         mainDoor, reader, dispose() {
-          photographic?.dispose();roomPhotographic?.dispose();
           window.removeEventListener('resize', onResize); mirror?.dispose(); environment.dispose();
           geometry.forEach(g => g.dispose()); instanceGeometries.forEach(g => g.dispose());
           nickelMap.dispose(); nickel.dispose(); readerFace.dispose(); amber.dispose();

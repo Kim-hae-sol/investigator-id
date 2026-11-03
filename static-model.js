@@ -23,10 +23,14 @@
     }
     const mats=j.materials.map(source=>{
       const p=source.pbrMetallicRoughness||{};
-      const m=new T.MeshStandardMaterial({name:source.name,color:role==='table'?'#5c4939':'#c4b9a8',roughness:1,metalness:1,side:T.FrontSide});
+      const m=new T.MeshStandardMaterial({name:source.name,color:role==='table'?'#5c4939':'#c4b9a8',roughness:p.roughnessFactor??1,metalness:p.metallicFactor??1,side:T.FrontSide});
       if(p.baseColorTexture)m.map=map(p.baseColorTexture.index,true);
-      if(p.metallicRoughnessTexture){m.roughnessMap=map(p.metallicRoughnessTexture.index);m.metalnessMap=m.roughnessMap;m.aoMap=m.roughnessMap;m.aoMapIntensity=.65;}
-      if(source.normalTexture){m.normalMap=map(source.normalTexture.index);m.normalScale.set(.65,.65);}
+      if(p.metallicRoughnessTexture){m.roughnessMap=map(p.metallicRoughnessTexture.index);m.metalnessMap=m.roughnessMap;m.aoMap=m.roughnessMap;m.aoMapIntensity=.45;}
+      if(source.normalTexture){m.normalMap=map(source.normalTexture.index);const strength=role==='table'?.45:.65;m.normalScale.set(strength,strength);}
+      // Retain the real PBR maps while avoiding lacquer-like highlights on wood.
+      const minimum=role==='table'?.58:.46;
+      m.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>\nroughnessFactor=max(roughnessFactor,${minimum.toFixed(2)});`);};
+      m.customProgramCacheKey=()=>`hnj-pbr-${role}-${minimum}`;
       m.envMapIntensity=.4;materials.add(m);return m;
     });
     const group=new T.Group();group.name=role+'-pbr-model';

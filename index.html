@@ -8,25 +8,23 @@
   <title>HNJ — 조사관 ID 발급</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23181917'/%3E%3Ctext x='32' y='42' fill='%23ebe9df' text-anchor='middle' font-family='Arial' font-weight='bold' font-size='28'%3EH.%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="opening.css?v=20261102-fill-viewport1">
+  <link rel="stylesheet" href="opening.css?v=20261103-realtime1">
   <link rel="stylesheet" href="access.css">
-  <link rel="stylesheet" href="room-entry.css?v=20261103-film3">
+  <link rel="stylesheet" href="room-entry.css?v=20261103-realtime1">
   <script src="app.js" defer></script>
   <script src="vendor/three.local.js" defer></script>
   <script src="vendor/reflector.local.js" defer></script>
   <script src="table-asset.js" defer></script>
   <script src="chair-asset.js" defer></script>
-  <script src="cinematic-renderer.js?v=20261103-film3" defer></script>
-  <script src="cinematic-plates.js?v=20261103-film3" defer></script>
-  <script src="corridor-3d.js?v=20261103-film3" defer></script>
-  <script src="static-model.js" defer></script>
-  <script src="interrogation-room.js?v=20261101-form1" defer></script>
-  <script src="cinematic-room.js?v=20261103-film3" defer></script>
-  <script src="opening.js?v=20261102-walk3" defer></script>
+  <script src="cinematic-renderer.js?v=20261103-realtime1" defer></script>
+  <script src="corridor-3d.js?v=20261103-realtime1" defer></script>
+  <script src="static-model.js?v=20261103-realtime1" defer></script>
+  <script src="interrogation-room.js?v=20261103-realtime2" defer></script>
+  <script src="opening.js?v=20261103-realtime1" defer></script>
   <script src="access.js?v=20261101-walk1" defer></script>
-  <script src="cinematic-sound.js?v=20261103-film3" defer></script>
+  <script src="cinematic-sound.js?v=20261103-realtime1" defer></script>
   <script src="room-music.js?v=20261102-door-cue-experiment1" defer></script>
-  <script src="room-entry.js?v=20261103-film3" defer></script>
+  <script src="room-entry.js?v=20261103-realtime1" defer></script>
 </head>
 <body>
   <svg class="texture-definitions" aria-hidden="true"><defs>
@@ -80,18 +78,9 @@
     </div>
   </main>
 
-  <!-- Generated photographic look-development plates, not supplied location photographs.
-       Replace these two independent PNGs in assets/ when final photography is ready. -->
+  <!-- Real-time 3D geometry only: no photographic scene fallback. -->
   <section class="opening-scene" id="opening-sequence" data-state="idle" data-footsteps="0" data-audible-steps="0" aria-label="조사실로 향하는 복도" aria-hidden="true" tabindex="-1" hidden>
     <div class="opening-stage" id="opening-stage">
-      <div class="opening-camera" id="opening-camera">
-        <div class="opening-shot corridor-background" id="corridor-background">
-          <img class="opening-plate" id="corridor-plate" src="assets/corridor-start.png" width="1672" height="941" alt="따뜻한 조명 아래 나무 문이 이어지는 조용한 사무실 복도" decoding="async" draggable="false">
-        </div>
-        <div class="opening-shot door-background" id="door-background">
-          <img class="opening-plate" id="door-plate" src="assets/door-arrival.png" width="1672" height="941" alt="작은 조명 아래 닫혀 있는 월넛 조사실 문" aria-hidden="true" decoding="async" draggable="false">
-        </div>
-      </div>
       <div class="opening-shade" aria-hidden="true"></div>
       <!-- STEP 03: projected reader target, safe visual card clone and insertion occlusion. -->
       <div class="door-interaction-layer" id="door-interaction-layer">
@@ -138,13 +127,5 @@
   </div>
 
   <footer class="desk-footer"><button class="sound-button" id="sound-button" type="button" aria-label="효과음 끄기" aria-pressed="true"><svg class="sound-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m8.5 5-4 3H2v4h2.5l4 3V5Z" stroke="currentColor" stroke-width="1"/><path class="sound-waves" d="M12 6.5c2 2 2 5 0 7M14.5 4c3.5 3.5 3.5 8.5 0 12" stroke="currentColor" stroke-width="1"/><path class="sound-muted" d="m12 8 5 5m0-5-5 5" stroke="currentColor" stroke-width="1"/></svg><span id="sound-label">SOUND ON</span></button></footer>
-  <div hidden aria-hidden="true" id="cinematic-image-bank">
-    <img data-cinematic="corridor" src="assets/cinematic/corridor-wide-v1.png" alt="">
-    <img data-cinematic="arrival" src="assets/cinematic/corridor-door-clean-v1.png" alt="">
-    <img data-cinematic="entry" src="assets/cinematic/room-entry-v1.png" alt="">
-    <img data-cinematic="room" src="assets/cinematic/room-clean-v1.png" alt="">
-    <img data-cinematic="subject" src="assets/cinematic/room-seated-v1.png" alt="">
-    <img data-cinematic="desk" src="assets/cinematic/room-desk-v1.png" alt="">
-  </div>
 </body>
 </html>
