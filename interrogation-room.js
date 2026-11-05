@@ -471,6 +471,7 @@
       box(.20,.004,.10,0,.058,0,charcoal,cassette,.005);
       for(const x of [-.055,.055]){const reel=cylinder(.024,.024,.004,x,.063,0,brass,cassette,32);}
       for(let i=0;i<4;i++)box(.035,.012,.025,-.07+i*.047,.061,.075,brass,cassette,.002);
+      const coverHinge=new T.Group();coverHinge.position.set(-.1265,.009,0);caseFile.add(coverHinge);coverHinge.add(cover);cover.position.set(.1265,0,0);deskItems.coverHinge=coverHinge;
       deskItems.file=caseFile;deskItems.cassette=cassette;
 
       // Blurred light cards provide subdued metal/leather reflections without an external HDR asset.
