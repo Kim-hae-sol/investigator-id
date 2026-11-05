@@ -220,9 +220,9 @@
       }
       if(window.HNJChairAsset){
         const model=window.HNJStaticModel.create(window.HNJChairAsset,'chair',{anisotropy,materials:ownedMaterials,geometries,textures});
-        const suspect=model.clone();suspect.name='subject-chair';suspect.position.z=-1.60;scene.add(suspect);
+        const suspect=model.clone();suspect.name='subject-chair';suspect.position.z=-1.60;suspect.visible=false;scene.add(suspect);
         const inspector=model.clone();inspector.name='investigator-chair';inspector.rotation.y=Math.PI;inspector.position.z=1.60;scene.add(inspector);
-      }else{chair(1.54,-1);chair(-1.54,1);}
+      }else{chair(1.54,-1);/* no facing subject seat */}
 
       // Left: compact records chest and a few restrained bound case files.
       const low = new T.Group(); low.position.set(-2.30, 0, -.10); scene.add(low); low.name = 'records-cabinet-low';
@@ -369,14 +369,14 @@
       const penCupGeo=new T.LatheGeometry([[0,0],[.038,0],[.043,.099],[.041,.105],[.037,.105],[.035,.014],[0,.014]].map(p=>new T.Vector2(...p)),48);geometries.set('pen-cup',penCupGeo);const penCup=new T.Mesh(penCupGeo,brass);penCup.position.set(.57,.8405,-.74);penCup.castShadow=penCup.receiveShadow=true;details.add(penCup);
       for(let i=0;i<3;i++){const pen=cylinder(.003,.003,.20,.55+i*.016,.98,-.74,darkMetal,details,8);pen.rotation.z=(i-1)*.11;}
       const mugProfile=[[0,0],[.040,0],[.046,.006],[.055,.092],[.055,.100],[.051,.104],[.047,.100],[.045,.092],[.039,.015],[0,.015]].map(p=>new T.Vector2(...p));
-      const mugGeometry=new T.LatheGeometry(mugProfile,64);geometries.set('mug-lathe',mugGeometry);const mug=new T.Mesh(mugGeometry,ceramic);mug.position.set(-.56,.847,.73);mug.castShadow=mug.receiveShadow=true;details.add(mug);
-      const coffee=cylinder(.047,.047,.002,-.56,.949,.73,charcoal,details,32);
-      const handle=new T.Mesh(new T.TorusGeometry(.033,.007,16,48),ceramic);handle.position.set(-.62,.907,.73);details.add(handle);
+      const mugGeometry=new T.LatheGeometry(mugProfile,64);geometries.set('mug-lathe',mugGeometry);const mug=new T.Mesh(mugGeometry,ceramic);mug.position.set(-.40,.847,-.12);mug.castShadow=mug.receiveShadow=true;details.add(mug);
+      const coffee=cylinder(.047,.047,.002,-.40,.949,-.12,charcoal,details,32);
+      const handle=new T.Mesh(new T.TorusGeometry(.033,.007,16,48),ceramic);handle.position.set(-.46,.907,-.12);details.add(handle);
       const folderMat=canvasMaterial(512,768,(c,w,h)=>{
         c.fillStyle='#92774d';c.fillRect(0,0,w,h);
         for(let i=0;i<18000;i++){c.fillStyle=i%2?'#f4e6c00c':'#342a1c0b';c.fillRect(random()*w,random()*h,1,2);}
         c.fillStyle='#b39e74';c.fillRect(38,70,436,185);c.strokeStyle='#74654b';c.lineWidth=2;c.strokeRect(48,80,416,165);
-        c.fillStyle='#35372f';c.font='18px monospace';c.fillText('SPECIAL INVESTIGATION UNIT',68,117);c.font='bold 37px Georgia';c.fillText('CASE  H—001',68,180);c.font='17px monospace';c.fillText('RESTRICTED / PERSONNEL ONLY',68,223);
+        c.fillStyle='#35372f';c.font='18px monospace';c.fillText('SPECIAL INVESTIGATION UNIT',68,117);c.font='bold 37px Georgia';c.fillText('CASE FILE : HNJ',68,180);c.font='17px monospace';c.fillText('RESTRICTED / PERSONNEL ONLY',68,223);
         c.strokeStyle='#89734d';c.beginPath();c.moveTo(17,15);c.lineTo(17,h-15);c.stroke();
       },.94);
       const caseFile=new T.Group();caseFile.name='case-file';caseFile.position.set(-.02,.844,.48);caseFile.rotation.y=-.055;details.add(caseFile);
@@ -389,7 +389,7 @@
       // Place the blotter below the folder; all paper geometry stays above the tabletop.
       caseFile.position.y=.8445;
       for(const sign of [-1,1])box(.006,.001,.59,sign*.35,.845,.42,brass,details,.001);
-      const dish=cylinder(.092,.10,.009,-.56,.842,.73,darkMetal,details,48);dish.receiveShadow=true;
+      const dish=cylinder(.092,.10,.009,-.40,.842,-.12,darkMetal,details,48);dish.receiveShadow=true;
       // Wall practicals: frosted cylindrical lamps, nickel/bronze mount and a real warm falloff.
       for(const x of [-2.95,2.95]){
         const fixture=new T.Group();fixture.position.set(x,2.15,-3.21);details.add(fixture);
@@ -452,6 +452,26 @@
       if(window.HNJTableAsset)for(const child of details.children){
         if(Math.abs(child.position.x)<.85&&Math.abs(child.position.z)<1.2&&child.position.y>=.839&&child.position.y<1.15)child.position.y-=.059;
       }
+
+      // Desk evidence is real metre-scale geometry. Text uses local canvas labels, never a scene plate.
+      const deskItems={};
+      function deskCard(key,label,x,z,w,h,color){
+        const cv=document.createElement('canvas');cv.width=768;cv.height=512;const c=cv.getContext('2d');
+        c.fillStyle=color;c.fillRect(0,0,768,512);c.strokeStyle='#958770';c.strokeRect(24,24,720,464);
+        c.fillStyle='#34332d';c.font='28px monospace';c.textAlign='center';c.fillText(label,384,250,680);
+        const tex=new T.CanvasTexture(cv);tex.colorSpace=T.SRGBColorSpace;textures.set('desk-'+key,{color:tex});
+        const mat=new T.MeshStandardMaterial({map:tex,roughness:.96,side:T.DoubleSide});ownedMaterials.add(mat);
+        const geo=new T.PlaneGeometry(w,h);geometries.set('desk-'+key,geo);const mesh=new T.Mesh(geo,mat);
+        mesh.rotation.x=-Math.PI/2;mesh.position.set(x,.802,z);mesh.castShadow=mesh.receiveShadow=true;details.add(mesh);deskItems[key]=mesh;if(key==='photo'&&window.HNJCaseData?.photo){const image=new Image();image.onload=()=>{c.fillStyle='#e5dfd0';c.fillRect(0,0,768,512);const scale=Math.min(720/image.width,464/image.height);c.drawImage(image,(768-image.width*scale)/2,(512-image.height*scale)/2,image.width*scale,image.height*scale);tex.needsUpdate=true;};image.src=window.HNJCaseData.photo;}return mesh;
+      }
+      deskCard('photo','PHOTO / ASSET PENDING',.02,.44,.14,.18,'#c7c0ae').rotation.z=.10;
+      deskCard('note',window.HNJCaseData?.memo||'NOTE',.43,.37,.18,.14,'#d3bf84');
+      const cassette=new T.Group();cassette.name='cassette-player';cassette.position.set(.47,.80,-.16);details.add(cassette);
+      box(.30,.055,.18,0,.027,0,darkMetal,cassette,.012);
+      box(.20,.004,.10,0,.058,0,charcoal,cassette,.005);
+      for(const x of [-.055,.055]){const reel=cylinder(.024,.024,.004,x,.063,0,brass,cassette,32);}
+      for(let i=0;i<4;i++)box(.035,.012,.025,-.07+i*.047,.061,.075,brass,cassette,.002);
+      deskItems.file=caseFile;deskItems.cassette=cassette;
 
       // Blurred light cards provide subdued metal/leather reflections without an external HDR asset.
       const envCanvas=document.createElement('canvas');envCanvas.width=256;envCanvas.height=128;
@@ -529,6 +549,7 @@
       ready = true; container.dataset.roomRenderer = 'webgl'; container.dataset.roomView = activeView;
       return Object.freeze({
         getScene: () => scene,
+        getDeskItems:()=>deskItems,
         getViewPose: name => views[name],
         views: Object.freeze(Object.keys(views)),
         setView(name) { const result = setView(name); container.dataset.roomView = result; return result; },

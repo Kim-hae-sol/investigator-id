@@ -30,7 +30,7 @@ def package(output_dir):
     if replaced != 1:
         raise ValueError('Expected exactly one embedded shoe Foley payload')
     files = ['index.html', 'styles.css', 'app.js', 'opening.css', 'opening.js', 'cinematic-renderer.js', 'chair-asset.js', 'table-asset.js', 'static-model.js', 'corridor-3d.js', 'interrogation-room.js',
-             'access.css', 'access.js', 'room-entry.css', 'room-entry.js', 'room-music.js', 'cinematic-sound.js', 'vendor/three.local.js', 'vendor/reflector.local.js', 'vendor/THREE-LICENSE.txt']
+             'access.css', 'access.js', 'room-entry.css', 'room-entry.js', 'room-music.js', 'case-data.js', 'case-sections.js', 'case-file.js', 'case-file.css', 'cinematic-sound.js', 'vendor/three.local.js', 'vendor/reflector.local.js', 'vendor/THREE-LICENSE.txt']
     for name in files:
         src, dst = source / name, target / name
         dst.parent.mkdir(parents=True, exist_ok=True)
@@ -52,15 +52,16 @@ def package(output_dir):
     if (project / 'CORRIDOR-RHYTHM.md').exists():
         shutil.copy2(project / 'CORRIDOR-RHYTHM.md', target / 'CORRIDOR-RHYTHM.md')
     shutil.copy2(project / 'REALTIME-RESTORATION.md', target / 'REALTIME-RESTORATION.md')
+    shutil.copy2(project / 'CASE-FILE-PROTOTYPE.md', target / 'CASE-FILE-PROTOTYPE.md')
     if Path(__file__).resolve() != (target / 'package.py').resolve():
         shutil.copy2(__file__, target / 'package.py')
 
     html = (source / 'index.html').read_text()
-    for name in ('styles.css', 'opening.css', 'access.css', 'room-entry.css'):
+    for name in ('styles.css', 'opening.css', 'access.css', 'room-entry.css', 'case-file.css'):
         css = (source / name).read_text().replace('@charset "UTF-8";', '', 1)
         html = re.sub(r'<link rel="stylesheet" href="' + re.escape(name) + r'(?:\?[^"<>]*)?">', lambda _: '<style>\n' + css + '\n</style>', html)
     scripts = []
-    for name in ('app.js', 'vendor/three.local.js', 'vendor/reflector.local.js', 'cinematic-renderer.js', 'chair-asset.js', 'table-asset.js', 'static-model.js', 'corridor-3d.js', 'interrogation-room.js', 'opening.js', 'access.js', 'cinematic-sound.js', 'room-music.js', 'room-entry.js'):
+    for name in ('app.js', 'vendor/three.local.js', 'vendor/reflector.local.js', 'cinematic-renderer.js', 'chair-asset.js', 'table-asset.js', 'static-model.js', 'corridor-3d.js', 'interrogation-room.js', 'opening.js', 'access.js', 'cinematic-sound.js', 'room-music.js', 'room-entry.js', 'case-data.js', 'case-sections.js', 'case-file.js'):
         js = opening_js if name == 'opening.js' else (source / name).read_text()
         if name == 'room-music.js':
             audio = 'assets/tunetank-jazz-spy-music-349626.mp3'
@@ -81,7 +82,7 @@ def package(output_dir):
     (output / 'investigator-id.html').write_text(html)
 
     with zipfile.ZipFile(output / 'investigator-id.zip', 'w', zipfile.ZIP_DEFLATED) as archive:
-        for name in files + ['README.md', 'package.py', 'VISUAL-RENEWAL.md', 'REALTIME-RESTORATION.md']:
+        for name in files + ['README.md', 'package.py', 'VISUAL-RENEWAL.md', 'REALTIME-RESTORATION.md', 'CASE-FILE-PROTOTYPE.md']:
             archive.write(target / name, 'investigator-id/' + name)
         if (target / 'FORM-REALISM.md').exists():
             archive.write(target / 'FORM-REALISM.md', 'investigator-id/FORM-REALISM.md')

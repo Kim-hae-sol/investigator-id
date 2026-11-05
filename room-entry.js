@@ -53,8 +53,9 @@
     lookingDown=down;root.dataset.roomView=down?'tabletop':'seated';gaze.textContent=down?'정면 보기 ↑':'사건 파일 ↓';
     gaze.setAttribute('aria-label',down?'맞은편 용의자석 바라보기':'책상 위 사건 파일 내려다보기');gaze.disabled=false;viewBusy=false;
   }
+  window.HNJDeskCamera={project:point=>corridor?.projectWorld(point),refresh:()=>corridor?.roomPose(worldPose('tabletop')),refreshReading:()=>corridor?.roomPose({position:[0,1.63,-2.95],target:[0,.79,-2.96],fov:49}),move:async(open)=>{const base=worldPose('tabletop'),close={position:[0,1.63,-2.95],target:[0,.79,-2.96],fov:49};await animate(650,t=>corridor.roomPose(interpolate(open?base:close,open?close:base,t)));},room:()=>room};
   gaze.addEventListener('click',()=>look(!lookingDown));
-  window.addEventListener('keydown',event=>{if(!entered||event.altKey||event.ctrlKey||event.metaKey)return;if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();look(event.key==='ArrowDown');}});
+  window.addEventListener('keydown',event=>{if(window.HNJCaseFile||!entered||event.altKey||event.ctrlKey||event.metaKey)return;if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();look(event.key==='ArrowDown');}});
   target.addEventListener('click',async()=>{
     if(busy||entered||!window.HNJAccess.getState().doorUnlocked||window.HNJAccess.getState().authSceneOpen)return;
     busy=true;target.disabled=true;
@@ -67,7 +68,7 @@
       const approach={position:[0,1.70,-.30],target:[0,1.10,-3.95],fov:48},seated=worldPose('tabletop');
       let seatPlayed=false;
       await animate(2200,t=>{const pose=interpolate(approach,seated,t);pose.position[0]=Math.sin(t*Math.PI)*.12;const lower=Math.max(0,(t-.42)/.58);pose.position[1]=1.70-(1.70-seated.position[1])*lower*lower*(3-2*lower);corridor.roomPose(pose);if(!seatPlayed&&t>=.82){seatPlayed=true;seatSound();}});
-      entered=true;lookingDown=true;root.dataset.state='room';root.dataset.roomView='tabletop';gaze.textContent='정면 보기 ↑';gaze.setAttribute('aria-label','맞은편 용의자석 바라보기');gaze.hidden=false;root.setAttribute('aria-label','조사실 내부');corridor.getRenderer().domElement.setAttribute('aria-label','목재 벽과 기록 보드, 따뜻한 조명의 조사실');
+      entered=true;lookingDown=true;root.dataset.state='room';root.dataset.roomView='tabletop';gaze.textContent='정면 보기 ↑';gaze.setAttribute('aria-label','맞은편 용의자석 바라보기');gaze.hidden=true;root.setAttribute('aria-label','조사실 내부');corridor.getRenderer().domElement.setAttribute('aria-label','목재 벽과 기록 보드, 따뜻한 조명의 조사실');
       document.querySelector('#reader-target').hidden=true;
       window.dispatchEvent(new CustomEvent('investigation:room-entered',{detail:window.HNJ.getIdentity()}));
     } catch(error){target.hidden=false;target.disabled=false;console.warn('Room entry:',error.message);}

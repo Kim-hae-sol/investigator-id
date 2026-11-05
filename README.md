@@ -1,3 +1,7 @@
+## Current desk investigation prototype
+
+ID issuance → real 3D corridor → original card authentication → door → seated desk → CASE FILE : HNJ. Details and asset insertion points: [CASE-FILE-PROTOTYPE.md](CASE-FILE-PROTOTYPE.md). Music starts only from the cassette.
+
 # HNJ — 조사관 ID 발급 · 3D 복도
 
 카드 한 장을 작성·발급받고 실제 3D 복도를 걸어간 뒤, 발급받은 카드로 문 옆 금속 슬롯에서 출입 인증하는 장면입니다.
