@@ -577,16 +577,66 @@
       potteryPart('mug-unglazed-foot',[
         [0,.003],[.031,.003],[.033,.0005],[.036,0],[.039,.0008],[.040,.004],[0,.004]
       ],foot,cup);
-      potteryPart('mug-stoneware-body',[
-        [0,.004],[.036,.004],[.041,.005],[.044,.009],[.047,.016],[.049,.028],
-        [.0505,.046],[.0507,.066],[.050,.086],[.050,.096],[.0495,.099],
-        [.0482,.100],[.0466,.0997],[.0452,.098],[.0448,.094],[.0452,.080],
-        [.0455,.060],[.044,.035],[.041,.022],[.036,.016],[.026,.014],[0,.014]
-      ],glaze,cup);
+      const printCanvas = document.createElement('canvas');
+      printCanvas.width = 2048;
+      printCanvas.height = 800;
+      const print = printCanvas.getContext('2d');
+      print.fillStyle = '#fff';
+      print.fillRect(0,0,2048,800);
+      print.fillStyle = print.strokeStyle = '#211f1c';
+      print.textBaseline = 'top';
+      print.font = 'bold 53px Georgia, serif';
+      print.textAlign = 'center';
+      print.fillText('MORNING QUESTIONS',1024,125,466);
+      print.lineWidth = 6;
+      print.strokeRect(790,193,468,438);
+      print.font = 'bold 25px Arial, sans-serif';
+      print.textAlign = 'left';
+      const questions = [
+        '1. What am I most grateful for this', 'morning?',
+        '2. What would be my big win today?',
+        '3. Who can I reach out to and send', 'some love?',
+        '4. What do I need to be kinder towards', 'myself for today?',
+        '5. What kindness can I spread?',
+        '6. What deserves my energy today?',
+        '7. What do I need to remind myself of?',
+        '8. What can I do today simply because', 'I enjoy it?',
+        '9. What can I let go of today?',
+        '10. How can I take one small step', 'towards a goal that feels out of reach?'
+      ];
+      questions.forEach((line,i)=>print.fillText(line,804,207+i*27,440));
+      const printMap = new T.CanvasTexture(printCanvas);
+      printMap.colorSpace = T.SRGBColorSpace;
+      printMap.anisotropy = anisotropy;
+      printMap.channel = 1;
+      textures.set('mug-print',{map:printMap});
+      const printedGlaze = glaze.clone();
+      printedGlaze.map = printMap;
+      ownedMaterials.add(printedGlaze);
+
+      const mugBody = potteryPart('mug-stoneware-body',[
+        [0,.004],[.036,.004],[.041,.005],[.044,.008],[.045,.014],[.0455,.028],
+        [.0458,.065],[.0456,.092],[.0454,.098],[.0445,.100],[.0427,.100],
+        [.0413,.0987],[.0408,.096],[.0408,.080],[.0405,.062],[.040,.032],
+        [.037,.022],[.033,.017],[.024,.015],[0,.015]
+      ],printedGlaze,cup);
+      // Keep the ink on the curved glaze and give it a height-based UV channel.
+      // The print faces the desk camera, with the wrap seam on the back.
+      mugBody.geometry.rotateY(Math.PI);
+      const bodyPositions = mugBody.geometry.attributes.position;
+      const bodyUv = mugBody.geometry.attributes.uv;
+      const printUv = new Float32Array(bodyUv.count*2);
+      for(let i=0;i<bodyUv.count;i++){
+        printUv[i*2] = bodyUv.getX(i);
+        printUv[i*2+1] = bodyPositions.getY(i)/.100;
+      }
+      mugBody.geometry.setAttribute('uv1',new T.BufferAttribute(printUv,2));
+
       const handlePath=new T.CatmullRomCurve3([
-        new T.Vector3(-.043,.080,0),new T.Vector3(-.064,.083,0),
-        new T.Vector3(-.081,.070,0),new T.Vector3(-.083,.052,0),
-        new T.Vector3(-.072,.033,0),new T.Vector3(-.044,.025,0)
+        new T.Vector3(-.040,.082,0),new T.Vector3(-.061,.085,0),
+        new T.Vector3(-.080,.073,0),new T.Vector3(-.085,.053,0),
+        new T.Vector3(-.079,.030,0),new T.Vector3(-.062,.020,0),
+        new T.Vector3(-.040,.024,0)
       ]);
       const handleGeometry=new T.TubeGeometry(handlePath,48,.0072,16,false);
       const vertices=handleGeometry.attributes.position;
@@ -606,7 +656,7 @@
       cup.add(handle);
       // The liquid is recessed 31 mm; its meniscus meets the inner wall.
       potteryPart('mug-coffee-meniscus',[
-        [.0455,.0705],[.0447,.0695],[.0425,.069],[0,.069]
+        [.0407,.0705],[.0400,.0695],[.0385,.069],[0,.069]
       ],coffee,cup);
       contact(.215,.209,-.006,.00025,.003,.67,mugSet);
       contact(.106,.102,.004,.00525,-.002,.77,mugSet);
