@@ -4,7 +4,7 @@ const T=window.THREE,root=document.getElementById('stage'),status=document.getEl
 if(!T){status.textContent='3D 엔진을 불러오지 못했습니다.';return;}
 const renderer=new T.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));renderer.setSize(innerWidth,innerHeight);
-renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.86;
+renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.35;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;root.appendChild(renderer.domElement);
 const scene=new T.Scene();scene.background=new T.Color(0x161310);scene.fog=new T.FogExp2(0x161310,.032);
 const camera=new T.PerspectiveCamera(37,innerWidth/innerHeight,.05,35);
@@ -57,10 +57,10 @@ for(const [a,b] of [[[-.98,.56],[.11,.43]],[[.11,.43],[.91,-.36]],[[.91,-.36],[-
 }
 const cabinet=new T.Group();cabinet.position.set(-2.5,0,-2.18);scene.add(cabinet);
 box(.68,1.64,.58,0,.82,0,metal,cabinet);for(let i=0;i<4;i++){box(.58,.34,.015,0,.25+i*.39,.30,black,cabinet);box(.17,.025,.025,0,.25+i*.39,.325,brass,cabinet)}
-const key=new T.SpotLight('#ffc88d',13,4.3,.76,.85,1.6);key.position.set(-1.24,1.62,-1.42);key.target.position.set(-.18,.83,-1.1);key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.normalBias=.018;scene.add(key,key.target);
-scene.add(new T.HemisphereLight('#8b9291','#211710',.65));
-const ambient=new T.PointLight('#c3b6a5',.75,6,2);ambient.position.set(1.4,2.9,.6);scene.add(ambient);
-const boardLight=new T.SpotLight('#b9a58e',2.3,5,.82,.9,2);boardLight.position.set(.6,3,-1.2);boardLight.target.position.set(0,1.8,-2.6);scene.add(boardLight,boardLight.target);
+const key=new T.SpotLight('#ffc88d',18,5.5,.9,.85,1.6);key.position.set(-1.24,1.62,-1.42);key.target.position.set(-.18,.83,-1.1);key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.normalBias=.018;scene.add(key,key.target);
+scene.add(new T.HemisphereLight('#c3c5c1','#493a2e',1.65));
+const ambient=new T.PointLight('#d4c5b0',2.6,8,2);ambient.position.set(1.4,2.9,.6);scene.add(ambient);
+const boardLight=new T.SpotLight('#d4c0a5',6,6,.95,.9,2);boardLight.position.set(.6,3,-1.2);boardLight.target.position.set(0,1.8,-2.6);scene.add(boardLight,boardLight.target);
 const views={room:{pos:[.08,1.72,3.05],target:[0,1.12,-1.72]},desk:{pos:[.02,1.78,1.13],target:[0,.85,-1.12]},file:{pos:[-.13,1.74,.20],target:[-.10,.84,-1.05]}};
 let current='room',drag=false,downX=0,downY=0;
 function view(k){current=k;const v=views[k];const aspect=innerWidth/innerHeight;camera.fov=aspect<.8?Math.min(76,37+(.8-aspect)*72):37;camera.updateProjectionMatrix();const pos=[...v.pos];if(aspect<.8){pos[2]+=(.8-aspect)*(k==='room'?3.4:k==='desk'?2.3:1.7);pos[1]+=(.8-aspect)*.3;}camera.position.set(...pos);camera.lookAt(...v.target);document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===k)));status.textContent=k==='room'?'수사실 · 전체 시점':k==='desk'?'책상 · 조사 시점':'사건 파일 · 열람 시점'}
