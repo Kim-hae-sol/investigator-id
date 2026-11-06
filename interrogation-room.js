@@ -307,7 +307,6 @@
       const details = new T.Group(); details.name='room-dressing'; scene.add(details);
       const paper = new T.MeshStandardMaterial({color:'#a4936e',roughness:.97,bumpMap:paperMicro,bumpScale:.00035}); ownedMaterials.add(paper);
       const leather = new T.MeshStandardMaterial({color:'#51392b',roughness:.72,bumpMap:leatherMicro,bumpScale:.0007}); ownedMaterials.add(leather);
-      const ceramic = new T.MeshStandardMaterial({color:'#69645a',roughness:.39,metalness:.02}); ownedMaterials.add(ceramic);
       function canvasMaterial(width,height,paint,roughness=.94) {
         const c=document.createElement('canvas');c.width=width;c.height=height;paint(c.getContext('2d'),width,height);
         const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;t.anisotropy=anisotropy;
@@ -426,17 +425,6 @@
       for(let i=0;i<9;i++){const sheet=box(.28,.0008,.21,.49+(i%3-1)*.001,.845+i*.00085,.72,paper,details);sheet.rotation.y=(i-4)*.002;}
       const penCupGeo=new T.LatheGeometry([[0,0],[.038,0],[.043,.099],[.041,.105],[.037,.105],[.035,.014],[0,.014]].map(p=>new T.Vector2(...p)),48);geometries.set('pen-cup',penCupGeo);const penCup=new T.Mesh(penCupGeo,brass);penCup.position.set(.57,.8405,-.74);penCup.castShadow=penCup.receiveShadow=true;details.add(penCup);
       for(let i=0;i<3;i++){const pen=cylinder(.003,.003,.20,.55+i*.016,.98,-.74,darkMetal,details,8);pen.rotation.z=(i-1)*.11;}
-      const mugProfile=[[0,0],[.038,0],[.041,.003],[.042,.008],[.045,.012],[.047,.024],[.050,.051],[.053,.079],[.054,.097],[.053,.101],[.050,.103],[.047,.100],[.046,.093],[.043,.060],[.039,.015],[0,.015]].map(p=>new T.Vector2(...p));
-      const mugGeometry=new T.LatheGeometry(mugProfile,64);geometries.set('mug-lathe',mugGeometry);const mug=new T.Mesh(mugGeometry,ceramic);mug.position.set(-.40,.847,-.12);mug.castShadow=mug.receiveShadow=true;details.add(mug);
-      const coffeeSurface=new T.MeshStandardMaterial({color:'#160e09',roughness:.24,metalness:0});ownedMaterials.add(coffeeSurface);const coffee=cylinder(.046,.046,.002,-.40,.945,-.12,coffeeSurface,details,48);
-      const handlePath=new T.CatmullRomCurve3([
-        new T.Vector3(-.042,.030,0),new T.Vector3(-.071,.026,0),
-        new T.Vector3(-.083,.006,0),new T.Vector3(-.073,-.019,0),new T.Vector3(-.036,-.031,0)
-      ]);
-      const handleGeometry=new T.TubeGeometry(handlePath,40,.0068,16,false);
-      geometries.set('mug-handle',handleGeometry);
-      const handle=new T.Mesh(handleGeometry,ceramic);
-      handle.position.set(-.40,.907,-.12);handle.castShadow=handle.receiveShadow=true;details.add(handle);
       const folderMat=canvasMaterial(512,768,(c,w,h)=>{
         const stock=c.createLinearGradient(0,0,w,h);stock.addColorStop(0,'#766146');stock.addColorStop(.28,'#ae966f');stock.addColorStop(1,'#927753');c.fillStyle=stock;c.fillRect(0,0,w,h);
         for(let i=0;i<18000;i++){c.fillStyle=i%2?'#f4e6c00c':'#342a1c0b';c.fillRect(random()*w,random()*h,1,2);}
@@ -476,7 +464,6 @@
       // Place the blotter below the folder; all paper geometry stays above the tabletop.
       caseFile.position.y=.8445;
       for(const sign of [-1,1])box(.003,.001,.63,sign*.36,.845,.21,darkMetal,details,.001);
-      const dish=cylinder(.092,.10,.009,-.40,.842,-.12,darkMetal,details,48);dish.receiveShadow=true;
       // Wall practicals: frosted cylindrical lamps, nickel/bronze mount and a real warm falloff.
       for(const x of [-2.95,2.95]){
         const fixture=new T.Group();fixture.position.set(x,2.15,-3.21);details.add(fixture);
@@ -520,7 +507,7 @@
       for(const x of [-1.0168,1.0168])for(const z of [-.55,.55])contact(.28,.28,x,.023,z+DESK_Z,.62);
       contact(.88,.92,0,.023,DESK_Z+.92,.44);
       contact(1.18,.9,-2.30,.003,-.10,.48);contact(1.12,.87,2.38,.003,-.54,.50);
-      contact(.17,.17,-.40,.8405,-.12,.42);contact(.45,.34,.49,.8405,.72,.45);contact(.39,.32,-.55,.8405,-.76,.42);contact(.13,.13,.57,.8405,-.74,.35);
+      contact(.45,.34,.49,.8405,.72,.45);contact(.39,.32,-.55,.8405,-.76,.42);contact(.13,.13,.57,.8405,-.74,.35);
       contact(1.8,.9,-1.95,.003,-2.45,.35);
 
       // A 778 mm real tabletop (instead of the old 838 mm slab). Keep all tabletop
@@ -536,6 +523,93 @@
       const surfacePieces = details.children.filter(child => Math.abs(child.position.x)<1.18 && Math.abs(child.position.z)<.72 && child.position.y>=.77 && child.position.y<1.10);
       details.add(workSurface);
       workSurface.add(...surfacePieces);
+      // The coaster, foot ring and coffee surface share the same metre-scale origin.
+      const mugSet = new T.Group();
+      mugSet.name = 'cream-stoneware-mug';
+      mugSet.position.set(-.613,window.HNJTableAsset ? .780 : .8375,-.066);
+      workSurface.add(mugSet);
+      const cup = new T.Group();
+      cup.position.set(.004,.005,-.002);
+      cup.rotation.y = .61;
+      mugSet.add(cup);
+      function potteryPart(name,profile,material,parent) {
+        const geometry=new T.LatheGeometry(profile.map(point=>new T.Vector2(...point)),96);
+        geometries.set(name,geometry);
+        const mesh=new T.Mesh(geometry,material);
+        mesh.castShadow=mesh.receiveShadow=true;
+        parent.add(mesh);
+        return mesh;
+      }
+      const glaze = new T.MeshPhysicalMaterial({
+        color:'#d8c9ac',roughness:.36,ior:1.48,clearcoat:.26,clearcoatRoughness:.31,
+        envMapIntensity:.68
+      });
+      // Very small fluctuations in the glaze, independent of the room's random sequence.
+      const grain=document.createElement('canvas');
+      grain.width=grain.height=128;
+      const gc=grain.getContext('2d');
+      const pixels=gc.createImageData(128,128);
+      let glazeSeed=2048;
+      for(let i=0;i<pixels.data.length;i+=4){
+        glazeSeed=(Math.imul(glazeSeed,1664525)+1013904223)>>>0;
+        const value=225+(glazeSeed>>>27);
+        pixels.data.set([value,value,value,255],i);
+      }
+      gc.putImageData(pixels,0,0);
+      const glazeGrain=new T.CanvasTexture(grain);
+      glazeGrain.wrapS=glazeGrain.wrapT=T.RepeatWrapping;
+      glazeGrain.repeat.set(2,1);
+      textures.set('mug-glaze',{map:glazeGrain});
+      glaze.roughnessMap=glazeGrain;
+      glaze.bumpMap=glazeGrain;
+      glaze.bumpScale=.000055;
+      const foot = new T.MeshStandardMaterial({color:'#9c896f',roughness:.87});
+      const coffee = new T.MeshPhysicalMaterial({
+        color:'#211009',roughness:.24,ior:1.34,envMapIntensity:.43
+      });
+      const coaster = new T.MeshStandardMaterial({
+        color:'#30231b',roughness:.88,bumpMap:leatherMicro,bumpScale:.00035
+      });
+      for(const mat of [glaze,foot,coffee,coaster]) ownedMaterials.add(mat);
+      potteryPart('mug-leather-coaster',[
+        [0,0],[.080,0],[.083,.0008],[.084,.0023],[.083,.004],[.081,.005],[0,.005]
+      ],coaster,mugSet);
+      potteryPart('mug-unglazed-foot',[
+        [0,.003],[.031,.003],[.033,.0005],[.036,0],[.039,.0008],[.040,.004],[0,.004]
+      ],foot,cup);
+      potteryPart('mug-stoneware-body',[
+        [0,.004],[.036,.004],[.041,.005],[.044,.009],[.047,.016],[.049,.028],
+        [.0505,.046],[.0507,.066],[.050,.086],[.050,.096],[.0495,.099],
+        [.0482,.100],[.0466,.0997],[.0452,.098],[.0448,.094],[.0452,.080],
+        [.0455,.060],[.044,.035],[.041,.022],[.036,.016],[.026,.014],[0,.014]
+      ],glaze,cup);
+      const handlePath=new T.CatmullRomCurve3([
+        new T.Vector3(-.043,.080,0),new T.Vector3(-.064,.083,0),
+        new T.Vector3(-.081,.070,0),new T.Vector3(-.083,.052,0),
+        new T.Vector3(-.072,.033,0),new T.Vector3(-.044,.025,0)
+      ]);
+      const handleGeometry=new T.TubeGeometry(handlePath,48,.0072,16,false);
+      const vertices=handleGeometry.attributes.position;
+      for(let ring=0;ring<=48;ring++){
+        const t=ring/48,center=handlePath.getPointAt(t);
+        const flare=1+.28*Math.pow(Math.abs(2*t-1),4);
+        for(let radial=0;radial<=16;radial++){
+          const i=ring*17+radial;
+          vertices.setXYZ(i,center.x+(vertices.getX(i)-center.x)*flare,
+            center.y+(vertices.getY(i)-center.y)*flare,center.z+(vertices.getZ(i)-center.z)*flare*1.12);
+        }
+      }
+      handleGeometry.computeVertexNormals();
+      geometries.set('mug-stoneware-handle',handleGeometry);
+      const handle=new T.Mesh(handleGeometry,glaze);
+      handle.castShadow=handle.receiveShadow=true;
+      cup.add(handle);
+      // The liquid is recessed 31 mm; its meniscus meets the inner wall.
+      potteryPart('mug-coffee-meniscus',[
+        [.0455,.0705],[.0447,.0695],[.0425,.069],[0,.069]
+      ],coffee,cup);
+      contact(.215,.209,-.006,.00025,.003,.67,mugSet);
+      contact(.106,.102,.004,.00525,-.002,.77,mugSet);
       caseFile.position.set(-.06,.7855,.18);caseFile.scale.setScalar(1.12);
       // Desk evidence is real metre-scale geometry. Text uses local canvas labels, never a scene plate.
       const deskItems={};
