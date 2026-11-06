@@ -253,3 +253,18 @@
   background:#211b14c9;color:#efe1c8;cursor:pointer;font:inherit;font-size:12px;
 }
 .case-tape-back[hidden] {display:none}
+
+/* Small contact marks and uneven paper margins belong to the print, not a screen filter. */
+.case-spread article::after {
+  background:
+    radial-gradient(ellipse at 1% 16%,#76513128,transparent 20%),
+    radial-gradient(ellipse at 97% 93%,#73502f25,transparent 18%);
+  box-shadow: inset 0 0 10px #76512d32;
+}
+.case-reader .folio-print {
+  border-radius: 0 2px 1px 2px;
+  box-shadow: 0 1px 1px #3c241c87, 3px 4px 5px #5a3b2536;
+}
+.folio-print-photo .folio-print-face:not(:has(img)) {
+  background: linear-gradient(155deg,#767063,#49463f);
+}

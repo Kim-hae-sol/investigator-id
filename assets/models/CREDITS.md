@@ -15,3 +15,8 @@ https://polyhaven.com/license · https://creativecommons.org/publicdomain/zero/1
 애니메이션, Draco, sparse/interleaved accessor를 지원한다고 가정하지 않습니다.
 모든 모델 이미지는 HTML의 숨겨진 이미지 뱅크에서 로딩하여 단일 HTML 패키징도 가능합니다.
 인물 모델이나 인물 사진은 포함하지 않습니다.
+
+### Cassette tape
+[ Cassette Player — Oday Abuzaeed / Poly Haven ](https://polyhaven.com/a/cassette_player), CC0.
+The independent tape mesh and its three 1K JPEG maps are retained. The mesh buffer is repacked
+in `tape-asset.js` for the existing offline loader. The hinged recorder body is project geometry.

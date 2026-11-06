@@ -264,6 +264,23 @@
         return g;
       }
 
+      // Wall joinery stops at the outside of each jamb rather than crossing the leaf.
+      const officeDoorCenters = [];
+      for (let z=1.35; z<SPACE.length-.8; z+=SPACE.doorPitch) officeDoorCenters.push(z);
+      const jambHalfWidth = .76;
+      const wallSpans = [];
+      let spanStart = 0;
+      for (const z of officeDoorCenters) {
+        if (z-jambHalfWidth>spanStart) wallSpans.push([spanStart,z-jambHalfWidth]);
+        spanStart=z+jambHalfWidth;
+      }
+      if (spanStart<SPACE.length) wallSpans.push([spanStart,SPACE.length]);
+      function wallStrip(width,height,x,y,material,bevel=0) {
+        for (const [start,end] of wallSpans) {
+          box(width,height,end-start,x,y,(start+end)/2,material,scene,bevel);
+        }
+      }
+
       // Geometry, repetition and proportions change together; SPACE controls the complete corridor.
       for(const sign of [-1,1]) box((SPACE.width+.32-1.30)/2,SPACE.height+.16,.16,sign*(.65+(SPACE.width+.32-1.30)/4),SPACE.height/2,-.13,wallEnd);
       box(1.30,SPACE.height+.16-2.48,.16,0,2.48+(SPACE.height+.16-2.48)/2,-.13,wallEnd);
@@ -272,12 +289,12 @@
       box(SPACE.width + .32, .12, SPACE.length, 0, SPACE.height + .06, centreZ, ceiling);
       box(SPACE.width + .12, .10, SPACE.length, 0, -.05, centreZ, floor);
       for (const sign of [-1, 1]) {
-        box(.065, .145, SPACE.length, sign * (half - .026), .0725, centreZ, woodTrim);
-        box(.032, .032, SPACE.length, sign * (half - .053), .158, centreZ, woodRail);
-        box(.035, .045, SPACE.length, sign * (half - .03), .91, centreZ, woodRail);
+        wallStrip(.065,.145,sign*(half-.026),.0725,woodTrim);
+        wallStrip(.032,.032,sign*(half-.053),.158,woodRail);
+        wallStrip(.035,.045,sign*(half-.03),.91,woodRail);
         box(.12, .10, SPACE.length, sign * (half - .06), SPACE.height - .06, centreZ, ceiling);
         box(.055, .045, SPACE.length, sign * (half - .07), SPACE.height - .135, centreZ, ceiling);
-        for (let z = 1.35; z < SPACE.length - .8; z += SPACE.doorPitch)
+        for (const z of officeDoorCenters)
           door(sign * (half - .012), z, sign > 0 ? -Math.PI / 2 : Math.PI / 2);
         // Contact shading at the skirting and the two rear wall junctions, with a short falloff.
         contact(.18, SPACE.length, sign * (half - .004), .09, centreZ,
@@ -292,19 +309,21 @@
       // Continuous walnut wainscot, recessed fields, stone border and restrained brass reveals.
       // These are architectural members with real thickness, not baked fake door photographs.
       for(const sign of [-1,1]){
-        box(.038,1.05,SPACE.length,sign*(half-.022),.525,centreZ,woodPanel);
-        box(.070,.075,SPACE.length,sign*(half-.052),1.07,centreZ,woodRail,scene,.006);
-        box(.076,.009,SPACE.length,sign*(half-.057),1.113,centreZ,brass);
+        wallStrip(.038,1.05,sign*(half-.022),.525,woodPanel);
+        wallStrip(.070,.075,sign*(half-.052),1.07,woodRail,.006);
+        wallStrip(.076,.009,sign*(half-.057),1.113,brass);
         for(let z=.46;z<SPACE.length;z+=.70){
+          if (!wallSpans.some(([start,end]) => z-.31>=start && z+.31<=end)) continue;
           const field=box(.018,.71,.57,sign*(half-.050),.56,z,wood,scene,.003);
           box(.028,.025,.60,sign*(half-.065),.19,z,woodTrim,scene,.003);
           box(.028,.025,.60,sign*(half-.065),.93,z,woodTrim,scene,.003);
           box(.028,.76,.025,sign*(half-.065),.56,z-.29,woodTrim,scene,.003);
         }
-        box(.135,.005,SPACE.length,sign*(half-.10),.007,centreZ,darkMetal);
+        wallStrip(.135,.005,sign*(half-.10),.007,darkMetal);
         for(let z=.6;z<SPACE.length;z+=SPACE.doorPitch){
           // Solid piers and stepped ceiling soffits break long, perfectly flat wall planes.
-          box(.065,1.79,.075,sign*(half-.032),2.0,z,woodTrim,scene,.004);
+          if (officeDoorCenters.every(center => Math.abs(z-center)>jambHalfWidth+.04))
+            box(.065,1.79,.075,sign*(half-.032),2.0,z,woodTrim,scene,.004);
         }
       }
       // Ceiling bays align with the doors; ivory inset fields sit behind dark cornices.

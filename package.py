@@ -29,7 +29,7 @@ def package(output_dir):
     )
     if replaced != 1:
         raise ValueError('Expected exactly one embedded shoe Foley payload')
-    files = ['index.html', 'styles.css', 'app.js', 'opening.css', 'opening.js', 'cinematic-renderer.js', 'chair-asset.js', 'table-asset.js', 'static-model.js', 'corridor-3d.js', 'interrogation-room.js',
+    files = ['index.html', 'styles.css', 'app.js', 'opening.css', 'opening.js', 'cinematic-renderer.js', 'chair-asset.js', 'table-asset.js', 'tape-asset.js', 'static-model.js', 'corridor-3d.js', 'interrogation-room.js',
              'access.css', 'access.js', 'room-entry.css', 'room-entry.js', 'room-music.js', 'case-data.js', 'case-sections.js', 'case-file.js', 'case-file.css', 'cinematic-sound.js', 'vendor/three.local.js', 'vendor/reflector.local.js', 'vendor/THREE-LICENSE.txt']
     for name in files:
         src, dst = source / name, target / name
@@ -62,7 +62,7 @@ def package(output_dir):
         css = (source / name).read_text().replace('@charset "UTF-8";', '', 1)
         html = re.sub(r'<link rel="stylesheet" href="' + re.escape(name) + r'(?:\?[^"<>]*)?">', lambda _: '<style>\n' + css + '\n</style>', html)
     scripts = []
-    for name in ('app.js', 'vendor/three.local.js', 'vendor/reflector.local.js', 'cinematic-renderer.js', 'chair-asset.js', 'table-asset.js', 'static-model.js', 'corridor-3d.js', 'interrogation-room.js', 'opening.js', 'access.js', 'cinematic-sound.js', 'room-music.js', 'room-entry.js', 'case-data.js', 'case-sections.js', 'case-file.js'):
+    for name in ('app.js', 'vendor/three.local.js', 'vendor/reflector.local.js', 'cinematic-renderer.js', 'chair-asset.js', 'table-asset.js', 'tape-asset.js', 'static-model.js', 'corridor-3d.js', 'interrogation-room.js', 'opening.js', 'access.js', 'cinematic-sound.js', 'room-music.js', 'room-entry.js', 'case-data.js', 'case-sections.js', 'case-file.js'):
         js = opening_js if name == 'opening.js' else (source / name).read_text()
         if name == 'room-music.js':
             audio = 'assets/tunetank-jazz-spy-music-349626.mp3'

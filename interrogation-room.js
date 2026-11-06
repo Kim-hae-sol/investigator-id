@@ -36,7 +36,7 @@
     const geometries = new Map(), textures = new Map(), ownedMaterials = new Set();
     let ready=false;
     try {
-      const images = [...document.querySelectorAll('[data-pbr], [data-room], [data-board-print], [data-chair], [data-table]')];
+      const images = [...document.querySelectorAll('[data-pbr], [data-room], [data-board-print], [data-chair], [data-table], [data-cassette]')];
       await deadline(Promise.all(images.map(image => image.decode())), 20000);
       if (!shared) {
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
@@ -287,11 +287,11 @@
       const lampShade = new T.Mesh(new T.CylinderGeometry(.23, .36, .18, 36, 1, true), brass);
       lampShade.position.y = -.07; lampShade.castShadow = true; pendant.add(lampShade);
       const diffuser = new T.Mesh(new T.CircleGeometry(.29, 36), shade); diffuser.rotation.x = -Math.PI / 2; diffuser.position.y = -.16; pendant.add(diffuser);
-      const mainLight = new T.SpotLight('#ffe5c8', 18, 6.5, .76, .95, 1.7);
+      const mainLight = new T.SpotLight('#ffedda', 16, 6.5, .76, .95, 1.7);
       mainLight.position.set(-.36, 2.66, DESK_Z + .56); mainLight.target.position.set(.05, .72, DESK_Z); mainLight.castShadow = true;
       mainLight.shadow.mapSize.set(2048, 2048); mainLight.shadow.bias = -.00016; mainLight.shadow.normalBias = .005;
       mainLight.shadow.radius = 5; mainLight.shadow.camera.near = .1; mainLight.shadow.camera.far = 8; scene.add(mainLight, mainLight.target);
-      const warmBounce = new T.PointLight('#e7d0b5', 2.8, 5.6, 2); warmBounce.position.set(0, 2.55, .12); scene.add(warmBounce);
+      const warmBounce = new T.PointLight('#e7d0b5', 2.8, 5.6, 2); warmBounce.position.set(.8, 1.88, DESK_Z+.72); scene.add(warmBounce);
       const wallBounce = new T.DirectionalLight('#c4bbb0', .30); wallBounce.position.set(-.8, 2.45, -2.55); scene.add(wallBounce);
       const sideFill = new T.DirectionalLight('#d5cec1', .21); sideFill.position.set(-3.0, 2.2, -1.2); scene.add(sideFill);
       const ambient = new T.HemisphereLight('#c5bfb2', '#393028', .22); scene.add(ambient);
@@ -303,7 +303,7 @@
       const details = new T.Group(); details.name='room-dressing'; scene.add(details);
       const paper = new T.MeshStandardMaterial({color:'#a4936e',roughness:.97,bumpMap:paperMicro,bumpScale:.00035}); ownedMaterials.add(paper);
       const leather = new T.MeshStandardMaterial({color:'#51392b',roughness:.72,bumpMap:leatherMicro,bumpScale:.0007}); ownedMaterials.add(leather);
-      const ceramic = new T.MeshStandardMaterial({color:'#69645a',roughness:.28,metalness:.02}); ownedMaterials.add(ceramic);
+      const ceramic = new T.MeshStandardMaterial({color:'#69645a',roughness:.39,metalness:.02}); ownedMaterials.add(ceramic);
       function canvasMaterial(width,height,paint,roughness=.94) {
         const c=document.createElement('canvas');c.width=width;c.height=height;paint(c.getContext('2d'),width,height);
         const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;t.anisotropy=anisotropy;
@@ -351,10 +351,10 @@
         });
         mat.bumpMap = paperMicro;
         mat.bumpScale = .00015;
-        const sheet = box(print.w,print.h,.002,print.x,print.y,.043+i*.002,mat,board);
+        const sheet = box(print.w,print.h,.002,print.x,print.y,.025+i*.0012,mat,board);
         sheet.rotation.z = print.angle;
         const pin = cylinder(.005,.005,.008,print.x-print.h*.44*Math.sin(print.angle),
-          print.y+print.h*.44*Math.cos(print.angle),.052+i*.002,brass,board,12);
+          print.y+print.h*.44*Math.cos(print.angle),.032+i*.0012,brass,board,12);
         pin.rotation.x = Math.PI/2;
       }
       for(const sign of [-1,1])for(let z=-2.8;z<3.3;z+=1.05){if(sign<0&&z>-1.7&&z<.1)continue;box(.032,1.67,1.02,sign*3.12,2.15,z,wood,details,.003);}
@@ -400,7 +400,7 @@
       for(let i=0;i<9;i++){const sheet=box(.28,.0008,.21,.49+(i%3-1)*.001,.845+i*.00085,.72,paper,details);sheet.rotation.y=(i-4)*.002;}
       const penCupGeo=new T.LatheGeometry([[0,0],[.038,0],[.043,.099],[.041,.105],[.037,.105],[.035,.014],[0,.014]].map(p=>new T.Vector2(...p)),48);geometries.set('pen-cup',penCupGeo);const penCup=new T.Mesh(penCupGeo,brass);penCup.position.set(.57,.8405,-.74);penCup.castShadow=penCup.receiveShadow=true;details.add(penCup);
       for(let i=0;i<3;i++){const pen=cylinder(.003,.003,.20,.55+i*.016,.98,-.74,darkMetal,details,8);pen.rotation.z=(i-1)*.11;}
-      const mugProfile=[[0,0],[.040,0],[.046,.006],[.055,.092],[.055,.100],[.051,.104],[.047,.100],[.045,.092],[.039,.015],[0,.015]].map(p=>new T.Vector2(...p));
+      const mugProfile=[[0,0],[.038,0],[.041,.003],[.042,.008],[.045,.012],[.047,.024],[.050,.051],[.053,.079],[.054,.097],[.053,.101],[.050,.103],[.047,.100],[.046,.093],[.043,.060],[.039,.015],[0,.015]].map(p=>new T.Vector2(...p));
       const mugGeometry=new T.LatheGeometry(mugProfile,64);geometries.set('mug-lathe',mugGeometry);const mug=new T.Mesh(mugGeometry,ceramic);mug.position.set(-.40,.847,-.12);mug.castShadow=mug.receiveShadow=true;details.add(mug);
       const coffeeSurface=new T.MeshStandardMaterial({color:'#160e09',roughness:.24,metalness:0});ownedMaterials.add(coffeeSurface);const coffee=cylinder(.046,.046,.002,-.40,.945,-.12,coffeeSurface,details,48);
       const handle=new T.Mesh(new T.TorusGeometry(.033,.007,16,48),ceramic);handle.position.set(-.46,.907,-.12);details.add(handle);
@@ -530,7 +530,28 @@
 
       // The well is built from rails, so the tape can physically sit below the rim.
       box(.28,.025,.177,0,.0125,0,darkMetal,cassette,.006);
-      box(.28,.036,.037,0,.042,.069,binderLabel,cassette,.004);
+      const fascia = canvasMaterial(1024,128,(ctx,w,h)=>{
+        ctx.fillStyle='#8e897b';ctx.fillRect(0,0,w,h);
+        for(let y=0;y<h;y++){
+          ctx.fillStyle=y%3?'#e5ded719':'#39352c19';ctx.fillRect(0,y,w,1);
+        }
+        ctx.fillStyle='#302e28';ctx.fillRect(0,98,w,24);
+        ctx.font='bold 25px monospace';ctx.fillText('CASSETTE RECORDER',35,42);
+        ctx.font='16px monospace';ctx.fillText('PORTABLE / MONO',36,71);
+        ['STOP','REW','PLAY','REC'].forEach((name,i)=>ctx.fillText(name,320+i*137,72));
+        ctx.fillStyle='#722c22';ctx.fillRect(884,35,10,10);
+      },.55);
+      fascia.metalness=.26;
+      box(.28,.036,.037,0,.042,.069,darkMetal,cassette,.004);
+      const fasciaFace = new T.Mesh(new T.PlaneGeometry(.270,.028),fascia);
+      fasciaFace.position.set(0,.043,.0876);
+      fasciaFace.receiveShadow=true;
+      geometries.set('cassette-fascia',fasciaFace.geometry);
+      cassette.add(fasciaFace);
+      for(const x of [-.127,.127]){
+        const screw=cylinder(.0025,.0025,.002,x,.034,.088,brass,cassette,12);
+        screw.rotation.x=Math.PI/2;
+      }
       box(.28,.033,.023,0,.041,-.077,darkMetal,cassette,.003);
       box(.066,.033,.137,-.107,.041,-.007,darkMetal,cassette,.003);
       box(.025,.033,.137,.127,.041,-.007,darkMetal,cassette,.003);
@@ -562,17 +583,10 @@
       tape.position.copy(tapeRest);
       tape.rotation.y = .23;
       workSurface.add(tape);
-      box(.108,.008,.069,0,.004,0,charcoal,tape,.002);
-      box(.095,.001,.051,0,.0085,-.004,binderLabel,tape,.001);
-      box(.075,.001,.018,0,.0095,-.005,darkMetal,tape,.001);
-      for (const x of [-.023,.023]) {
-        cylinder(.009,.009,.001,x,.0105,-.005,binderLabel,tape,28);
-        cylinder(.004,.004,.001,x,.0115,-.005,charcoal,tape,16);
-      }
-      box(.077,.001,.012,0,.0095,.020,darkMetal,tape,.001);
-      for (const x of [-.046,.046]) for (const z of [-.027,.027]) {
-        cylinder(.0015,.0015,.001,x,.009,z,brass,tape,8);
-      }
+      const tapeModel = window.HNJStaticModel.create(window.HNJTapeAsset,'cassette',
+        {anisotropy,materials:ownedMaterials,geometries,textures});
+      tapeModel.position.y = .0036;
+      tape.add(tapeModel);
       deskItems.tape = tape;
       deskItems.tapeDeck = {
         lidAt(progress) { lid.rotation.x = -1.15 * progress; },
