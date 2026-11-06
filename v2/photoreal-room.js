@@ -4,7 +4,7 @@ const T=window.THREE, host=document.getElementById('stage'), note=document.getEl
 if(!T){note.textContent='Three.js 로드 실패';return;}
 const renderer=new T.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);
-renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;
+renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.02;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
 host.appendChild(renderer.domElement);
 const scene=new T.Scene();scene.background=new T.Color('#17120f');scene.fog=new T.FogExp2('#17120f',.045);
@@ -104,12 +104,15 @@ cylinder(.13,.13,.025,0,.01,0,materials.brass,lamp);
 cylinder(.018,.022,.41,0,.24,0,materials.brass,lamp);
 const shade=mesh(new T.CylinderGeometry(.15,.25,.19,64,1,true),materials.green,lamp);shade.position.y=.48;
 cylinder(.16,.16,.008,0,.382,0,materials.glow,lamp);
-const lampLight=new T.SpotLight('#ffd3a1',23,5,.83,.66,1.6);lampLight.position.set(-1.0,1.39,-1.78);
+const lampLight=new T.SpotLight('#ffcf98',12,3.5,.72,.82,1.5);lampLight.position.set(-1.0,1.48,-1.78);
 lampLight.target.position.set(-.15,.7,-1.48);lampLight.castShadow=true;lampLight.shadow.mapSize.set(2048,2048);
-lampLight.shadow.bias=-.00015;scene.add(lampLight,lampLight.target);
-const fill=new T.DirectionalLight('#a8b7c2',1.0);fill.position.set(2.8,3.5,2);scene.add(fill);
-const rim=new T.SpotLight('#d9ad77',5,8,1.1,.9);rim.position.set(2.4,2.6,-2.6);rim.target.position.set(0,.9,-.5);scene.add(rim,rim.target);
-scene.add(new T.HemisphereLight('#d8c4a8','#211b16',.65));
+lampLight.shadow.bias=-.0001;lampLight.shadow.normalBias=.018;lampLight.shadow.radius=3;scene.add(lampLight,lampLight.target);
+const fill=new T.DirectionalLight('#9eacc0',.65);fill.position.set(2.8,3.5,2);scene.add(fill);
+const rim=new T.SpotLight('#d8aa79',2.1,7,.95,.9,1.6);rim.position.set(2.4,2.6,-2.6);rim.target.position.set(0,.9,-1.48);scene.add(rim,rim.target);
+scene.add(new T.HemisphereLight('#c6b8a6','#30221c',.95));
+// Soft overhead practical bounce: lifts evidence without flattening the warm desk-lamp pool.
+const ceilingBounce=new T.PointLight('#d8c3a6',1.25,6,2);ceilingBounce.position.set(.2,2.7,-1.75);scene.add(ceilingBounce);
+const boardWash=new T.SpotLight('#c6b7a4',2.0,5,.78,.9,2);boardWash.position.set(0,2.95,-2.0);boardWash.target.position.set(0,1.8,-3.5);scene.add(boardWash,boardWash.target);
 const frame=box(2.0,1.13,.07,0,1.82,-3.54,materials.joinery);
 const cork=new T.MeshStandardMaterial({color:'#765139',roughness:1});
 box(1.84,.99,.013,0,1.82,-3.49,cork);
