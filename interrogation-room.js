@@ -9,6 +9,7 @@
     entry: Object.freeze({ position: [0, 1.70, 3.10], target: [0, 1.10, -.55], fov: 48 }),
     seated: Object.freeze({ position: [0, 1.48, DESK_Z + .91], target: [0, 1.05, DESK_Z - .45], fov: 46 }),
     tabletop: Object.freeze({ position: [0, 1.48, DESK_Z + .91], target: [0, .81, DESK_Z + .01], fov: 46 }),
+    tape: Object.freeze({ position: [.35, 1.10, DESK_Z + .045], target: [.40, .83, DESK_Z - .385], fov: 40 }),
     reading: Object.freeze({ position: [0, 1.64, DESK_Z + .29], target: [0, .79, DESK_Z + .18], fov: 49 })
   });
   const deadline = (promise, ms) => {
@@ -406,10 +407,21 @@
       const folderMat=canvasMaterial(512,768,(c,w,h)=>{
         const stock=c.createLinearGradient(0,0,w,h);stock.addColorStop(0,'#766146');stock.addColorStop(.28,'#ae966f');stock.addColorStop(1,'#927753');c.fillStyle=stock;c.fillRect(0,0,w,h);
         for(let i=0;i<18000;i++){c.fillStyle=i%2?'#f4e6c00c':'#342a1c0b';c.fillRect(random()*w,random()*h,1,2);}
-        c.fillStyle='#c6b591';c.fillRect(38,70,436,185);c.strokeStyle='#74654b';c.lineWidth=2;c.strokeRect(48,80,416,165);
+        const rim=c.createRadialGradient(w*.46,h*.43,h*.16,w*.48,h*.44,h*.64);
+        rim.addColorStop(0,'#69462600');rim.addColorStop(1,'#53382091');
+        c.fillStyle=rim;c.fillRect(0,0,w,h);
+        c.strokeStyle='#eed4a948';c.lineWidth=2;
+        for(let i=0;i<96;i++){
+          const side=i%2,x=side?w-random()*17:random()*17,y=random()*h;
+          c.beginPath();c.moveTo(x,y);c.lineTo(x+(side?-1:1)*(3+random()*15),y+random()*9);c.stroke();
+        }
+        c.fillStyle='#c6b591';
+        c.beginPath();c.moveTo(38,72);c.lineTo(474,68);c.lineTo(469,254);c.lineTo(40,258);c.closePath();c.fill();c.strokeStyle='#74654b';c.lineWidth=2;c.strokeRect(48,80,416,165);
         c.fillStyle='#35372f';c.font='18px monospace';c.fillText('SPECIAL INVESTIGATION UNIT',68,117);c.font='bold 37px Georgia';c.fillText('CASE FILE : HNJ',68,180);c.font='17px monospace';c.fillText('RESTRICTED / PERSONNEL ONLY',68,223);
         c.strokeStyle='#89734d';c.beginPath();c.moveTo(17,15);c.lineTo(17,h-15);c.stroke();
       },.94);
+      folderMat.bumpMap = paperMicro;
+      folderMat.bumpScale = .00055;
       const caseFile=new T.Group();caseFile.name='case-file';caseFile.position.set(-.02,.844,.48);caseFile.rotation.y=-.055;details.add(caseFile);
       const binding = new T.MeshStandardMaterial({
         color: '#645039', roughness: .94, bumpMap: paperMicro, bumpScale: .00035
@@ -510,12 +522,70 @@
       // Bent metal paperclip at the file's free corner, with a small physical gap above the cover.
       const clipCurve=new T.CatmullRomCurve3([new T.Vector3(-.11,.014,-.14),new T.Vector3(-.11,.014,-.09),new T.Vector3(-.095,.014,-.086),new T.Vector3(-.09,.014,-.14),new T.Vector3(-.105,.014,-.145),new T.Vector3(-.105,.014,-.10)]);
       const clipGeometry=new T.TubeGeometry(clipCurve,40,.0009,8,false);geometries.set('file-clip',clipGeometry);const fileClip=new T.Mesh(clipGeometry,darkMetal);fileClip.castShadow=true;
-      const cassette=new T.Group();cassette.name='cassette-player';cassette.position.set(.65,.785,-.40);workSurface.add(cassette);
-      box(.29,.052,.175,0,.026,0,darkMetal,cassette,.009);
-      box(.173,.003,.096,.037,.054,-.01,charcoal,cassette,.004);
-      for(const x of [-.002,.075]){cylinder(.025,.025,.003,x,.057,-.01,upholstery,cassette,40);cylinder(.016,.016,.004,x,.059,-.01,binderLabel,cassette,32);cylinder(.004,.004,.005,x,.062,-.01,darkMetal,cassette,16);}
-      for(let i=0;i<9;i++)box(.050,.0015,.003,-.103,.054,-.055+i*.011,charcoal,cassette,.001);
-      for(let i=0;i<4;i++)box(.029,.009,.020,-.018+i*.038,.056,.067,i===0?brass:cabinetPaint,cassette,.002);
+      const cassette = new T.Group();
+      cassette.name = 'cassette-player';
+      cassette.position.set(.51,.785,-.40);
+      cassette.rotation.y = -.10;
+      workSurface.add(cassette);
+
+      // The well is built from rails, so the tape can physically sit below the rim.
+      box(.28,.025,.177,0,.0125,0,darkMetal,cassette,.006);
+      box(.28,.036,.037,0,.042,.069,binderLabel,cassette,.004);
+      box(.28,.033,.023,0,.041,-.077,darkMetal,cassette,.003);
+      box(.066,.033,.137,-.107,.041,-.007,darkMetal,cassette,.003);
+      box(.025,.033,.137,.127,.041,-.007,darkMetal,cassette,.003);
+      box(.157,.004,.111,.029,.028,-.008,charcoal,cassette);
+      for (const x of [.006,.052]) {
+        cylinder(.008,.008,.011,x,.033,-.013,brass,cassette,20);
+      }
+      for (let i=0;i<8;i++) {
+        box(.044,.001,.002,-.107,.058,-.056+i*.012,charcoal,cassette);
+      }
+      for (let i=0;i<4;i++) {
+        box(.024,.006,.019,-.052+i*.039,.062,.069,darkMetal,cassette,.002);
+      }
+
+      const lid = new T.Group();
+      lid.position.set(.029,.059,-.066);
+      cassette.add(lid);
+      for (const x of [-.081,.081]) box(.017,.009,.121,x,0,.06,darkMetal,lid,.0015);
+      for (const z of [.007,.113]) box(.17,.009,.016,0,0,z,darkMetal,lid,.0015);
+      const glass = new T.MeshStandardMaterial({
+        color:'#766953',transparent:true,opacity:.22,roughness:.25,depthWrite:false
+      });
+      ownedMaterials.add(glass);
+      box(.145,.0015,.092,0,0,.06,glass,lid);
+
+      const tape = new T.Group();
+      tape.name = 'cassette-tape';
+      const tapeRest = new T.Vector3(.28,.789,-.335);
+      tape.position.copy(tapeRest);
+      tape.rotation.y = .23;
+      workSurface.add(tape);
+      box(.108,.008,.069,0,.004,0,charcoal,tape,.002);
+      box(.095,.001,.051,0,.0085,-.004,binderLabel,tape,.001);
+      box(.075,.001,.018,0,.0095,-.005,darkMetal,tape,.001);
+      for (const x of [-.023,.023]) {
+        cylinder(.009,.009,.001,x,.0105,-.005,binderLabel,tape,28);
+        cylinder(.004,.004,.001,x,.0115,-.005,charcoal,tape,16);
+      }
+      box(.077,.001,.012,0,.0095,.020,darkMetal,tape,.001);
+      for (const x of [-.046,.046]) for (const z of [-.027,.027]) {
+        cylinder(.0015,.0015,.001,x,.009,z,brass,tape,8);
+      }
+      deskItems.tape = tape;
+      deskItems.tapeDeck = {
+        lidAt(progress) { lid.rotation.x = -1.15 * progress; },
+        insertAt(progress) {
+          const seat = new T.Vector3(.029,.031,-.009);
+          cassette.localToWorld(seat);
+          workSurface.worldToLocal(seat);
+          const lift = Math.sin(progress*Math.PI) * .135;
+          tape.position.copy(tapeRest).lerp(seat,progress);
+          tape.position.y += lift;
+          tape.rotation.set(-Math.sin(progress*Math.PI)*.42,.23+(-.10-.23)*progress,0);
+        }
+      };
       const coverHinge = new T.Group();
       coverHinge.position.set(-.1265,.033,0);
       caseFile.add(coverHinge);
