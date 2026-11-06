@@ -27,7 +27,7 @@ materials.wood=pbr('wood','#cbb8a6',.67);
 materials.joinery=pbr('joinery','#c7b8a8',.75);
 materials.wall=pbr('wall','#9c9286',.92);
 materials.leather=pbr('leather','#7e6a5a',.78);
-materials.paper=new T.MeshStandardMaterial({color:'#cdbb95',roughness:.94,side:T.DoubleSide});
+materials.paper=new T.MeshStandardMaterial({color:'#e5d8bc',roughness:1,side:T.DoubleSide});
 materials.brass=new T.MeshStandardMaterial({color:'#a68b5b',metalness:.82,roughness:.28});
 materials.iron=new T.MeshStandardMaterial({color:'#343330',metalness:.68,roughness:.4});
 materials.green=new T.MeshPhysicalMaterial({color:'#174c3b',metalness:0,roughness:.19,clearcoat:.7,clearcoatRoughness:.13});
@@ -50,10 +50,10 @@ try{
  }
 }catch(err){console.warn('Table asset fallback',err);}
 if(!imported){box(2.65,.10,1.55,0,.79,0,materials.wood,desk);for(const x of [-1.12,1.12])for(const z of [-.61,.61])box(.12,.72,.12,x,.36,z,materials.joinery,desk);}
-const top=.88;
+const top=.845; // desk surface: keep props in direct contact with tabletop
 const evidence=new T.Group();evidence.name='case-file';desk.add(evidence);
-box(.78,.012,.96,-.08,top+.018,-.05,materials.leather,evidence);
-for(let i=0;i<6;i++){const page=box(.58,.002,.76,-.07+(i%3)*.002,top+.028+i*.003,-.08,materials.paper,evidence);page.rotation.y=(i-2)*.007;}
+box(.78,.009,.96,-.08,top+.0045,-.05,materials.leather,evidence);
+for(let i=0;i<6;i++){const page=box(.58,.002,.76,-.07+(i%3)*.002,top+.011+i*.0015,-.08,materials.paper,evidence);page.rotation.y=(i-2)*.007;}
 function printTexture(title,lines){
  const c=document.createElement('canvas');c.width=768;c.height=1024;const g=c.getContext('2d');
  g.fillStyle='#d7c6a3';g.fillRect(0,0,768,1024);
@@ -65,14 +65,40 @@ function printTexture(title,lines){
  g.font='bold 28px monospace';g.fillText('HNJ / CONFIDENTIAL',76,914);
  const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;return t;
 }
-const fileMat=new T.MeshStandardMaterial({map:printTexture('CASE FILE / 001',18),roughness:.91,side:T.DoubleSide});
-const page=mesh(new T.PlaneGeometry(.56,.74),fileMat,evidence);page.rotation.x=-Math.PI/2;page.position.set(-.065,top+.050,-.08);page.name='clickable-file';
+const fileMat=new T.MeshStandardMaterial({map:printTexture('CASE FILE / 001',18),roughness:1,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1});
+const page=mesh(new T.PlaneGeometry(.56,.74),fileMat,evidence);page.rotation.x=-Math.PI/2;page.position.set(-.065,top+.023,-.08);page.name='clickable-file';
 const memoMat=new T.MeshStandardMaterial({map:printTexture('EVIDENCE',10),roughness:.93,side:T.DoubleSide});
-const memo=mesh(new T.PlaneGeometry(.35,.48),memoMat,desk);memo.rotation.x=-Math.PI/2;memo.rotation.z=.13;memo.position.set(.78,top+.015,.08);memo.name='clickable-memo';
-const cup=cylinder(.07,.068,.14,.9,top+.07,-.42,materials.iron,desk);
-const coffee=cylinder(.063,.063,.002,.9,top+.143,-.42,new T.MeshStandardMaterial({color:'#241711',roughness:.22}),desk);
-const saucer=cylinder(.105,.105,.012,.9,top+.004,-.42,materials.paper,desk);
-const lamp=new T.Group();lamp.position.set(-1.0,top+.01,-.38);desk.add(lamp);
+const memo=mesh(new T.PlaneGeometry(.35,.48),memoMat,desk);memo.rotation.x=-Math.PI/2;memo.rotation.z=.13;memo.position.set(.78,top+.003,.08);memo.name='clickable-memo';
+const cup=cylinder(.07,.068,.14,.9,top+.076,-.42,materials.iron,desk);
+const coffee=cylinder(.063,.063,.002,.9,top+.147,-.42,new T.MeshStandardMaterial({color:'#241711',roughness:.22}),desk);
+const saucer=cylinder(.105,.105,.012,.9,top+.006,-.42,materials.paper,desk);
+// Grounded desk props: all vertical coordinates are referenced to the desk surface.
+const penBody=new T.MeshStandardMaterial({color:'#202322',metalness:.65,roughness:.32});
+const ink=new T.MeshStandardMaterial({color:'#27231e',roughness:.8});
+const photoBorder=new T.MeshStandardMaterial({color:'#e2d7bd',roughness:1});
+function rod(a,b,r,mat,parent=desk){const d=new T.Vector3().subVectors(b,a),m=mesh(new T.CylinderGeometry(r,r,d.length(),12),mat,parent);m.position.copy(a).add(b).multiplyScalar(.5);m.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),d.normalize());return m;}
+rod(new T.Vector3(.34,top+.015,.29),new T.Vector3(.68,top+.015,.36),.008,penBody);
+rod(new T.Vector3(.68,top+.015,.36),new T.Vector3(.735,top+.015,.37),.004,materials.brass);
+const tape=new T.Group();tape.position.set(-.84,top+.052,.39);desk.add(tape);
+box(.34,.10,.22,0,0,0,materials.iron,tape);
+box(.16,.009,.085,-.065,.056,0,materials.brass,tape);
+for(let i=0;i<4;i++)box(.035,.012,.04,.07+i*.043,.058,.05,penBody,tape);
+for(let i=0;i<2;i++){const reel=cylinder(.044,.044,.008,-.08+i*.13,.062,-.02,penBody,tape);reel.rotation.x=Math.PI/2;}
+const photoTexture=printTexture('SUBJECT / 01',6);
+const photoMat=new T.MeshStandardMaterial({map:photoTexture,roughness:1,side:T.DoubleSide});
+for(let i=0;i<2;i++){
+ const g=new T.Group();g.position.set(.43+i*.26,top+.008,-.35+i*.05);g.rotation.y=(i?-.18:.11);desk.add(g);
+ box(.22,.003,.30,0,0,0,photoBorder,g);
+ const face=mesh(new T.PlaneGeometry(.18,.22),photoMat,g);face.rotation.x=-Math.PI/2;face.position.y=.003;face.position.z=-.02;
+}
+const pad=new T.Group();pad.position.set(.56,top+.009,.48);pad.rotation.y=-.12;desk.add(pad);
+box(.33,.006,.26,0,0,0,materials.paper,pad);
+for(let i=0;i<7;i++)box(.22,.0008,.002,-.025,.004,-.085+i*.024,ink,pad);
+const book=new T.Group();book.position.set(-.49,top+.029,-.34);book.rotation.y=.15;desk.add(book);
+box(.38,.048,.51,0,0,0,materials.leather,book);
+box(.355,.042,.48,0,.003,0,materials.paper,book);
+box(.38,.006,.51,0,.028,0,materials.leather,book);
+const lamp=new T.Group();lamp.position.set(-1.0,top+.013,-.38);desk.add(lamp);
 cylinder(.13,.13,.025,0,.01,0,materials.brass,lamp);
 cylinder(.018,.022,.41,0,.24,0,materials.brass,lamp);
 const shade=mesh(new T.CylinderGeometry(.15,.25,.19,64,1,true),materials.green,lamp);shade.position.y=.48;
