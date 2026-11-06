@@ -41,16 +41,17 @@ box(.15,3.3,8,-4,1.65,0,materials.wall);
 box(.15,3.3,8,4,1.65,0,materials.wall);
 for(let x=-3.5;x<4;x+=.86){box(.035,2.7,.09,x,1.65,-3.65,materials.joinery);box(.76,.045,.09,x+.39,.92,-3.64,materials.joinery);}
 box(7.8,.17,.11,0,.16,-3.59,materials.joinery);
-const desk=new T.Group();desk.position.set(0,0,-.55);scene.add(desk);
-let imported=false;
-try{
- if(window.HNJTableAsset&&window.HNJStaticModel){
- const table=window.HNJStaticModel.create(window.HNJTableAsset,'table',{anisotropy:8,materials:ownedMaterials,geometries,textures});
- table.rotation.y=Math.PI/2;table.scale.set(1.42,1.12,1.36);table.position.y=.04;desk.add(table);imported=true;
- }
-}catch(err){console.warn('Table asset fallback',err);}
-if(!imported){box(2.65,.10,1.55,0,.79,0,materials.wood,desk);for(const x of [-1.12,1.12])for(const z of [-.61,.61])box(.12,.72,.12,x,.36,z,materials.joinery,desk);}
-const top=.845; // desk surface: keep props in direct contact with tabletop
+const desk=new T.Group();desk.position.set(0,0,-1.48);scene.add(desk);
+// Controlled desk proportions: wide along X, shallow along Z, feet touching floor.
+const deskTop=box(2.95,.095,1.34,0,.797,0,materials.wood,desk);
+for(const x of [-1.30,1.30])for(const z of [-.49,.49]){
+ box(.105,.747,.105,x,.3735,z,materials.joinery,desk);
+}
+box(2.65,.12,.075,0,.66,-.54,materials.joinery,desk);
+box(2.65,.12,.075,0,.66,.54,materials.joinery,desk);
+box(.075,.12,1.04,-1.3,.66,0,materials.joinery,desk);
+box(.075,.12,1.04,1.3,.66,0,materials.joinery,desk);
+const top=.8445; // desk surface: keep props in direct contact with tabletop
 const evidence=new T.Group();evidence.name='case-file';desk.add(evidence);
 box(.78,.009,.96,-.08,top+.0045,-.05,materials.leather,evidence);
 for(let i=0;i<6;i++){const page=box(.58,.002,.76,-.07+(i%3)*.002,top+.011+i*.0015,-.08,materials.paper,evidence);page.rotation.y=(i-2)*.007;}
@@ -103,8 +104,8 @@ cylinder(.13,.13,.025,0,.01,0,materials.brass,lamp);
 cylinder(.018,.022,.41,0,.24,0,materials.brass,lamp);
 const shade=mesh(new T.CylinderGeometry(.15,.25,.19,64,1,true),materials.green,lamp);shade.position.y=.48;
 cylinder(.16,.16,.008,0,.382,0,materials.glow,lamp);
-const lampLight=new T.SpotLight('#ffd3a1',23,5,.83,.66,1.6);lampLight.position.set(-1.0,1.39,-.9);
-lampLight.target.position.set(-.15,.7,-.65);lampLight.castShadow=true;lampLight.shadow.mapSize.set(2048,2048);
+const lampLight=new T.SpotLight('#ffd3a1',23,5,.83,.66,1.6);lampLight.position.set(-1.0,1.39,-1.78);
+lampLight.target.position.set(-.15,.7,-1.48);lampLight.castShadow=true;lampLight.shadow.mapSize.set(2048,2048);
 lampLight.shadow.bias=-.00015;scene.add(lampLight,lampLight.target);
 const fill=new T.DirectionalLight('#a8b7c2',1.0);fill.position.set(2.8,3.5,2);scene.add(fill);
 const rim=new T.SpotLight('#d9ad77',5,8,1.1,.9);rim.position.set(2.4,2.6,-2.6);rim.target.position.set(0,.9,-.5);scene.add(rim,rim.target);
@@ -116,8 +117,8 @@ for(let i=0;i<5;i++){
  const m=new T.MeshStandardMaterial({map:printTexture(i%2?'PERSONNEL':'FIELD NOTES',9),roughness:.95});
  const p=mesh(new T.PlaneGeometry(.29,.39),m);p.position.set(-.65+(i%3)*.62,1.62+Math.floor(i/3)*.46,-3.472);p.rotation.z=(i-2)*.05;
 }
-const views={overview:{radius:4.65,az:.13,el:.35,target:[0,.9,-.8]},desk:{radius:2.6,az:.16,el:.52,target:[0,.84,-.55]},evidence:{radius:1.5,az:0,el:1.12,target:[-.1,.84,-.55]}};
-let az=.13,el=.35,radius=4.65,target=new T.Vector3(0,.9,-.8),drag=false,lastX=0,lastY=0;
+const views={overview:{radius:3.85,az:.08,el:.32,target:[0,.95,-1.8]},desk:{radius:2.55,az:.06,el:.52,target:[0,.85,-1.48]},evidence:{radius:1.55,az:0,el:1.12,target:[-.1,.84,-1.48]}};
+let az=.13,el=.35,radius=4.65,target=new T.Vector3(0,.95,-1.8),drag=false,lastX=0,lastY=0;
 function updateCamera(){camera.position.set(target.x+radius*Math.sin(az)*Math.cos(el),target.y+radius*Math.sin(el),target.z+radius*Math.cos(az)*Math.cos(el));camera.lookAt(target);}
 function selectView(name){const v=views[name];radius=v.radius;az=v.az;el=v.el;target.set(...v.target);updateCamera();}
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>selectView(b.dataset.view)));
