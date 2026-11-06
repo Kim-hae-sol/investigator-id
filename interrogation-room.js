@@ -540,124 +540,39 @@
         parent.add(mesh);
         return mesh;
       }
-      const glaze = new T.MeshPhysicalMaterial({
-        color:'#d8c9ac',roughness:.36,ior:1.48,clearcoat:.26,clearcoatRoughness:.31,
-        envMapIntensity:.68
-      });
-      // Very small fluctuations in the glaze, independent of the room's random sequence.
-      const grain=document.createElement('canvas');
-      grain.width=grain.height=128;
-      const gc=grain.getContext('2d');
-      const pixels=gc.createImageData(128,128);
-      let glazeSeed=2048;
-      for(let i=0;i<pixels.data.length;i+=4){
-        glazeSeed=(Math.imul(glazeSeed,1664525)+1013904223)>>>0;
-        const value=225+(glazeSeed>>>27);
-        pixels.data.set([value,value,value,255],i);
-      }
-      gc.putImageData(pixels,0,0);
-      const glazeGrain=new T.CanvasTexture(grain);
-      glazeGrain.wrapS=glazeGrain.wrapT=T.RepeatWrapping;
-      glazeGrain.repeat.set(2,1);
-      textures.set('mug-glaze',{map:glazeGrain});
-      glaze.roughnessMap=glazeGrain;
-      glaze.bumpMap=glazeGrain;
-      glaze.bumpScale=.000055;
-      const foot = new T.MeshStandardMaterial({color:'#9c896f',roughness:.87});
       const coffee = new T.MeshPhysicalMaterial({
         color:'#211009',roughness:.24,ior:1.34,envMapIntensity:.43
       });
       const coaster = new T.MeshStandardMaterial({
         color:'#30231b',roughness:.88,bumpMap:leatherMicro,bumpScale:.00035
       });
-      for(const mat of [glaze,foot,coffee,coaster]) ownedMaterials.add(mat);
+      for(const mat of [coffee,coaster]) ownedMaterials.add(mat);
       potteryPart('mug-leather-coaster',[
         [0,0],[.080,0],[.083,.0008],[.084,.0023],[.083,.004],[.081,.005],[0,.005]
       ],coaster,mugSet);
-      potteryPart('mug-unglazed-foot',[
-        [0,.003],[.031,.003],[.033,.0005],[.036,0],[.039,.0008],[.040,.004],[0,.004]
-      ],foot,cup);
-      const printCanvas = document.createElement('canvas');
-      printCanvas.width = 2048;
-      printCanvas.height = 800;
-      const print = printCanvas.getContext('2d');
-      print.fillStyle = '#fff';
-      print.fillRect(0,0,2048,800);
-      print.fillStyle = print.strokeStyle = '#211f1c';
-      print.textBaseline = 'top';
-      print.font = 'bold 53px Georgia, serif';
-      print.textAlign = 'center';
-      print.fillText('MORNING QUESTIONS',1024,125,466);
-      print.lineWidth = 6;
-      print.strokeRect(790,193,468,438);
-      print.font = 'bold 25px Arial, sans-serif';
-      print.textAlign = 'left';
-      const questions = [
-        '1. What am I most grateful for this', 'morning?',
-        '2. What would be my big win today?',
-        '3. Who can I reach out to and send', 'some love?',
-        '4. What do I need to be kinder towards', 'myself for today?',
-        '5. What kindness can I spread?',
-        '6. What deserves my energy today?',
-        '7. What do I need to remind myself of?',
-        '8. What can I do today simply because', 'I enjoy it?',
-        '9. What can I let go of today?',
-        '10. How can I take one small step', 'towards a goal that feels out of reach?'
-      ];
-      questions.forEach((line,i)=>print.fillText(line,804,207+i*27,440));
-      const printMap = new T.CanvasTexture(printCanvas);
-      printMap.colorSpace = T.SRGBColorSpace;
-      printMap.anisotropy = anisotropy;
-      printMap.channel = 1;
-      textures.set('mug-print',{map:printMap});
-      const printedGlaze = glaze.clone();
-      printedGlaze.map = printMap;
-      ownedMaterials.add(printedGlaze);
-
-      const mugBody = potteryPart('mug-stoneware-body',[
-        [0,.004],[.036,.004],[.041,.005],[.044,.008],[.045,.014],[.0455,.028],
-        [.0458,.065],[.0456,.092],[.0454,.098],[.0445,.100],[.0427,.100],
-        [.0413,.0987],[.0408,.096],[.0408,.080],[.0405,.062],[.040,.032],
-        [.037,.022],[.033,.017],[.024,.015],[0,.015]
-      ],printedGlaze,cup);
-      // Keep the ink on the curved glaze and give it a height-based UV channel.
-      // The print faces the desk camera, with the wrap seam on the back.
-      mugBody.geometry.rotateY(Math.PI);
-      const bodyPositions = mugBody.geometry.attributes.position;
-      const bodyUv = mugBody.geometry.attributes.uv;
-      const printUv = new Float32Array(bodyUv.count*2);
-      for(let i=0;i<bodyUv.count;i++){
-        printUv[i*2] = bodyUv.getX(i);
-        printUv[i*2+1] = bodyPositions.getY(i)/.100;
-      }
-      mugBody.geometry.setAttribute('uv1',new T.BufferAttribute(printUv,2));
-
-      const handlePath=new T.CatmullRomCurve3([
-        new T.Vector3(-.040,.082,0),new T.Vector3(-.061,.085,0),
-        new T.Vector3(-.080,.073,0),new T.Vector3(-.085,.053,0),
-        new T.Vector3(-.079,.030,0),new T.Vector3(-.062,.020,0),
-        new T.Vector3(-.040,.024,0)
-      ]);
-      const handleGeometry=new T.TubeGeometry(handlePath,48,.0072,16,false);
-      const vertices=handleGeometry.attributes.position;
-      for(let ring=0;ring<=48;ring++){
-        const t=ring/48,center=handlePath.getPointAt(t);
-        const flare=1+.28*Math.pow(Math.abs(2*t-1),4);
-        for(let radial=0;radial<=16;radial++){
-          const i=ring*17+radial;
-          vertices.setXYZ(i,center.x+(vertices.getX(i)-center.x)*flare,
-            center.y+(vertices.getY(i)-center.y)*flare,center.z+(vertices.getZ(i)-center.z)*flare*1.12);
-        }
-      }
-      handleGeometry.computeVertexNormals();
-      geometries.set('mug-stoneware-handle',handleGeometry);
-      const handle=new T.Mesh(handleGeometry,glaze);
-      handle.castShadow=handle.receiveShadow=true;
-      cup.add(handle);
-      // The liquid is recessed 31 mm; its meniscus meets the inner wall.
-      potteryPart('mug-coffee-meniscus',[
-        [.0407,.0705],[.0400,.0695],[.0385,.069],[0,.069]
+      // The source mugs use an untextured ceramic PBR material, separate from the cart atlas.
+      const source = window.HNJMugAsset;
+      const ceramic = new T.MeshStandardMaterial({
+        color: new T.Color().fromArray(source.pbr.baseColorFactor),
+        roughness: source.pbr.roughnessFactor,
+        metalness: source.pbr.metallicFactor,
+        side: T.DoubleSide
+      });
+      ownedMaterials.add(ceramic);
+      const mugGeometry = new T.BufferGeometry();
+      mugGeometry.setAttribute('position',new T.Float32BufferAttribute(source.positions,3));
+      mugGeometry.setAttribute('normal',new T.Float32BufferAttribute(source.normals,3));
+      mugGeometry.setIndex(source.indices);
+      geometries.set('coffee-cart-white-mug',mugGeometry);
+      const mug = new T.Mesh(mugGeometry,ceramic);
+      mug.castShadow = mug.receiveShadow = true;
+      cup.scale.setScalar(.86);
+      cup.add(mug);
+      // Coffee remains a separate surface below the imported rim.
+      const liquid = potteryPart('mug-coffee-meniscus',[
+        [.0478,.0915],[.047,.0905],[.045,.090],[0,.090]
       ],coffee,cup);
+      liquid.castShadow = false;
       contact(.215,.209,-.006,.00025,.003,.67,mugSet);
       contact(.106,.102,.004,.00525,-.002,.77,mugSet);
       caseFile.position.set(-.06,.7855,.18);caseFile.scale.setScalar(1.12);

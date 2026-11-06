@@ -20,3 +20,5 @@ https://polyhaven.com/license · https://creativecommons.org/publicdomain/zero/1
 [ Cassette Player — Oday Abuzaeed / Poly Haven ](https://polyhaven.com/a/cassette_player), CC0.
 The independent tape mesh and its three 1K JPEG maps are retained. The mesh buffer is repacked
 in `tape-asset.js` for the existing offline loader. The hinged recorder body is project geometry.
+
+- **White ceramic mug** — [Coffee Cart 01](https://polyhaven.com/a/CoffeeCart_01), Poly Haven, [CC0](https://creativecommons.org/publicdomain/zero/1.0/). The mug body and handle were isolated from the official glTF export and reoriented for the scene. The ceramic material factors and vertex normals are from the source. The liquid is a separate project mesh.
