@@ -51,7 +51,7 @@ box(2.65,.12,.075,0,.66,-.54,materials.joinery,desk);
 box(2.65,.12,.075,0,.66,.54,materials.joinery,desk);
 box(.075,.12,1.04,-1.3,.66,0,materials.joinery,desk);
 box(.075,.12,1.04,1.3,.66,0,materials.joinery,desk);
-const top=.845; const propY=top+.045; // desk surface: keep props in direct contact with tabletop
+const top=.845; const propY=top+.003; // desk surface: keep props in direct contact with tabletop
 const evidence=new T.Group();evidence.name='case-file';desk.add(evidence);
 box(.78,.009,.96,-.08,propY+.0045,-.05,materials.leather,evidence);
 for(let i=0;i<6;i++){const page=box(.58,.002,.76,-.07+(i%3)*.002,propY+.011+i*.0015,-.08,materials.paper,evidence);page.rotation.y=(i-2)*.007;}
