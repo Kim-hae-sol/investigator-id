@@ -7,8 +7,26 @@ const layer=document.createElement('div');layer.className='case-desk-targets';la
 const targets={};const labels={file:'CASE FILE : HNJ 열기',photo:'허남준 사진 확대',photo2:'사진 자료 02 확대',photo3:'사진 자료 03 확대',note:'조사관 메모 펼치기',cassette:'카세트 재생 / 정지'};
 for(const [key,label]of Object.entries(labels)){const b=document.createElement('button');b.className='case-object case-'+key;b.type='button';b.setAttribute('aria-label',label);b.title=label;layer.append(b);targets[key]=b;}
 const reader=document.createElement('section');reader.className='case-reader';reader.hidden=true;reader.setAttribute('aria-label','CASE FILE : HNJ 기록철');
-reader.innerHTML='<div class="case-folio"><button class="case-close" type="button">파일 닫기 ×</button><div class="case-spread"><article class="case-left"><small>CASE FILE : HNJ</small><h1></h1><p class="case-subtitle"></p><p class="case-assigned"></p><div class="case-rule"></div><span class="case-reference"></span></article><article class="case-right"><small>기록 구간</small><div class="case-content"></div><nav class="case-pages" aria-label="기록 순서"><button type="button" data-prev>← 이전</button><span></span><button type="button" data-next>다음 →</button></nav></article></div><nav class="case-tabs" aria-label="챕터 인덱스"></nav></div>';
+reader.innerHTML='<div class="case-folio"><button class="case-close" type="button">파일 닫기 ×</button><div class="case-spread"><div class="folio-stock" aria-hidden="true"></div><article class="case-left"><small>CASE FILE : HNJ</small><h1></h1><p class="case-subtitle"></p><p class="case-assigned"></p><div class="case-rule"></div><span class="case-reference"></span><div class="folio-slip"><span>FILE COPY</span><strong>HNJ</strong><span>ARCHIVE / 01</span></div></article><article class="case-right"><small>기록 구간</small><div class="case-content"></div><div class="folio-attachments"></div><nav class="case-pages" aria-label="기록 순서"><button type="button" data-prev>← 이전</button><span></span><button type="button" data-next>다음 →</button></nav></article></div><nav class="case-tabs" aria-label="챕터 인덱스"></nav></div>';
 root.append(reader);
+const attachments = reader.querySelector('.folio-attachments');
+for (const [kind, number, title] of [['photo','01','사진 자료'], ['note','02','조사관 메모']]) {
+  const print = document.createElement('button');
+  print.type = 'button';
+  print.className = 'folio-print folio-print-' + kind;
+  print.innerHTML = '<span class="folio-print-number"></span><span class="folio-print-face" aria-hidden="true"></span><span class="folio-print-label"></span>';
+  print.querySelector('.folio-print-number').textContent = 'ATTACHMENT / ' + number;
+  print.querySelector('.folio-print-label').textContent = title;
+  if (kind === 'note') print.querySelector('.folio-print-face').textContent = data.memo;
+  if (kind === 'photo' && data.photo) {
+    const img = new Image();
+    img.src = data.photo;
+    img.alt = '';
+    print.querySelector('.folio-print-face').append(img);
+  }
+  print.onclick = () => inspect(kind);
+  attachments.append(print);
+}
 const evidenceLayer=document.createElement('div');evidenceLayer.className='case-evidence-layer';reader.append(evidenceLayer);
 const tabs=reader.querySelector('.case-tabs');data.sections.forEach((s,i)=>{const b=document.createElement('button');b.type='button';b.textContent=s.title;b.onclick=()=>show(i);tabs.append(b);});
 const viewer=document.createElement('dialog');viewer.className='case-viewer';viewer.innerHTML='<button type="button" class="viewer-close">닫기 ×</button><div class="viewer-body"></div>';document.body.append(viewer);viewer.querySelector('button').onclick=()=>viewer.close();
@@ -23,8 +41,8 @@ function show(i){index=Math.max(0,Math.min(data.sections.length-1,i));const s=da
  reader.querySelector('[data-prev]').disabled=index===0;reader.querySelector('[data-next]').disabled=index===data.sections.length-1;reader.querySelector('.case-pages span').textContent=String(index+1).padStart(2,'0')+' / SECTION';[...tabs.children].forEach((b,j)=>b.setAttribute('aria-current',j===index?'true':'false'));}
 reader.querySelector('[data-prev]').onclick=()=>show(index-1);reader.querySelector('[data-next]').onclick=()=>show(index+1);
 async function open(){if(!active||busy||opened)return;busy=true;layer.hidden=true;photoAside=true;
- const photo=window.HNJDeskCamera.room()?.getDeskItems().photo,start=photo?.position.x||.02,startY=photo?.position.y||.797;
- await motion(260,t=>{if(photo){photo.position.x=start+(-.39-start)*t;photo.position.y=startY+(.786-startY)*t;}window.HNJDeskCamera.refresh();});
+ const photo=window.HNJDeskCamera.room()?.getDeskItems().photo,start=photo?.position.x||.02,startY=photo?.position.y||.827;
+ await motion(260,t=>{if(photo){photo.position.x=start+(-.39-start)*t;photo.position.y=startY+(.786-startY)*Math.max(0,(t-.62)/.38);}window.HNJDeskCamera.refresh();});
  await window.HNJDeskCamera.move(true);window.HNJDeskCamera.room().getDeskItems().file.visible=false;window.HNJDeskCamera.refreshReading();opened=true;show(index);reader.hidden=false;cassette.hidden=false;reader.querySelector('.case-close').focus();busy=false;root.dataset.caseState='reading';}
 async function close(){if(busy||!opened)return;busy=true;reader.hidden=true;cassette.hidden=true;window.HNJDeskCamera.room().getDeskItems().file.visible=true;await window.HNJDeskCamera.move(false);opened=false;layer.hidden=false;busy=false;root.dataset.caseState='desk';targets.file.focus();}
 reader.querySelector('.case-close').onclick=close;targets.file.onclick=open;

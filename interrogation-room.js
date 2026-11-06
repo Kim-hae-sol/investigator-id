@@ -378,16 +378,27 @@
       const coffeeSurface=new T.MeshStandardMaterial({color:'#160e09',roughness:.24,metalness:0});ownedMaterials.add(coffeeSurface);const coffee=cylinder(.046,.046,.002,-.40,.945,-.12,coffeeSurface,details,48);
       const handle=new T.Mesh(new T.TorusGeometry(.033,.007,16,48),ceramic);handle.position.set(-.46,.907,-.12);details.add(handle);
       const folderMat=canvasMaterial(512,768,(c,w,h)=>{
-        c.fillStyle='#a38e68';c.fillRect(0,0,w,h);
+        const stock=c.createLinearGradient(0,0,w,h);stock.addColorStop(0,'#766146');stock.addColorStop(.28,'#ae966f');stock.addColorStop(1,'#927753');c.fillStyle=stock;c.fillRect(0,0,w,h);
         for(let i=0;i<18000;i++){c.fillStyle=i%2?'#f4e6c00c':'#342a1c0b';c.fillRect(random()*w,random()*h,1,2);}
         c.fillStyle='#c6b591';c.fillRect(38,70,436,185);c.strokeStyle='#74654b';c.lineWidth=2;c.strokeRect(48,80,416,165);
         c.fillStyle='#35372f';c.font='18px monospace';c.fillText('SPECIAL INVESTIGATION UNIT',68,117);c.font='bold 37px Georgia';c.fillText('CASE FILE : HNJ',68,180);c.font='17px monospace';c.fillText('RESTRICTED / PERSONNEL ONLY',68,223);
         c.strokeStyle='#89734d';c.beginPath();c.moveTo(17,15);c.lineTo(17,h-15);c.stroke();
       },.94);
       const caseFile=new T.Group();caseFile.name='case-file';caseFile.position.set(-.02,.844,.48);caseFile.rotation.y=-.055;details.add(caseFile);
-      box(.245,.008,.345,0,.004,0,paper,caseFile,.002);
+      const binding = new T.MeshStandardMaterial({
+        color: '#645039', roughness: .94, bumpMap: paperMicro, bumpScale: .00035
+      });
+      ownedMaterials.add(binding);
+      box(.265,.005,.366,0,.0025,0,binding,caseFile,.002);
+      box(.016,.029,.362,-.123,.017,0,binding,caseFile,.004);
+      // Separate signatures leave visible fore-edge lines and slightly staggered corners.
+      for (let i = 0; i < 7; i++) {
+        const signature = box(.237 + (i % 3) * .002,.0032,.339 + (i % 2) * .003,
+          .005 + (i % 2) * .001,.0066 + i * .0034,(i % 3 - 1) * .0018,pageEdges,caseFile,.0005);
+        signature.rotation.y = (i % 3 - 1) * .004;
+      }
       const cover=new T.Mesh(new T.PlaneGeometry(.253,.355,16,20),folderMat);cover.rotation.x=-Math.PI/2;cover.position.y=.009;const coverVertices=cover.geometry.attributes.position;for(let i=0;i<coverVertices.count;i++){const x=coverVertices.getX(i),y=coverVertices.getY(i);coverVertices.setZ(i,.0014*Math.pow(Math.max(0,(x+.1265)/.253),4)*Math.pow(Math.max(0,(.1775-y)/.355),2));}cover.geometry.computeVertexNormals();cover.castShadow=cover.receiveShadow=true;caseFile.add(cover);geometries.set('case-cover',cover.geometry);
-      box(.058,.003,.025,-.076,.006,-.182,paper,caseFile,.002);
+      box(.058,.0018,.025,-.076,.023,-.177,paper,caseFile,.002);
       // A dark leather blotter grounds the folder and separates the wood from loose papers.
       const blotter=material('leather','#665c4c',.88,.08,3.2,2.0);
       box(1.04,.004,.68,0,.841,.21,blotter,details,.006);
@@ -470,7 +481,7 @@
         const tex=new T.CanvasTexture(cv);tex.colorSpace=T.SRGBColorSpace;textures.set('desk-'+key,{color:tex});
         const mat=new T.MeshStandardMaterial({map:tex,roughness:.94,bumpMap:paperMicro,bumpScale:.00018,side:T.DoubleSide});ownedMaterials.add(mat);
         const geo=new T.PlaneGeometry(pw,ph,12,16),vertices=geo.attributes.position;for(let i=0;i<vertices.count;i++){const u=vertices.getX(i)/pw+.5,v=vertices.getY(i)/ph+.5;vertices.setZ(i,.0012*Math.pow(u,5)*Math.pow(1-v,3));}geo.computeVertexNormals();geometries.set('desk-'+key,geo);const mesh=new T.Mesh(geo,mat);
-        mesh.rotation.x=-Math.PI/2;mesh.position.set(x,key==='photo'?.797:key==='photo3'?.786:key==='photo2'?.785:.782,z);mesh.castShadow=mesh.receiveShadow=true;details.add(mesh);deskItems[key]=mesh;if(key==='photo'&&window.HNJCaseData?.photo){const image=new Image();image.onload=()=>{c.fillStyle='#e5dfd0';c.fillRect(0,0,w,h);const scale=Math.min((w-48)/image.width,(h-48)/image.height);c.drawImage(image,(w-image.width*scale)/2,(h-image.height*scale)/2,image.width*scale,image.height*scale);tex.needsUpdate=true;};image.src=window.HNJCaseData.photo;}return mesh;
+        mesh.rotation.x=-Math.PI/2;mesh.position.set(x,key==='photo'?.827:key==='photo3'?.786:key==='photo2'?.785:.782,z);mesh.castShadow=mesh.receiveShadow=true;details.add(mesh);deskItems[key]=mesh;if(key==='photo'&&window.HNJCaseData?.photo){const image=new Image();image.onload=()=>{c.fillStyle='#e5dfd0';c.fillRect(0,0,w,h);const scale=Math.min((w-48)/image.width,(h-48)/image.height);c.drawImage(image,(w-image.width*scale)/2,(h-image.height*scale)/2,image.width*scale,image.height*scale);tex.needsUpdate=true;};image.src=window.HNJCaseData.photo;}return mesh;
       }
       deskCard('photo','PHOTO / ASSET PENDING',.015,.18,.14,.18,'#b7b2a4').rotation.z=.10;
       deskCard('note',window.HNJCaseData?.memo||'NOTE',.60,.21,.18,.14,'#c4b48e');
@@ -478,14 +489,21 @@
       deskCard('photo3','PHOTO / 03',-.43,.08,.13,.17,'#b5b0a2').rotation.z=.06;
       // Bent metal paperclip at the file's free corner, with a small physical gap above the cover.
       const clipCurve=new T.CatmullRomCurve3([new T.Vector3(-.11,.014,-.14),new T.Vector3(-.11,.014,-.09),new T.Vector3(-.095,.014,-.086),new T.Vector3(-.09,.014,-.14),new T.Vector3(-.105,.014,-.145),new T.Vector3(-.105,.014,-.10)]);
-      const clipGeometry=new T.TubeGeometry(clipCurve,40,.0009,8,false);geometries.set('file-clip',clipGeometry);const fileClip=new T.Mesh(clipGeometry,darkMetal);fileClip.castShadow=true;caseFile.add(fileClip);
+      const clipGeometry=new T.TubeGeometry(clipCurve,40,.0009,8,false);geometries.set('file-clip',clipGeometry);const fileClip=new T.Mesh(clipGeometry,darkMetal);fileClip.castShadow=true;
       const cassette=new T.Group();cassette.name='cassette-player';cassette.position.set(.74,.785,-.36);details.add(cassette);
       box(.29,.052,.175,0,.026,0,darkMetal,cassette,.009);
       box(.173,.003,.096,.037,.054,-.01,charcoal,cassette,.004);
       for(const x of [-.002,.075]){cylinder(.025,.025,.003,x,.057,-.01,upholstery,cassette,40);cylinder(.016,.016,.004,x,.059,-.01,binderLabel,cassette,32);cylinder(.004,.004,.005,x,.062,-.01,darkMetal,cassette,16);}
       for(let i=0;i<9;i++)box(.050,.0015,.003,-.103,.054,-.055+i*.011,charcoal,cassette,.001);
       for(let i=0;i<4;i++)box(.029,.009,.020,-.018+i*.038,.056,.067,i===0?brass:cabinetPaint,cassette,.002);
-      const coverHinge=new T.Group();coverHinge.position.set(-.1265,.009,0);caseFile.add(coverHinge);coverHinge.add(cover);cover.position.set(.1265,0,0);deskItems.coverHinge=coverHinge;
+      const coverHinge = new T.Group();
+      coverHinge.position.set(-.1265,.033,0);
+      caseFile.add(coverHinge);
+      box(.253,.0035,.355,.1265,-.002,0,binding,coverHinge,.001);
+      coverHinge.add(cover, fileClip);
+      cover.position.set(.1265,0,0);
+      fileClip.position.set(.1265,-.011,0);
+      deskItems.coverHinge=coverHinge;
       deskItems.file=caseFile;deskItems.cassette=cassette;
 
       // Blurred light cards provide subdued metal/leather reflections without an external HDR asset.

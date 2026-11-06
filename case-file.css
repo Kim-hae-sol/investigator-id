@@ -5,3 +5,149 @@
 .case-viewer[data-kind=note]{background:linear-gradient(100deg,#d6bf87,#e1cd9b 49%,#c3ad77 50%,#ddc996 51%)}
 .case-viewer[data-kind=note][open]{animation:note-unfold .25s ease both}@keyframes note-unfold{from{opacity:.3;transform:perspective(700px) rotateX(18deg)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.case-viewer[data-kind=note][open]{animation:none}}
+
+/* Bound paper, cloth cover and loose inserts, lit from the upper left. */
+.case-folio {
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.58' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23735a40' filter='url(%23n)' d='M0 0h192v192H0z'/%3E%3C/svg%3E");
+  isolation: isolate;
+  padding: 9px 10px 18px;
+  border: 1px solid #4a3626;
+  border-radius: 8px 9px 11px 8px;
+  background: repeating-linear-gradient(87deg,#fff1 0 1px,transparent 1px 4px), linear-gradient(112deg,#84674c,#5f432f 70%,#4b3528);
+  box-shadow: 0 2px 2px #24180f, 4px 12px 10px #140d09ad, 12px 28px 50px #0c0805a8;
+}
+.case-spread {
+  position: relative;
+  isolation: isolate;
+  border-radius: 5px 8px 7px 4px;
+  background: transparent;
+  box-shadow: none;
+  min-height: min(535px,68vh);
+}
+.folio-stock {
+  position: absolute;
+  inset: 3px -2px -11px;
+  z-index: -1;
+  border: 1px solid #897251;
+  border-radius: 6px 5px 12px 8px;
+  background: repeating-linear-gradient(0deg,#81694a 0 1px,#b7a080 1px 2px,#d5c29f 2px 4px);
+  box-shadow: 0 3px 0 #af9570, 1px 5px 0 #6e543b, 1px 8px 4px #352419aa;
+}
+.case-spread article {
+  min-width: 0;
+  background-color: #dbc6a0;
+  background-image: radial-gradient(ellipse at 5% 0%,#fff3d68f,transparent 55%),
+    linear-gradient(155deg,#f1e1be 0%,#e7d4ad 65%,#c6ab80 100%);
+  background-clip: padding-box;
+  border: 1px solid #ad9771;
+}
+.case-spread article::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: var(--paper-grain);
+  opacity: .15;
+  mix-blend-mode: multiply;
+}
+.case-spread article::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 14px #76512d42;
+}
+.case-spread .case-left {
+  border-radius: 6px 20px 15px 5px / 8px 8px 16px 9px;
+  box-shadow: inset -6px 0 7px #422b2360, inset -22px 0 21px -15px #6546269c, 0 2px 1px #7a6143;
+}
+.case-spread .case-right {
+  border-radius: 20px 6px 7px 14px / 8px 9px 9px 15px;
+  box-shadow: inset 7px 0 8px #5335236e, inset 22px 0 22px -15px #714d2f99, 1px 3px 2px #7a6143;
+}
+.case-reader h1 {margin-top: clamp(20px,4vh,47px)}
+.case-assigned {margin-top: 22px}
+.case-content {padding-top: 17px}
+.folio-slip {
+  width: fit-content;
+  display: grid;
+  gap: 5px;
+  margin: 25px 0 3px 5px;
+  padding: 12px 20px;
+  transform: rotate(-5deg);
+  color: #665342;
+  background: linear-gradient(150deg,#e5cda3,#c9aa7a);
+  border: 1px solid #aa8d63;
+  box-shadow: 1px 2px 2px #62482870,4px 5px 6px #6c51352e;
+  font: 9px/1.2 monospace;
+  letter-spacing: .08em;
+}
+.folio-slip strong {font: 24px/1 Georgia}
+.folio-attachments {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: clamp(8px,2vw,22px);
+  margin: 14px 0 20px;
+}
+.case-reader .folio-print {
+  position: relative;
+  display: grid;
+  gap: 5px;
+  padding: 8px;
+  text-align: left;
+  color: #514031;
+  border: 1px solid #ae9773;
+  border-radius: 1px 2px 4px 2px;
+  background: linear-gradient(140deg,#f4e8cc,#dfc99e);
+  box-shadow: 1px 2px 2px #51351e70,4px 7px 8px #5a3b2540;
+  transform: rotate(-4deg);
+}
+.case-reader .folio-print-note {transform: translateY(6px) rotate(4deg)}
+.case-reader .folio-print:is(:hover,:focus-visible) {transform: translateY(-3px) rotate(0)}
+.folio-print-number {font: 8px/1.2 monospace;letter-spacing: .05em}
+.folio-print-label {font: 11px/1.3 Georgia,serif}
+.folio-print-face {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1.55;
+  min-height: 31px;
+  overflow: hidden;
+  background: linear-gradient(155deg,#777063,#4c4941);
+  box-shadow: inset 0 1px 3px #211b1780;
+}
+.folio-print-face img {width:100%;height:100%;object-fit:cover}
+.folio-print-note .folio-print-face {
+  background: repeating-linear-gradient(0deg,transparent 0 11px,#96784b30 11px 12px),#d9c196;
+  padding: 4px;
+  font: 10px/1.3 Georgia,serif;
+}
+.case-tabs {top: 23px;right: -43px;z-index:2}
+.case-tabs button {background: linear-gradient(110deg,#a98d63,#c2aa80);border:1px solid #836849}
+.case-tabs button[aria-current=true] {background: linear-gradient(110deg,#ceb489,#ebd6ad)}
+.case-folio:has(.case-content > :nth-child(3)) .folio-attachments {margin-top: 6px}
+@media (max-width: 650px), (max-height: 650px) {
+  .case-spread article {padding: 14px 11px}
+  .case-reader h1 {margin-top: 17px}
+  .case-rule {margin: 12px 0}
+  .case-assigned {margin-top: 12px}
+  .folio-slip {margin-top: 14px;padding: 8px}
+  .folio-attachments {gap: 6px;margin: 9px 0 13px}
+  .case-reader .folio-print {padding: 4px}
+  .folio-print-number {font-size: 6px}
+  .folio-print-note .folio-print-face {font-size: 8px}
+  .case-tabs {right: -35px}
+}
+.folio-print-photo .folio-print-face:not(:has(img)) {
+  background: repeating-linear-gradient(130deg,#b6a89118 0 1px,transparent 1px 6px),
+    linear-gradient(155deg,#777063,#4c4941);
+}
+.folio-print-photo .folio-print-face:not(:has(img))::after {
+  content: "ORIGINAL PENDING";
+  color: #ede1c9;
+  font: 7px/1.1 monospace;
+  text-align: center;
+}
+.case-reader button:focus-visible {outline: 2px solid #694a32;outline-offset: 2px}
+.case-reader .case-close:focus-visible {outline-color: #e5d1ad}
