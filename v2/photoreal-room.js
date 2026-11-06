@@ -39,7 +39,11 @@ const floor=box(8,.16,8,0,-.08,0,materials.wood);floor.material=materials.joiner
 box(8,3.3,.15,0,1.65,-3.0,materials.wall);
 box(.15,3.3,8,-4,1.65,0,materials.wall);
 box(.15,3.3,8,4,1.65,0,materials.wall);
-// Aged plaster replaces the repeated acoustic-panel grid.\nconst plaster=new T.MeshStandardMaterial({color:'#625c52',roughness:1});\nbox(7.8,2.9,.014,0,1.78,-2.915,plaster);\nbox(7.8,.68,.055,0,.34,-2.89,materials.joinery);\nbox(7.8,.045,.075,0,.71,-2.85,materials.joinery);
+// Aged plaster replaces the repeated acoustic-panel grid.
+const plaster=new T.MeshStandardMaterial({color:'#625c52',roughness:1});
+box(7.8,2.9,.014,0,1.78,-2.915,plaster);
+box(7.8,.68,.055,0,.34,-2.89,materials.joinery);
+box(7.8,.045,.075,0,.71,-2.85,materials.joinery);
 box(7.8,.12,.11,0,.07,-2.84,materials.joinery);
 const desk=new T.Group();desk.position.set(0,0,-1.48);scene.add(desk);
 // Controlled desk proportions: wide along X, shallow along Z, feet touching floor.
@@ -54,20 +58,42 @@ box(.075,.12,1.04,1.3,.66,0,materials.joinery,desk);
 const top=.845; const propY=top+.003; // desk surface: keep props in direct contact with tabletop
 const evidence=new T.Group();evidence.name='case-file';desk.add(evidence);
 box(.78,.009,.96,-.08,propY+.0045,-.05,materials.leather,evidence);
-for(let i=0;i<6;i++){const page=box(.58,.002,.76,-.07+(i%3)*.002,propY+.011+i*.0015,-.08,materials.paper,evidence);page.rotation.y=(i-2)*.007;}
+// Evidence folder: separated paper edges avoid z-fighting and read as a physical dossier.
+for(let i=0;i<4;i++){
+ const sheet=box(.575,.0014,.745,-.065+i*.001,propY+.012+i*.0025,-.08-i*.001,materials.paper,evidence);
+ sheet.rotation.y=(i-1.5)*.012;
+}
+function dossierTexture(){
+ const c=document.createElement('canvas');c.width=1024;c.height=1360;const g=c.getContext('2d');
+ g.fillStyle='#e4d9c0';g.fillRect(0,0,1024,1360);
+ const vignette=g.createRadialGradient(510,560,200,510,680,850);vignette.addColorStop(0,'#ffffff00');vignette.addColorStop(1,'#755e423d');g.fillStyle=vignette;g.fillRect(0,0,1024,1360);
+ for(let i=0;i<12000;i++){const x=(i*173)%1024,y=(i*379)%1360;g.fillStyle=i%3?'#47341b0a':'#fff8e80c';g.fillRect(x,y,2,2);}
+ g.strokeStyle='#5c4c37';g.lineWidth=3;g.strokeRect(60,58,904,1240);
+ g.fillStyle='#423d33';g.font='bold 29px monospace';g.fillText('METROPOLITAN INVESTIGATION BUREAU',95,130);
+ g.fillStyle='#6b2e28';g.font='bold 69px Georgia';g.fillText('CASE DOSSIER',95,228);
+ g.strokeStyle='#594c3a';g.lineWidth=2;g.beginPath();g.moveTo(95,254);g.lineTo(920,254);g.stroke();
+ g.fillStyle='#38362e';g.font='28px monospace';['CASE NO.     001 - HNJ','CLASSIFICATION    RESTRICTED','STATUS       UNDER INVESTIGATION','DATE         2026 / 11 / 07'].forEach((line,i)=>g.fillText(line,100,332+i*59));
+ g.fillStyle='#c3b396';g.fillRect(100,580,824,420);g.strokeStyle='#786a53';g.strokeRect(100,580,824,420);
+ g.fillStyle='#34352e';g.font='bold 25px monospace';g.fillText('INVESTIGATION SUMMARY',128,638);
+ g.font='22px monospace';
+ const lines=['SUBJECT:  UNKNOWN INDIVIDUAL','LOCATION: INTERROGATION ROOM 02','EVIDENCE: PHOTOGRAPH / AUDIO / NOTES','REPORT:   PENDING FURTHER REVIEW'];
+ lines.forEach((line,i)=>g.fillText(line,128,700+i*64));
+ g.save();g.translate(690,1095);g.rotate(-.16);g.strokeStyle='#8a352d';g.lineWidth=8;g.strokeRect(-205,-50,410,100);g.fillStyle='#8a352d';g.font='bold 46px monospace';g.fillText('CONFIDENTIAL',-181,16);g.restore();
+ g.fillStyle='#494235';g.font='22px monospace';g.fillText('PROPERTY OF THE INVESTIGATION UNIT',98,1230);
+ const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());return t;
+}
 function printTexture(title,lines){
- const c=document.createElement('canvas');c.width=768;c.height=1024;const g=c.getContext('2d');
- g.fillStyle='#d7c6a3';g.fillRect(0,0,768,1024);
- for(let i=0;i<2400;i++){g.fillStyle=i%2?'#6c50300c':'#fff8e20e';g.fillRect((i*97)%768,(i*173)%1024,2,3);}
- g.strokeStyle='#685c47';g.lineWidth=3;g.strokeRect(43,42,682,936);
+ const c=document.createElement('canvas');c.width=768;c.height=1024;const g=c.getContext('2d');g.fillStyle='#e0d4b9';g.fillRect(0,0,768,1024);
+ for(let i=0;i<4500;i++){g.fillStyle=i%2?'#5c49320b':'#ffffff12';g.fillRect((i*97)%768,(i*173)%1024,2,3);}
+ g.strokeStyle='#665b48';g.lineWidth=3;g.strokeRect(43,42,682,936);
  g.fillStyle='#38352f';g.font='bold 43px Georgia';g.fillText(title,76,134);
  g.font='23px monospace';g.fillText('SPECIAL INVESTIGATION UNIT',76,185);
  for(let i=0;i<lines;i++){g.fillStyle=i%4===0?'#4a443c':'#716858';g.fillRect(78,258+i*28,500-(i%5)*63,3);}
  g.font='bold 28px monospace';g.fillText('HNJ / CONFIDENTIAL',76,914);
  const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;return t;
 }
-const fileMat=new T.MeshStandardMaterial({map:printTexture('CASE FILE / 001',18),roughness:1,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1});
-const page=mesh(new T.PlaneGeometry(.56,.74),fileMat,evidence);page.rotation.x=-Math.PI/2;page.position.set(-.065,propY+.023,-.08);page.name='clickable-file';
+const fileMat=new T.MeshStandardMaterial({map:dossierTexture(),color:'#ffffff',roughness:1,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2});
+const page=mesh(new T.PlaneGeometry(.565,.735),fileMat,evidence);page.rotation.x=-Math.PI/2;page.position.set(-.065,propY+.025,-.08);page.name='clickable-file';
 const memoMat=new T.MeshStandardMaterial({map:printTexture('EVIDENCE',10),roughness:.93,side:T.DoubleSide});
 const memo=mesh(new T.PlaneGeometry(.35,.48),memoMat,desk);memo.rotation.x=-Math.PI/2;memo.rotation.z=.13;memo.position.set(.78,propY+.003,.08);memo.name='clickable-memo';
 const cup=cylinder(.07,.068,.14,.9,propY+.076,-.42,materials.iron,desk);
