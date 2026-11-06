@@ -63,11 +63,11 @@ const ambient=new T.PointLight('#c3b6a5',.75,6,2);ambient.position.set(1.4,2.9,.
 const boardLight=new T.SpotLight('#b9a58e',2.3,5,.82,.9,2);boardLight.position.set(.6,3,-1.2);boardLight.target.position.set(0,1.8,-2.6);scene.add(boardLight,boardLight.target);
 const views={room:{pos:[.08,1.72,3.05],target:[0,1.12,-1.72]},desk:{pos:[.02,1.78,1.13],target:[0,.85,-1.12]},file:{pos:[-.13,1.74,.20],target:[-.10,.84,-1.05]}};
 let current='room',drag=false,downX=0,downY=0;
-function view(k){current=k;const v=views[k];camera.position.set(...v.pos);camera.lookAt(...v.target);document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===k)));status.textContent=k==='room'?'수사실 · 전체 시점':k==='desk'?'책상 · 조사 시점':'사건 파일 · 열람 시점'}
+function view(k){current=k;const v=views[k];const aspect=innerWidth/innerHeight;camera.fov=aspect<.8?Math.min(76,37+(.8-aspect)*72):37;camera.updateProjectionMatrix();const pos=[...v.pos];if(aspect<.8){pos[2]+=(.8-aspect)*(k==='room'?3.4:k==='desk'?2.3:1.7);pos[1]+=(.8-aspect)*.3;}camera.position.set(...pos);camera.lookAt(...v.target);document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===k)));status.textContent=k==='room'?'수사실 · 전체 시점':k==='desk'?'책상 · 조사 시점':'사건 파일 · 열람 시점'}
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>view(b.dataset.view)));
 const ray=new T.Raycaster(),pointer=new T.Vector2();
 renderer.domElement.addEventListener('pointerdown',e=>{downX=e.clientX;downY=e.clientY;drag=true});
 renderer.domElement.addEventListener('pointerup',e=>{if(!drag)return;drag=false;if(Math.abs(e.clientX-downX)+Math.abs(e.clientY-downY)>12)return;pointer.set(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1);ray.setFromCamera(pointer,camera);if(ray.intersectObject(fileSheet).length)view('file')});
-window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);view(current)});
 view('room');renderer.setAnimationLoop(()=>renderer.render(scene,camera));
 })();
