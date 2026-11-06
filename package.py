@@ -53,6 +53,7 @@ def package(output_dir):
         shutil.copy2(project / 'CORRIDOR-RHYTHM.md', target / 'CORRIDOR-RHYTHM.md')
     shutil.copy2(project / 'REALTIME-RESTORATION.md', target / 'REALTIME-RESTORATION.md')
     shutil.copy2(project / 'CASE-FILE-PROTOTYPE.md', target / 'CASE-FILE-PROTOTYPE.md')
+    shutil.copy2(project / 'WIDE-DESK.md', target / 'WIDE-DESK.md')
     if Path(__file__).resolve() != (target / 'package.py').resolve():
         shutil.copy2(__file__, target / 'package.py')
 
@@ -82,7 +83,7 @@ def package(output_dir):
     (output / 'investigator-id.html').write_text(html)
 
     with zipfile.ZipFile(output / 'investigator-id.zip', 'w', zipfile.ZIP_DEFLATED) as archive:
-        for name in files + ['README.md', 'package.py', 'VISUAL-RENEWAL.md', 'REALTIME-RESTORATION.md', 'CASE-FILE-PROTOTYPE.md']:
+        for name in files + ['README.md', 'package.py', 'VISUAL-RENEWAL.md', 'REALTIME-RESTORATION.md', 'CASE-FILE-PROTOTYPE.md', 'WIDE-DESK.md']:
             archive.write(target / name, 'investigator-id/' + name)
         if (target / 'FORM-REALISM.md').exists():
             archive.write(target / 'FORM-REALISM.md', 'investigator-id/FORM-REALISM.md')

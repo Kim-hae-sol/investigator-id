@@ -53,7 +53,7 @@
     lookingDown=down;root.dataset.roomView=down?'tabletop':'seated';gaze.textContent=down?'정면 보기 ↑':'사건 파일 ↓';
     gaze.setAttribute('aria-label',down?'맞은편 용의자석 바라보기':'책상 위 사건 파일 내려다보기');gaze.disabled=false;viewBusy=false;
   }
-  window.HNJDeskCamera={project:point=>corridor?.projectWorld(point),refresh:()=>{corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(worldPose('tabletop'));},refreshReading:()=>corridor?.roomPose({position:[0,1.63,-2.95],target:[0,.79,-2.96],fov:49}),move:async(open)=>{const base=worldPose('tabletop'),close={position:[0,1.63,-2.95],target:[0,.79,-2.96],fov:49};await animate(650,t=>{const hinge=room.getDeskItems().coverHinge;if(hinge)hinge.rotation.z=Math.PI*(open?t:1-t);corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(interpolate(open?base:close,open?close:base,t));});},room:()=>room};
+  window.HNJDeskCamera={project:point=>corridor?.projectWorld(point),refresh:()=>{corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(worldPose('tabletop'));},refreshReading:()=>corridor?.roomPose(worldPose('reading')),move:async(open)=>{const base=worldPose('tabletop'),close=worldPose('reading');await animate(650,t=>{const hinge=room.getDeskItems().coverHinge;if(hinge)hinge.rotation.z=Math.PI*(open?t:1-t);corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(interpolate(open?base:close,open?close:base,t));});},room:()=>room};
   gaze.addEventListener('click',()=>look(!lookingDown));
   window.addEventListener('keydown',event=>{if(window.HNJCaseFile||!entered||event.altKey||event.ctrlKey||event.metaKey)return;if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();look(event.key==='ArrowDown');}});
   target.addEventListener('click',async()=>{

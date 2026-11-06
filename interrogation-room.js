@@ -6,8 +6,9 @@
   const ease = t => t * t * (3 - 2 * t);
   const views = Object.freeze({
     entry: Object.freeze({ position: [0, 1.70, 3.10], target: [0, 1.10, -.55], fov: 48 }),
-    seated: Object.freeze({ position: [0, 1.27, 1.72], target: [0, 1.13, -1.54], fov: 46 }),
-    tabletop: Object.freeze({ position: [0, 1.33, 1.42], target: [0, .79, .42], fov: 54 })
+    seated: Object.freeze({ position: [0, 1.29, 1.40], target: [0, .99, -.20], fov: 50 }),
+    tabletop: Object.freeze({ position: [0, 1.29, 1.40], target: [0, .83, -.10], fov: 46 }),
+    reading: Object.freeze({ position: [0, 1.64, .29], target: [0, .79, .18], fov: 49 })
   });
   const deadline = (promise, ms) => {
     let timer;
@@ -67,7 +68,7 @@
         }
         const value = new T.MeshStandardMaterial({ color: tint, map: maps.color, normalMap: maps.normal,
           normalScale: new T.Vector2(normal, normal), roughnessMap: maps.roughness, roughness, metalness: 0 });
-        const minimum=role==='floor'||role==='parquet'?.72:role==='wall'?.90:role==='leather'?.44:.48;
+        const minimum=role==='floor'||role==='parquet'?.72:role==='wall'?.90:role==='leather'?.68:.48;
         value.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>\nroughnessFactor=max(roughnessFactor,${minimum.toFixed(2)});`);
           if(role==='joinery')shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\nfloat timberL=dot(diffuseColor.rgb,vec3(.2126,.7152,.0722));diffuseColor.rgb=vec3(.80,.65,.49)*(timberL*.48+.014);');};
         value.customProgramCacheKey=()=> 'room-cinema-v1-'+role+'-'+minimum;
@@ -76,8 +77,9 @@
       const wood = material('joinery', '#c4b29c', .68, .21, .55, .8);
       const woodDark = material('joinery', '#9f8b74', .72, .20, .45, .75);
       const woodTrim = material('joinery', '#b0a08b', .66, .17, .5, .45);
-      const tableFinish=material('joinery','#92725a',.72,.13,1.35,1.65);
-      for(const m of [tableFinish,woodDark])for(const t of [m.map,m.normalMap,m.roughnessMap]){t.center.set(.5,.5);t.rotation=Math.PI/2;}
+      // Keep the scanned walnut albedo and grain; do not pass the hero top through the joinery color override.
+      const tableFinish=material('wood','#a17658',.64,.20,1.0,.58);
+      for(const m of [woodDark])for(const t of [m.map,m.normalMap,m.roughnessMap]){t.center.set(.5,.5);t.rotation=Math.PI/2;}
       const wall = material('wall', '#72766e', .96, .10, 3.2, 1.7);
       const floor = material('parquet', '#9f9c8b', .85, .15, 2.7, 3.0);
       const ceilingMaterial = material('wall', '#5c6059', 1, .025, 2.3, 1.4);
@@ -200,6 +202,8 @@
         top.name='beveled-walnut-tabletop';
       }
 
+      // 2.39 x 1.38 m worktable: retained licensed furniture frame, shorter depth and a wide working edge.
+      table.scale.set(1.64,1,.585);
       // Two matching but subtly different wooden chairs face each other across the long table axis.
       const chairLeather=material('leather','#9e8068',.64,.40,1.2,1.2);
       function chair(z, facing) {
@@ -220,9 +224,10 @@
       }
       if(window.HNJChairAsset){
         const model=window.HNJStaticModel.create(window.HNJChairAsset,'chair',{anisotropy,materials:ownedMaterials,geometries,textures});
-        const suspect=model.clone();suspect.name='subject-chair';suspect.position.z=-1.60;suspect.visible=false;scene.add(suspect);
-        const inspector=model.clone();inspector.name='investigator-chair';inspector.rotation.y=Math.PI;inspector.position.z=1.60;scene.add(inspector);
-      }else{chair(1.54,-1);/* no facing subject seat */}
+        model.traverse(o=>{if(o.isMesh){o.material.roughness=.9;o.material.normalScale?.set(.35,.35);o.material.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor=max(roughnessFactor,.68);');};o.material.customProgramCacheKey=()=> 'room-chair-soft-leather-v2';}});
+        const suspect=model.clone();suspect.name='subject-chair';suspect.position.z=-1.08;suspect.visible=true;scene.add(suspect);
+        const inspector=model.clone();inspector.name='investigator-chair';inspector.rotation.y=Math.PI;inspector.position.z=1.12;scene.add(inspector);
+      }else{chair(1.12,-1);chair(-1.08,1);}
 
       // Left: compact records chest and a few restrained bound case files.
       const low = new T.Group(); low.position.set(-2.30, 0, -.10); scene.add(low); low.name = 'records-cabinet-low';
@@ -280,17 +285,17 @@
       const lampShade = new T.Mesh(new T.CylinderGeometry(.23, .36, .18, 36, 1, true), brass);
       lampShade.position.y = -.07; lampShade.castShadow = true; pendant.add(lampShade);
       const diffuser = new T.Mesh(new T.CircleGeometry(.29, 36), shade); diffuser.rotation.x = -Math.PI / 2; diffuser.position.y = -.16; pendant.add(diffuser);
-      const mainLight = new T.SpotLight('#ffe2b9', 28, 6.5, .76, .95, 1.7);
+      const mainLight = new T.SpotLight('#ffe5c8', 18, 6.5, .76, .95, 1.7);
       mainLight.position.set(0, 2.76, .08); mainLight.target.position.set(0, .58, 0); mainLight.castShadow = true;
       mainLight.shadow.mapSize.set(2048, 2048); mainLight.shadow.bias = -.00016; mainLight.shadow.normalBias = .005;
-      mainLight.shadow.radius = 3.5; mainLight.shadow.camera.near = .1; mainLight.shadow.camera.far = 8; scene.add(mainLight, mainLight.target);
-      const warmBounce = new T.PointLight('#e7cba7', 5, 5.6, 2); warmBounce.position.set(0, 2.55, .12); scene.add(warmBounce);
+      mainLight.shadow.radius = 5; mainLight.shadow.camera.near = .1; mainLight.shadow.camera.far = 8; scene.add(mainLight, mainLight.target);
+      const warmBounce = new T.PointLight('#e7d0b5', 2.8, 5.6, 2); warmBounce.position.set(0, 2.55, .12); scene.add(warmBounce);
       const wallBounce = new T.DirectionalLight('#c4bbb0', .30); wallBounce.position.set(-.8, 2.45, -2.55); scene.add(wallBounce);
-      const sideFill = new T.DirectionalLight('#bdc8cf', .26); sideFill.position.set(-3.0, 2.2, -1.2); scene.add(sideFill);
-      const ambient = new T.HemisphereLight('#c1c5c6', '#393028', .32); scene.add(ambient);
-      scene.add(new T.AmbientLight('#b5b4ad', .08));
+      const sideFill = new T.DirectionalLight('#d5cec1', .21); sideFill.position.set(-3.0, 2.2, -1.2); scene.add(sideFill);
+      const ambient = new T.HemisphereLight('#c5bfb2', '#393028', .22); scene.add(ambient);
+      scene.add(new T.AmbientLight('#c2b5a1', .07));
       const wallGraze=new T.PointLight('#d1c4b2',2.2,3.8,2);wallGraze.position.set(-1.9,2.30,-2.0);scene.add(wallGraze);
-      const windowFill=new T.SpotLight('#d8dcd6',3.2,6.5,1.0,1,2);windowFill.position.set(-2.82,2.05,-.82);windowFill.target.position.set(.3,.78,0);scene.add(windowFill,windowFill.target);
+      const windowFill=new T.SpotLight('#ded4c2',2.4,6.5,1.0,1,2);windowFill.position.set(-2.82,2.05,-.82);windowFill.target.position.set(.3,.78,0);scene.add(windowFill,windowFill.target);
 
       // Reference look: layered walnut joinery, coffered ceiling, warm practicals and a working records wall.
       const details = new T.Group(); details.name='room-dressing'; scene.add(details);
@@ -349,7 +354,7 @@
         for(let i=0;i<42000;i++){c.fillStyle=random()>.5?'#d3b28a12':'#00000016';c.fillRect(random()*w,random()*h,1,3);}
       });
       rugMat.bumpMap=leatherMicro;rugMat.bumpScale=.0007;rugMat.roughness=1;
-      const rug=box(2.70,.012,3.66,0,.008,0,rugMat,details,.003);rug.castShadow=false;
+      const rug=box(3.0,.012,2.52,0,.008,0,rugMat,details,.003);rug.castShadow=false;
       // Bound ledgers with visible page blocks and individual cover thicknesses.
       const pageEdges=canvasMaterial(256,256,(c,w,h)=>{c.fillStyle='#c2b79b';c.fillRect(0,0,w,h);for(let y=0;y<h;y+=3){c.fillStyle=y%9?'#6e634a33':'#ebe3cb55';c.fillRect(0,y,w,1);}});
       pageEdges.bumpMap=paperMicro;pageEdges.bumpScale=.0002;
@@ -360,7 +365,7 @@
         box(.012,h,d+.014,-w/2,0,0,leather,book,.003);
         for(const zz of [-d*.36,d*.36])box(.014,h*.65,.004,-w/2-.002,0,zz,brass,book,.001);
       }
-      for(let i=0;i<4;i++)ledger(-.50+i*.009,.87+i*.051,-.76,.30,.23,.045,details);
+      for(let i=0;i<2;i++)ledger(-.50+i*.009,.87+i*.051,-.76,.30,.23,.045,details);
       // File tray, brass pen cup and a ceramic mug leave the center clear for the future A4 folio.
       box(.33,.005,.25,.49,.8405,.72,darkMetal,details,.001);
       for(const x of [.33,.65])box(.003,.046,.25,x,.863,.72,darkMetal,details,.001);
@@ -370,25 +375,25 @@
       for(let i=0;i<3;i++){const pen=cylinder(.003,.003,.20,.55+i*.016,.98,-.74,darkMetal,details,8);pen.rotation.z=(i-1)*.11;}
       const mugProfile=[[0,0],[.040,0],[.046,.006],[.055,.092],[.055,.100],[.051,.104],[.047,.100],[.045,.092],[.039,.015],[0,.015]].map(p=>new T.Vector2(...p));
       const mugGeometry=new T.LatheGeometry(mugProfile,64);geometries.set('mug-lathe',mugGeometry);const mug=new T.Mesh(mugGeometry,ceramic);mug.position.set(-.40,.847,-.12);mug.castShadow=mug.receiveShadow=true;details.add(mug);
-      const coffee=cylinder(.047,.047,.002,-.40,.949,-.12,charcoal,details,32);
+      const coffeeSurface=new T.MeshStandardMaterial({color:'#160e09',roughness:.24,metalness:0});ownedMaterials.add(coffeeSurface);const coffee=cylinder(.046,.046,.002,-.40,.945,-.12,coffeeSurface,details,48);
       const handle=new T.Mesh(new T.TorusGeometry(.033,.007,16,48),ceramic);handle.position.set(-.46,.907,-.12);details.add(handle);
       const folderMat=canvasMaterial(512,768,(c,w,h)=>{
-        c.fillStyle='#92774d';c.fillRect(0,0,w,h);
+        c.fillStyle='#a38e68';c.fillRect(0,0,w,h);
         for(let i=0;i<18000;i++){c.fillStyle=i%2?'#f4e6c00c':'#342a1c0b';c.fillRect(random()*w,random()*h,1,2);}
-        c.fillStyle='#b39e74';c.fillRect(38,70,436,185);c.strokeStyle='#74654b';c.lineWidth=2;c.strokeRect(48,80,416,165);
+        c.fillStyle='#c6b591';c.fillRect(38,70,436,185);c.strokeStyle='#74654b';c.lineWidth=2;c.strokeRect(48,80,416,165);
         c.fillStyle='#35372f';c.font='18px monospace';c.fillText('SPECIAL INVESTIGATION UNIT',68,117);c.font='bold 37px Georgia';c.fillText('CASE FILE : HNJ',68,180);c.font='17px monospace';c.fillText('RESTRICTED / PERSONNEL ONLY',68,223);
         c.strokeStyle='#89734d';c.beginPath();c.moveTo(17,15);c.lineTo(17,h-15);c.stroke();
       },.94);
       const caseFile=new T.Group();caseFile.name='case-file';caseFile.position.set(-.02,.844,.48);caseFile.rotation.y=-.055;details.add(caseFile);
       box(.245,.008,.345,0,.004,0,paper,caseFile,.002);
-      const cover=new T.Mesh(new T.PlaneGeometry(.253,.355),folderMat);cover.rotation.x=-Math.PI/2;cover.position.y=.009;cover.castShadow=cover.receiveShadow=true;caseFile.add(cover);geometries.set('case-cover',cover.geometry);
+      const cover=new T.Mesh(new T.PlaneGeometry(.253,.355,16,20),folderMat);cover.rotation.x=-Math.PI/2;cover.position.y=.009;const coverVertices=cover.geometry.attributes.position;for(let i=0;i<coverVertices.count;i++){const x=coverVertices.getX(i),y=coverVertices.getY(i);coverVertices.setZ(i,.0014*Math.pow(Math.max(0,(x+.1265)/.253),4)*Math.pow(Math.max(0,(.1775-y)/.355),2));}cover.geometry.computeVertexNormals();cover.castShadow=cover.receiveShadow=true;caseFile.add(cover);geometries.set('case-cover',cover.geometry);
       box(.058,.003,.025,-.076,.006,-.182,paper,caseFile,.002);
       // A dark leather blotter grounds the folder and separates the wood from loose papers.
-      const blotter=material('leather','#6b5c49',.81,.24,1.6,1.2);
-      box(.72,.006,.63,0,.841,.42,blotter,details,.009);
+      const blotter=material('leather','#665c4c',.88,.08,3.2,2.0);
+      box(1.04,.004,.68,0,.841,.21,blotter,details,.006);
       // Place the blotter below the folder; all paper geometry stays above the tabletop.
       caseFile.position.y=.8445;
-      for(const sign of [-1,1])box(.006,.001,.59,sign*.35,.845,.42,brass,details,.001);
+      for(const sign of [-1,1])box(.003,.001,.63,sign*.36,.845,.21,darkMetal,details,.001);
       const dish=cylinder(.092,.10,.009,-.40,.842,-.12,darkMetal,details,48);dish.receiveShadow=true;
       // Wall practicals: frosted cylindrical lamps, nickel/bronze mount and a real warm falloff.
       for(const x of [-2.95,2.95]){
@@ -441,10 +446,10 @@
       const contactMap=new T.CanvasTexture(shadowCanvas);textures.set('contact-map',{map:contactMap});
       function contact(w,d,x,y,z,opacity=.4,parent=details){const mat=new T.MeshBasicMaterial({map:contactMap,color:'#17130f',transparent:true,opacity,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1});ownedMaterials.add(mat);
         const geo=new T.PlaneGeometry(w,d);geometries.set('contact-'+geometries.size,geo);const mesh=new T.Mesh(geo,mat);mesh.rotation.x=-Math.PI/2;mesh.position.set(x,y,z);mesh.renderOrder=1;parent.add(mesh);}
-      for(const x of [-.62,.62])for(const z of [-.94,.94])contact(.28,.28,x,.023,z,.62);
-      for(const z of [-1.54,1.54])contact(.88,.92,0,.023,z,.44);
+      for(const x of [-1.0168,1.0168])for(const z of [-.55,.55])contact(.28,.28,x,.023,z,.62);
+      for(const z of [-1.08,1.12])contact(.88,.92,0,.023,z,.44);
       contact(1.18,.9,-2.30,.003,-.10,.48);contact(1.12,.87,2.38,.003,-.54,.50);
-      contact(.17,.17,-.56,.8405,.73,.42);contact(.45,.34,.49,.8405,.72,.45);contact(.39,.32,-.55,.8405,-.76,.42);contact(.13,.13,.57,.8405,-.74,.35);
+      contact(.17,.17,-.40,.8405,-.12,.42);contact(.45,.34,.49,.8405,.72,.45);contact(.39,.32,-.55,.8405,-.76,.42);contact(.13,.13,.57,.8405,-.74,.35);
       contact(1.8,.9,-1.95,.003,-2.45,.35);
 
       // A 778 mm real tabletop (instead of the old 838 mm slab). Keep all tabletop
@@ -453,35 +458,44 @@
         if(Math.abs(child.position.x)<.85&&Math.abs(child.position.z)<1.2&&child.position.y>=.839&&child.position.y<1.15)child.position.y-=.059;
       }
 
+      // Re-space only objects on the working surface, not wall/cabinet dressing.
+      for(const child of details.children){if(Math.abs(child.position.x)<.85&&Math.abs(child.position.z)<1.2&&child.position.y>=.77&&child.position.y<1.10){if(child.position.x>=.32&&child.position.z>=.59&&child.position.y<.94){child.position.x+=.214;child.position.z-=.902;}child.position.x*=1.42;child.position.z*=.55;}}
+      caseFile.position.set(-.06,.7855,.18);caseFile.scale.setScalar(1.12);
       // Desk evidence is real metre-scale geometry. Text uses local canvas labels, never a scene plate.
       const deskItems={};
-      function deskCard(key,label,x,z,w,h,color){
-        const cv=document.createElement('canvas');cv.width=768;cv.height=512;const c=cv.getContext('2d');
-        c.fillStyle=color;c.fillRect(0,0,768,512);c.strokeStyle='#958770';c.strokeRect(24,24,720,464);
-        c.fillStyle='#34332d';c.font='28px monospace';c.textAlign='center';c.fillText(label,384,250,680);
+      function deskCard(key,label,x,z,pw,ph,color){
+        const cv=document.createElement('canvas'),portrait=key.startsWith('photo');cv.width=portrait?512:768;cv.height=portrait?768:512;const c=cv.getContext('2d'),w=cv.width,h=cv.height;
+        c.fillStyle=color;c.fillRect(0,0,w,h);for(let i=0;i<6500;i++){c.fillStyle=i%2?'#ffffff06':'#30291e06';c.fillRect(random()*w,random()*h,1,1);}if(portrait){c.fillStyle='#73736b';c.fillRect(30,30,w-60,h-180);c.strokeStyle='#9b9788';c.strokeRect(30,30,w-60,h-180);}else{c.strokeStyle='#958770';c.strokeRect(24,24,w-48,h-48);}
+        c.fillStyle='#34332d';c.font=portrait?'20px monospace':'28px monospace';c.textAlign='center';c.fillText(label,w/2,portrait?h-85:h/2,w-70);
         const tex=new T.CanvasTexture(cv);tex.colorSpace=T.SRGBColorSpace;textures.set('desk-'+key,{color:tex});
-        const mat=new T.MeshStandardMaterial({map:tex,roughness:.96,side:T.DoubleSide});ownedMaterials.add(mat);
-        const geo=new T.PlaneGeometry(w,h);geometries.set('desk-'+key,geo);const mesh=new T.Mesh(geo,mat);
-        mesh.rotation.x=-Math.PI/2;mesh.position.set(x,.802,z);mesh.castShadow=mesh.receiveShadow=true;details.add(mesh);deskItems[key]=mesh;if(key==='photo'&&window.HNJCaseData?.photo){const image=new Image();image.onload=()=>{c.fillStyle='#e5dfd0';c.fillRect(0,0,768,512);const scale=Math.min(720/image.width,464/image.height);c.drawImage(image,(768-image.width*scale)/2,(512-image.height*scale)/2,image.width*scale,image.height*scale);tex.needsUpdate=true;};image.src=window.HNJCaseData.photo;}return mesh;
+        const mat=new T.MeshStandardMaterial({map:tex,roughness:.94,bumpMap:paperMicro,bumpScale:.00018,side:T.DoubleSide});ownedMaterials.add(mat);
+        const geo=new T.PlaneGeometry(pw,ph,12,16),vertices=geo.attributes.position;for(let i=0;i<vertices.count;i++){const u=vertices.getX(i)/pw+.5,v=vertices.getY(i)/ph+.5;vertices.setZ(i,.0012*Math.pow(u,5)*Math.pow(1-v,3));}geo.computeVertexNormals();geometries.set('desk-'+key,geo);const mesh=new T.Mesh(geo,mat);
+        mesh.rotation.x=-Math.PI/2;mesh.position.set(x,key==='photo'?.797:key==='photo3'?.786:key==='photo2'?.785:.782,z);mesh.castShadow=mesh.receiveShadow=true;details.add(mesh);deskItems[key]=mesh;if(key==='photo'&&window.HNJCaseData?.photo){const image=new Image();image.onload=()=>{c.fillStyle='#e5dfd0';c.fillRect(0,0,w,h);const scale=Math.min((w-48)/image.width,(h-48)/image.height);c.drawImage(image,(w-image.width*scale)/2,(h-image.height*scale)/2,image.width*scale,image.height*scale);tex.needsUpdate=true;};image.src=window.HNJCaseData.photo;}return mesh;
       }
-      deskCard('photo','PHOTO / ASSET PENDING',.02,.44,.14,.18,'#c7c0ae').rotation.z=.10;
-      deskCard('note',window.HNJCaseData?.memo||'NOTE',.43,.37,.18,.14,'#d3bf84');
-      const cassette=new T.Group();cassette.name='cassette-player';cassette.position.set(.47,.80,-.16);details.add(cassette);
-      box(.30,.055,.18,0,.027,0,darkMetal,cassette,.012);
-      box(.20,.004,.10,0,.058,0,charcoal,cassette,.005);
-      for(const x of [-.055,.055]){const reel=cylinder(.024,.024,.004,x,.063,0,brass,cassette,32);}
-      for(let i=0;i<4;i++)box(.035,.012,.025,-.07+i*.047,.061,.075,brass,cassette,.002);
+      deskCard('photo','PHOTO / ASSET PENDING',.015,.18,.14,.18,'#b7b2a4').rotation.z=.10;
+      deskCard('note',window.HNJCaseData?.memo||'NOTE',.60,.21,.18,.14,'#c4b48e');
+      deskCard('photo2','PHOTO / 02',-.40,.04,.135,.175,'#b9b4a7').rotation.z=-.09;
+      deskCard('photo3','PHOTO / 03',-.43,.08,.13,.17,'#b5b0a2').rotation.z=.06;
+      // Bent metal paperclip at the file's free corner, with a small physical gap above the cover.
+      const clipCurve=new T.CatmullRomCurve3([new T.Vector3(-.11,.014,-.14),new T.Vector3(-.11,.014,-.09),new T.Vector3(-.095,.014,-.086),new T.Vector3(-.09,.014,-.14),new T.Vector3(-.105,.014,-.145),new T.Vector3(-.105,.014,-.10)]);
+      const clipGeometry=new T.TubeGeometry(clipCurve,40,.0009,8,false);geometries.set('file-clip',clipGeometry);const fileClip=new T.Mesh(clipGeometry,darkMetal);fileClip.castShadow=true;caseFile.add(fileClip);
+      const cassette=new T.Group();cassette.name='cassette-player';cassette.position.set(.74,.785,-.36);details.add(cassette);
+      box(.29,.052,.175,0,.026,0,darkMetal,cassette,.009);
+      box(.173,.003,.096,.037,.054,-.01,charcoal,cassette,.004);
+      for(const x of [-.002,.075]){cylinder(.025,.025,.003,x,.057,-.01,upholstery,cassette,40);cylinder(.016,.016,.004,x,.059,-.01,binderLabel,cassette,32);cylinder(.004,.004,.005,x,.062,-.01,darkMetal,cassette,16);}
+      for(let i=0;i<9;i++)box(.050,.0015,.003,-.103,.054,-.055+i*.011,charcoal,cassette,.001);
+      for(let i=0;i<4;i++)box(.029,.009,.020,-.018+i*.038,.056,.067,i===0?brass:cabinetPaint,cassette,.002);
       const coverHinge=new T.Group();coverHinge.position.set(-.1265,.009,0);caseFile.add(coverHinge);coverHinge.add(cover);cover.position.set(.1265,0,0);deskItems.coverHinge=coverHinge;
       deskItems.file=caseFile;deskItems.cassette=cassette;
 
       // Blurred light cards provide subdued metal/leather reflections without an external HDR asset.
       const envCanvas=document.createElement('canvas');envCanvas.width=256;envCanvas.height=128;
-      const en=envCanvas.getContext('2d'),eg=en.createLinearGradient(0,0,0,128);eg.addColorStop(0,'#49301d');eg.addColorStop(.5,'#33291f');eg.addColorStop(1,'#100d0a');en.fillStyle=eg;en.fillRect(0,0,256,128);
-      en.fillStyle='#a7b1b5';en.shadowColor='#bfc5c1';en.shadowBlur=14;en.fillRect(22,30,22,62);en.fillStyle='#d4ac76';en.fillRect(154,24,48,8);en.shadowBlur=0;
+      const en=envCanvas.getContext('2d'),eg=en.createLinearGradient(0,0,0,128);eg.addColorStop(0,'#34312a');eg.addColorStop(.5,'#28251f');eg.addColorStop(1,'#100d0a');en.fillStyle=eg;en.fillRect(0,0,256,128);
+      en.fillStyle='#a99d87';en.shadowColor='#c4b69d';en.shadowBlur=14;en.fillRect(22,30,22,62);en.fillStyle='#d4ac76';en.fillRect(154,24,48,8);en.shadowBlur=0;
       const env=new T.CanvasTexture(envCanvas);env.mapping=T.EquirectangularReflectionMapping;env.colorSpace=T.SRGBColorSpace;
       const pmrem=new T.PMREMGenerator(renderer),environment=pmrem.fromEquirectangular(env);scene.environment=environment.texture;env.dispose();pmrem.dispose();
 
-      ownedMaterials.forEach(m=>{m.envMap=environment.texture;m.envMapIntensity=m.metalness>.35?.52:.16;});
+      ownedMaterials.forEach(m=>{m.envMap=environment.texture;m.envMapIntensity=m.metalness>.35?.38:.12;});
 
       let activeView = options.initialView && views[options.initialView] ? options.initialView : 'entry';
       let transition = null, disposed = false;
