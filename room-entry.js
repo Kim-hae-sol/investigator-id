@@ -56,7 +56,7 @@
   window.HNJDeskCamera={tapeView(progress){
     corridor.getRenderer().shadowMap.needsUpdate=true;
     corridor.roomPose(interpolate(worldPose('tabletop'),worldPose('tape'),progress));
-  },project:point=>corridor?.projectWorld(point),refresh:()=>{corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(worldPose('tabletop'));},refreshReading:()=>{corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(worldPose('reading'));},move:async(open)=>{const base=worldPose('tabletop'),close=worldPose('reading');await animate(650,t=>{const hinge=room.getDeskItems().coverHinge;if(hinge)hinge.rotation.z=Math.PI*(open?t:1-t);corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(interpolate(open?base:close,open?close:base,t));});},room:()=>room};
+  },project:point=>corridor?.projectWorld(point),refresh:()=>{corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(worldPose('tabletop'));},refreshReading:()=>{corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(worldPose('reading'));},move:async(open,onFrame)=>{const base=worldPose('tabletop'),close=worldPose('reading');await animate(650,t=>{const hinge=room.getDeskItems().coverHinge;if(hinge)hinge.rotation.z=Math.PI*(open?t:1-t);corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(interpolate(open?base:close,open?close:base,t));onFrame?.(t);});},room:()=>room};
   gaze.addEventListener('click',()=>look(!lookingDown));
   window.addEventListener('keydown',event=>{if(window.HNJCaseFile||!entered||event.altKey||event.ctrlKey||event.metaKey)return;if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();look(event.key==='ArrowDown');}});
   target.addEventListener('click',async()=>{

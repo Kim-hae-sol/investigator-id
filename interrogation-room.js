@@ -10,7 +10,7 @@
     seated: Object.freeze({ position: [0, 1.48, DESK_Z + .91], target: [0, 1.05, DESK_Z - .45], fov: 46 }),
     tabletop: Object.freeze({ position: [0, 1.48, DESK_Z + .91], target: [0, .81, DESK_Z + .01], fov: 46 }),
     tape: Object.freeze({ position: [.35, 1.10, DESK_Z + .045], target: [.40, .83, DESK_Z - .385], fov: 40 }),
-    reading: Object.freeze({ position: [0, 1.64, DESK_Z + .29], target: [0, .79, DESK_Z + .18], fov: 49 })
+    reading: Object.freeze({ position: [-.20, 1.62, DESK_Z + .25], target: [-.20, .817, DESK_Z + .185], fov: 35 })
   });
   const deadline = (promise, ms) => {
     let timer;
@@ -633,10 +633,21 @@
           statusLight.emissiveIntensity = playing ? .62 : 0;
         }
       };
+      // Liner on the inside of the cover and two thin exposed signatures.
+      const liner = new T.MeshStandardMaterial({
+        color:'#ab9068',roughness:.96,bumpMap:paperMicro,bumpScale:.00022
+      });
+      const leafPaper = new T.MeshStandardMaterial({
+        color:'#c6b591',roughness:.96,bumpMap:paperMicro,bumpScale:.00014
+      });
+      ownedMaterials.add(liner);ownedMaterials.add(leafPaper);
       const coverHinge = new T.Group();
       coverHinge.position.set(-.1265,.033,0);
       caseFile.add(coverHinge);
       box(.253,.0035,.355,.1265,-.002,0,binding,coverHinge,.001);
+      box(.242,.0012,.345,.1265,-.0044,0,liner,coverHinge,.0005);
+      box(.232,.0011,.334,.124,-.0052,.0015,leafPaper,coverHinge,.0004);
+      box(.232,.0009,.334,.001,.0296,.0015,leafPaper,caseFile,.0003);
       coverHinge.add(cover, fileClip);
       cover.position.set(.1265,0,0);
       fileClip.position.set(.1265,-.011,0);
@@ -649,8 +660,19 @@
           pageEdges,workSurface,.0002);
         form.rotation.y = -.24+i*.09;
       }
-      const pen = cylinder(.005,.0045,.135,.29,.789,.35,darkMetal,workSurface,16);
-      pen.rotation.set(Math.PI/2,0,-.24);
+      const pen = new T.Group();
+      pen.position.set(.29,.787,.35);
+      pen.rotation.y = -.31;
+      workSurface.add(pen);
+      const barrel = cylinder(.0045,.0047,.091,0,0,-.014,darkMetal,pen,24);
+      barrel.rotation.x = Math.PI/2;
+      const cap = cylinder(.0052,.0052,.043,0,0,.047,charcoal,pen,24);
+      cap.rotation.x = Math.PI/2;
+      const collar = cylinder(.0049,.0049,.004,0,0,.025,brass,pen,24);
+      collar.rotation.x = Math.PI/2;
+      const tip = cylinder(.0038,.0012,.012,0,0,-.065,brass,pen,20);
+      tip.rotation.x = -Math.PI/2;
+      box(.0023,.001,.028,0,.0054,.047,brass,pen,.0004);
 
       // Blurred light cards provide subdued metal/leather reflections without an external HDR asset.
       const envCanvas=document.createElement('canvas');envCanvas.width=256;envCanvas.height=128;

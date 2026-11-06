@@ -268,3 +268,61 @@
 .folio-print-photo .folio-print-face:not(:has(img)) {
   background: linear-gradient(155deg,#767063,#49463f);
 }
+
+/* On desktop the DOM is projected onto the two leaves of the live 3D binder. */
+.case-reader:not(.folio-compact) .case-folio {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 860px;
+  height: 597px;
+  max-height: none;
+  padding: 0;
+  transform-origin: 0 0;
+  animation: none;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.case-reader:not(.folio-compact) .case-spread {
+  height: 100%;
+  min-height: 0;
+}
+.case-reader:not(.folio-compact) .folio-stock {display:none}
+.case-reader:not(.folio-compact) .case-spread > article {
+  padding: 39px 43px 33px;
+  transform: none;
+  border-radius: 2px;
+}
+.case-reader:not(.folio-compact) .case-tabs {right:-54px}
+.case-reader:not(.folio-compact) .folio-clip {top:-4px}
+.case-content {min-height: 52px}
+.case-spread {perspective: 2200px;perspective-origin: 50% 52%}
+.turn-leaf,.turn-shadow {
+  position:absolute;inset:0;pointer-events:none;
+}
+.turn-leaf {z-index:5;transform-style:preserve-3d}
+.turn-strip {
+  position:absolute;top:0;left:0;
+  transform-style:preserve-3d;
+}
+.turn-face {
+  position:absolute;inset:0;overflow:hidden;
+  backface-visibility:hidden;
+  background:#dfcaa4;
+}
+.turn-back {transform:rotateY(180deg)}
+.turn-face::after {
+  content:"";position:absolute;inset:0;
+  background:#50351e;opacity:var(--crease,0);
+}
+.case-spread .turn-copy {
+  position:absolute;top:0;margin:0;
+  box-sizing:border-box;transform:none;overflow:hidden;
+}
+.case-reader:not(.folio-compact) .case-spread .turn-copy {padding:39px 43px 33px}
+.case-spread .turn-under {z-index:2;pointer-events:none}
+.turn-shadow {
+  z-index:4;right:auto;
+  background:linear-gradient(90deg,#422b2390,transparent);
+}

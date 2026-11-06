@@ -29,7 +29,7 @@ for (const [kind, number, title] of [['photo','01','사진 자료'], ['note','02
   attachments.append(print);
 }
 const evidenceLayer=document.createElement('div');evidenceLayer.className='case-evidence-layer';reader.append(evidenceLayer);
-const tabs=reader.querySelector('.case-tabs');data.sections.forEach((s,i)=>{const b=document.createElement('button');b.type='button';b.textContent=s.title;b.onclick=()=>show(i);tabs.append(b);});
+const tabs=reader.querySelector('.case-tabs');data.sections.forEach((s,i)=>{const b=document.createElement('button');b.type='button';b.textContent=s.title;b.onclick=()=>turnTo(i);tabs.append(b);});
 const viewer=document.createElement('dialog');viewer.className='case-viewer';viewer.innerHTML='<button type="button" class="viewer-close">닫기 ×</button><div class="viewer-body"></div>';document.body.append(viewer);viewer.querySelector('button').onclick=()=>viewer.close();
 viewer.addEventListener('click',e=>{if(e.target===viewer)viewer.close();});viewer.addEventListener('close',()=>lastFocus?.focus());
 const cassette=document.createElement('button');cassette.type='button';cassette.className='case-cassette';cassette.hidden=true;cassette.setAttribute('aria-label','카세트 재생');cassette.textContent='▣ PLAY';root.append(cassette);
@@ -116,20 +116,198 @@ window.addEventListener('investigation:music-state',e=>{cassette.textContent=e.d
 });
 function inspect(kind){lastFocus=document.activeElement;viewer.dataset.kind=kind;const body=viewer.querySelector('.viewer-body');body.replaceChildren();if(kind==='photo'){if(data.photo){const img=new Image();img.src=data.photo;img.alt='허남준 원본 사진';body.append(img);}else{const p=document.createElement('div');p.className='case-photo-placeholder';p.textContent='PHOTO / ASSET PENDING';body.append(p);}}else{const p=document.createElement('p');p.className='case-memo';p.textContent=data.memo;body.append(p);}viewer.showModal();}
 targets.photo.onclick=()=>inspect('photo');targets.photo2.onclick=()=>inspect('photo');targets.photo3.onclick=()=>inspect('photo');targets.note.onclick=()=>inspect('note');
-function show(i){index=Math.max(0,Math.min(data.sections.length-1,i));const s=data.sections[index];reader.querySelector('h1').textContent=s.title;reader.querySelector('.case-subtitle').textContent=s.subtitle;const identity=window.HNJ.getIdentity();reader.querySelector('.case-assigned').textContent='담당 조사관 · '+(identity?.name||'—');reader.querySelector('.case-reference').textContent='HNJ / '+s.id.toUpperCase();
- const area=reader.querySelector('.case-content');window.HNJCaseSections.render(s,area,{inspect,evidenceLayer,identity});
- reader.querySelector('[data-prev]').disabled=index===0;reader.querySelector('[data-next]').disabled=index===data.sections.length-1;reader.querySelector('.case-pages span').textContent=String(index+1).padStart(2,'0')+' / SECTION';[...tabs.children].forEach((b,j)=>b.setAttribute('aria-current',j===index?'true':'false'));}
-reader.querySelector('[data-prev]').onclick=()=>show(index-1);reader.querySelector('[data-next]').onclick=()=>show(index+1);
-async function open(){if(!active||busy||opened)return;busy=true;layer.hidden=true;photoAside=true;
- const photo=window.HNJDeskCamera.room()?.getDeskItems().photo,start=photo?.position.x||.02,startY=photo?.position.y||.827;
- await motion(260,t=>{if(photo){photo.position.x=start+(-.39-start)*t;photo.position.y=startY+(.786-startY)*Math.max(0,(t-.62)/.38);}window.HNJDeskCamera.refresh();});
- await window.HNJDeskCamera.move(true);window.HNJDeskCamera.room().getDeskItems().file.visible=false;window.HNJDeskCamera.refreshReading();opened=true;show(index);reader.hidden=false;cassette.hidden=false;cassette.disabled=deckState!=='loaded';cassette.textContent=deckState==='loaded'?(window.HNJRoomMusic.status().playing?'▣ STOP':'▣ PLAY'):'▣ 테이프 없음';reader.querySelector('.case-close').focus();busy=false;root.dataset.caseState='reading';}
-async function close(){if(busy||!opened)return;busy=true;reader.hidden=true;cassette.hidden=true;window.HNJDeskCamera.room().getDeskItems().file.visible=true;await window.HNJDeskCamera.move(false);opened=false;layer.hidden=false;busy=false;root.dataset.caseState='desk';targets.file.focus();}
-reader.querySelector('.case-close').onclick=close;targets.file.onclick=open;
+function renderSection(scope, i) {
+  const section = data.sections[i];
+  const identity = window.HNJ.getIdentity();
+  scope.querySelector('h1').textContent = section.title;
+  scope.querySelector('.case-subtitle').textContent = section.subtitle;
+  scope.querySelector('.case-assigned').textContent = '담당 조사관 · ' + (identity?.name || '—');
+  scope.querySelector('.case-reference').textContent = 'HNJ / ' + section.id.toUpperCase();
+  window.HNJCaseSections.render(section,scope.querySelector('.case-content'),{inspect,evidenceLayer,identity});
+  scope.querySelector('[data-prev]').disabled = i === 0;
+  scope.querySelector('[data-next]').disabled = i === data.sections.length-1;
+  scope.querySelector('.case-pages span').textContent = String(i+1).padStart(2,'0') + ' / SECTION';
+}
+function show(i) {
+  index = i;
+  renderSection(reader,i);
+  [...tabs.children].forEach((button,j)=>button.setAttribute('aria-current',j===i?'true':'false'));
+}
+
+const folio = reader.querySelector('.case-folio');
+const spread = reader.querySelector('.case-spread');
+const bookCorners = [
+  [-.367,.036,-.167],[.114,.036,-.167],
+  [-.367,.036,.167],[.114,.036,.167]
+];
+function alignFolio() {
+  if (reader.hidden) return;
+  if (stage.clientWidth < 760 || stage.clientHeight < 540) {
+    reader.classList.add('folio-compact');
+    folio.style.removeProperty('transform');
+    return;
+  }
+  reader.classList.remove('folio-compact');
+  const camera = window.HNJDeskCamera;
+  const file = camera.room().getDeskItems().file;
+  const [a,b,c,d] = bookCorners.map(point=>camera.project(file.localToWorld(new THREE.Vector3(...point)).toArray()));
+  // Project the four corners of the actual book into the DOM plane.
+  const dx1=b.x-d.x, dx2=c.x-d.x, dx3=a.x-b.x-c.x+d.x;
+  const dy1=b.y-d.y, dy2=c.y-d.y, dy3=a.y-b.y-c.y+d.y;
+  const det=dx1*dy2-dx2*dy1;
+  if (Math.abs(det)<.00001) return;
+  const g=(dx3*dy2-dx2*dy3)/det, h=(dx1*dy3-dx3*dy1)/det;
+  const w=folio.offsetWidth, height=folio.offsetHeight;
+  folio.style.transform = 'matrix3d(' + [
+    (b.x-a.x+g*b.x)/w,(b.y-a.y+g*b.y)/w,0,g/w,
+    (c.x-a.x+h*c.x)/height,(c.y-a.y+h*c.y)/height,0,h/height,
+    0,0,1,0,a.x,a.y,0,1
+  ].join(',') + ')';
+}
+stage.addEventListener('corridor:render',alignFolio);
+new ResizeObserver(alignFolio).observe(stage);
+
+function snapshot(page) {
+  const copy = page.cloneNode(true);
+  copy.setAttribute('aria-hidden','true');
+  copy.inert = true;
+  copy.classList.add('turn-copy');
+  return copy;
+}
+async function turnTo(i) {
+  if (!opened || busy || viewer.open || i===index || i<0 || i>=data.sections.length) return;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    show(i);
+    return;
+  }
+  busy = true;
+  const direction = i>index ? 1 : -1;
+  const outgoing = spread.querySelector(direction===1?'.case-right':'.case-left');
+  const prepared = spread.cloneNode(true);
+  renderSection(prepared,i);
+  const incoming = prepared.querySelector(direction===1?'.case-right':'.case-left');
+  const reverse = prepared.querySelector(direction===1?'.case-left':'.case-right');
+  const width = outgoing.offsetWidth;
+  const height = outgoing.offsetHeight;
+  const spine = spread.clientWidth/2;
+  const count = 16;
+  const segment = width/count;
+  const overlap = 1.15;
+
+  const beneath = snapshot(incoming);
+  beneath.classList.add('turn-under');
+  beneath.style.cssText = 'left:'+ (direction===1?spine:0) +'px;width:'+width+'px;height:'+height+'px';
+  const shadow = document.createElement('div');
+  shadow.className = 'turn-shadow';
+  shadow.setAttribute('aria-hidden','true');
+  const turn = document.createElement('div');
+  turn.className = 'turn-leaf';
+  turn.setAttribute('aria-hidden','true');
+
+  const pieces = Array.from({length:count},(_,j)=>{
+    const piece = document.createElement('div');
+    piece.className = 'turn-strip';
+    piece.style.width = (segment+overlap)+'px';
+    piece.style.height = height+'px';
+    piece.style.transformOrigin = (direction===1?'left':'right')+' center';
+    for (const [side,page,offset] of [
+      ['front',outgoing,direction===1?j:count-1-j],
+      ['back',reverse,direction===1?count-1-j:j]
+    ]) {
+      const face = document.createElement('div');
+      face.className = 'turn-face turn-'+side;
+      const copy = snapshot(page);
+      const extendsLeft = side==='front' ? direction<0 : direction>0;
+      copy.style.cssText = 'left:'+(-offset*segment+(extendsLeft?overlap:0))+'px;width:'+width+'px;height:'+height+'px';
+      face.append(copy);
+      piece.append(face);
+    }
+    turn.append(piece);
+    return piece;
+  });
+  const controls = [...reader.querySelectorAll('button')];
+  const focused = document.activeElement;
+  const previousDisabled = controls.map(button=>button.disabled);
+  controls.forEach(button=>button.disabled=true);
+  outgoing.style.visibility = 'hidden';
+  spread.append(beneath,shadow,turn);
+  try {
+    await motion(760,p=>{
+      let x = spine;
+      let z = .6;
+      const curve = Math.sin(Math.PI*p);
+      for (let j=0;j<count;j++) {
+        const u = (j+.5)/count;
+        const angle = Math.PI*p + .84*curve*(u-.31);
+        const piece = pieces[j];
+        piece.style.transform = 'translate3d('+ (x-(direction<0?segment+overlap:0)) +'px,0,'+z+'px) rotateY('+(-direction*angle)+'rad)';
+        piece.style.setProperty('--crease',String(.07*curve*(1-u)));
+        x += direction*segment*Math.cos(angle);
+        z += segment*Math.sin(angle);
+      }
+      shadow.style.left = Math.min(x,spine)+'px';
+      shadow.style.width = Math.max(1,Math.abs(x-spine))+'px';
+      shadow.style.opacity = String(curve*.65);
+    });
+    show(i);
+  } finally {
+    turn.remove();shadow.remove();beneath.remove();
+    outgoing.style.removeProperty('visibility');
+    controls.forEach((button,j)=>{
+      if (button.matches('[data-prev]')) button.disabled=index===0;
+      else if (button.matches('[data-next]')) button.disabled=index===data.sections.length-1;
+      else button.disabled=previousDisabled[j];
+    });
+    busy = false;
+    if (focused instanceof HTMLElement && !focused.matches(':disabled')) focused.focus({preventScroll:true});
+    else tabs.children[index].focus({preventScroll:true});
+  }
+}
+reader.querySelector('[data-prev]').onclick=()=>turnTo(index-1);
+reader.querySelector('[data-next]').onclick=()=>turnTo(index+1);
+
+async function open() {
+  if (!active || busy || opened) return;
+  busy=true;layer.hidden=true;photoAside=true;
+  const camera=window.HNJDeskCamera;
+  const photo=camera.room().getDeskItems().photo;
+  const start=photo.position.x,startY=photo.position.y;
+  await motion(260,t=>{
+    photo.position.x=start+(-.39-start)*t;
+    photo.position.y=startY+(.786-startY)*Math.max(0,(t-.62)/.38);
+    camera.refresh();
+  });
+  show(index);
+  reader.style.opacity='0';
+  reader.inert=true;
+  reader.hidden=false;
+  await camera.move(true,t=>{
+    reader.style.opacity=String(Math.max(0,(t-.91)/.09));
+    alignFolio();
+  });
+  opened=true;reader.inert=false;
+  reader.style.removeProperty('opacity');
+  cassette.hidden=false;
+  cassette.disabled=deckState!=='loaded';
+  cassette.textContent=deckState==='loaded'?(window.HNJRoomMusic.status().playing?'▣ STOP':'▣ PLAY'):'▣ 테이프 없음';
+  reader.querySelector('.case-close').focus();
+  busy=false;root.dataset.caseState='reading';
+}
+async function close() {
+  if (busy || !opened || viewer.open) return;
+  busy=true;reader.inert=true;cassette.hidden=true;
+  await window.HNJDeskCamera.move(false,t=>{
+    reader.style.opacity=String(Math.max(0,1-t/.09));
+  });
+  reader.hidden=true;reader.inert=false;reader.style.removeProperty('opacity');
+  opened=false;layer.hidden=false;busy=false;root.dataset.caseState='desk';targets.file.focus();
+}
+reader.querySelector('.case-close').onclick=close;
+targets.file.onclick=open;
 function motion(ms,fn){if(matchMedia('(prefers-reduced-motion: reduce)').matches){fn(1);return Promise.resolve();}return new Promise(resolve=>{let start;function frame(now){start??=now;const t=Math.min(1,(now-start)/ms);fn(t*t*(3-2*t));if(t<1)requestAnimationFrame(frame);else resolve();}requestAnimationFrame(frame);});}
 function project(){if(!active||opened)return;const items=window.HNJDeskCamera.room()?.getDeskItems();if(!items)return;for(const [key,b]of Object.entries(targets)){const obj=items[key];if(!obj||b.hidden)continue;const v=new THREE.Vector3();obj.getWorldPosition(v);const p=window.HNJDeskCamera.project(v.toArray());if(!p)continue;b.style.left=p.x+'px';b.style.top=p.y+'px';b.style.visibility=p.depth<1?'visible':'hidden';}}
 stage.addEventListener('corridor:render',project);window.addEventListener('resize',project);
 window.addEventListener('investigation:room-entered',()=>{active=true;layer.hidden=false;root.dataset.caseState='desk';project();});
-window.addEventListener('keydown',e=>{if(viewer.open)return;if(e.key==='Escape'&&!deckBack.hidden){deckBack.click();return;}if(!opened)return;if(e.key==='Escape')close();if(e.key==='ArrowRight'){e.preventDefault();show(index+1);}if(e.key==='ArrowLeft'){e.preventDefault();show(index-1);}});
+window.addEventListener('keydown',e=>{if(viewer.open)return;if(e.key==='Escape'&&!deckBack.hidden){deckBack.click();return;}if(!opened)return;if(e.key==='Escape')close();if(e.key==='ArrowRight'){e.preventDefault();turnTo(index+1);}if(e.key==='ArrowLeft'){e.preventDefault();turnTo(index-1);}});
 window.HNJCaseFile=Object.freeze({state:()=>({active,opened,busy,section:data.sections[index].id,photoAside})});
 })();
