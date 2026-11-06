@@ -4,11 +4,12 @@
   const ROOM = Object.freeze({ width: 6.4, depth: 6.8, height: 3.05, fov: 46 });
   const clamp = v => Math.max(0, Math.min(1, v));
   const ease = t => t * t * (3 - 2 * t);
+  const DESK_Z = -2.64;
   const views = Object.freeze({
     entry: Object.freeze({ position: [0, 1.70, 3.10], target: [0, 1.10, -.55], fov: 48 }),
-    seated: Object.freeze({ position: [0, 1.29, 1.40], target: [0, .99, -.20], fov: 50 }),
-    tabletop: Object.freeze({ position: [0, 1.29, 1.40], target: [0, .83, -.10], fov: 46 }),
-    reading: Object.freeze({ position: [0, 1.64, .29], target: [0, .79, .18], fov: 49 })
+    seated: Object.freeze({ position: [0, 1.48, DESK_Z + .91], target: [0, 1.05, DESK_Z - .45], fov: 46 }),
+    tabletop: Object.freeze({ position: [0, 1.48, DESK_Z + .91], target: [0, .81, DESK_Z + .01], fov: 46 }),
+    reading: Object.freeze({ position: [0, 1.64, DESK_Z + .29], target: [0, .79, DESK_Z + .18], fov: 49 })
   });
   const deadline = (promise, ms) => {
     let timer;
@@ -34,7 +35,7 @@
     const geometries = new Map(), textures = new Map(), ownedMaterials = new Set();
     let ready=false;
     try {
-      const images = [...document.querySelectorAll('[data-pbr], [data-room], [data-chair], [data-table]')];
+      const images = [...document.querySelectorAll('[data-pbr], [data-room], [data-board-print], [data-chair], [data-table]')];
       await deadline(Promise.all(images.map(image => image.decode())), 20000);
       if (!shared) {
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
@@ -204,10 +205,11 @@
 
       // 2.39 x 1.38 m worktable: retained licensed furniture frame, shorter depth and a wide working edge.
       table.scale.set(1.64,1,.585);
-      // Two matching but subtly different wooden chairs face each other across the long table axis.
+      table.position.z = DESK_Z;
+      // The sole chair faces the wall-mounted evidence board.
       const chairLeather=material('leather','#9e8068',.64,.40,1.2,1.2);
       function chair(z, facing) {
-        const g = new T.Group(); g.position.z = z; g.rotation.y = facing > 0 ? 0 : Math.PI; g.name = z > 0 ? 'investigator-chair' : 'subject-chair'; scene.add(g);
+        const g = new T.Group(); g.position.z = z; g.rotation.y = facing > 0 ? 0 : Math.PI; g.name = 'investigator-chair'; scene.add(g);
         box(.58, .075, .53, 0, .49, 0, chairLeather, g, .025);
         box(.56, .045, .51, 0, .445, 0, woodDark, g, .006);
         box(.58, .68, .075, 0, .84, -.235, wood, g, .012);
@@ -225,9 +227,8 @@
       if(window.HNJChairAsset){
         const model=window.HNJStaticModel.create(window.HNJChairAsset,'chair',{anisotropy,materials:ownedMaterials,geometries,textures});
         model.traverse(o=>{if(o.isMesh){o.material.roughness=.9;o.material.normalScale?.set(.35,.35);o.material.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor=max(roughnessFactor,.68);');};o.material.customProgramCacheKey=()=> 'room-chair-soft-leather-v2';}});
-        const suspect=model.clone();suspect.name='subject-chair';suspect.position.z=-1.08;suspect.visible=true;scene.add(suspect);
-        const inspector=model.clone();inspector.name='investigator-chair';inspector.rotation.y=Math.PI;inspector.position.z=1.12;scene.add(inspector);
-      }else{chair(1.12,-1);chair(-1.08,1);}
+        const inspector=model.clone();inspector.name='investigator-chair';inspector.rotation.y=Math.PI;inspector.position.z=DESK_Z+.92;scene.add(inspector);
+      }else{chair(DESK_Z+.92,-1);}
 
       // Left: compact records chest and a few restrained bound case files.
       const low = new T.Group(); low.position.set(-2.30, 0, -.10); scene.add(low); low.name = 'records-cabinet-low';
@@ -280,13 +281,13 @@
       box(.075, .009, .012, -2.39, 2.27, -3.189, darkMetal, scene);
 
       // Simple suspended tungsten shade. The downlight pools over the folio area; a weak side source separates the suspect seat from the back wall.
-      const pendant = new T.Group(); pendant.position.set(0, 2.86, .10); scene.add(pendant); pendant.name = 'table-pendant';
+      const pendant = new T.Group(); pendant.position.set(0, 2.86, DESK_Z + .30); scene.add(pendant); pendant.name = 'table-pendant';
       cylinder(.012, .012, .20, 0, .08, 0, darkMetal, pendant, 12);
       const lampShade = new T.Mesh(new T.CylinderGeometry(.23, .36, .18, 36, 1, true), brass);
       lampShade.position.y = -.07; lampShade.castShadow = true; pendant.add(lampShade);
       const diffuser = new T.Mesh(new T.CircleGeometry(.29, 36), shade); diffuser.rotation.x = -Math.PI / 2; diffuser.position.y = -.16; pendant.add(diffuser);
       const mainLight = new T.SpotLight('#ffe5c8', 18, 6.5, .76, .95, 1.7);
-      mainLight.position.set(0, 2.76, .08); mainLight.target.position.set(0, .58, 0); mainLight.castShadow = true;
+      mainLight.position.set(-.36, 2.66, DESK_Z + .56); mainLight.target.position.set(.05, .72, DESK_Z); mainLight.castShadow = true;
       mainLight.shadow.mapSize.set(2048, 2048); mainLight.shadow.bias = -.00016; mainLight.shadow.normalBias = .005;
       mainLight.shadow.radius = 5; mainLight.shadow.camera.near = .1; mainLight.shadow.camera.far = 8; scene.add(mainLight, mainLight.target);
       const warmBounce = new T.PointLight('#e7d0b5', 2.8, 5.6, 2); warmBounce.position.set(0, 2.55, .12); scene.add(warmBounce);
@@ -311,24 +312,49 @@
       // Controlled, deterministic surface variation; no heavy full-screen grain or random flicker.
       let seed=6143; const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
       const cork=canvasMaterial(1024,640,(c,w,h)=>{c.fillStyle='#79502e';c.fillRect(0,0,w,h);for(let i=0;i<48000;i++){const a=random();c.fillStyle=a>.5?'#b8885244':'#25180f33';c.fillRect(random()*w,random()*h,1+random()*3,1+random()*2);}});
-      const boardImage=document.querySelector('[data-room="records-board"]');
-      let boardFinish=cork;
-      if(boardImage?.naturalWidth){const map=new T.Texture(boardImage);map.colorSpace=T.SRGBColorSpace;map.anisotropy=anisotropy;map.needsUpdate=true;textures.set('board-image',{color:map});boardFinish=new T.MeshStandardMaterial({map,color:'#c4b294',roughness:.98});ownedMaterials.add(boardFinish);}
-      const board=new T.Group();board.position.set(1.24,1.95,-3.27);details.add(board);board.name='records-board';
-      box(2.46,1.30,.045,0,0,0,boardFinish,board);
-      for(const x of [-1.26,1.26])box(.065,1.43,.075,x,0,.02,woodTrim,board,.006);
-      for(const y of [-.69,.69])box(2.58,.065,.075,0,y,.02,woodTrim,board,.006);
-      const documentMaps=Array.from({length:8},(_,k)=>canvasMaterial(256,360,(c,w,h)=>{
-        c.fillStyle=['#d8c9a7','#cbb88e','#ded5bb','#b7a787'][k%4];c.fillRect(0,0,w,h);
-        c.fillStyle='#62513d';c.fillRect(22,27,96,5);c.fillStyle='#5e534744';
-        for(let y=54;y<330;y+=11){let end=24+random()*60;c.fillRect(22,y,w-end-22,1+random());}
-        if(k%3===0){c.fillStyle='#514b40';c.fillRect(28,80,196,116);c.fillStyle='#8b8878';for(let i=0;i<18;i++)c.fillRect(random()*180+30,random()*90+84,18+random()*40,2+random()*10);}
-        if(k===4){c.strokeStyle='#817b61';for(let i=0;i<7;i++){c.beginPath();c.moveTo(25,random()*290+30);c.lineTo(230,random()*290+30);c.stroke();}}
-      }));
-      for(let i=0;i<(boardImage?.naturalWidth?0:17);i++){
-        const x=-1.03+(i%6)*.40+(random()-.5)*.08,y=.43-Math.floor(i/6)*.40+(random()-.5)*.08;
-        const sheet=box(.31,.39,.002,x,y,.032+i*.0004,documentMaps[i%8],board);sheet.rotation.z=(random()-.5)*.12;sheet.castShadow=false;
-        const pin=cylinder(.009,.009,.009,x,y+.17,.043+i*.0004,brass,board,10);pin.rotation.x=Math.PI/2;
+      const board = new T.Group();
+      board.name = 'records-board';
+      board.position.set(0, 1.39, -3.17);
+      details.add(board);
+      box(2.46,1.12,.045,0,0,0,cork,board);
+      for (const x of [-1.26,1.26]) box(.065,1.25,.075,x,0,.02,woodTrim,board,.006);
+      for (const y of [-.59,.59]) box(2.58,.065,.075,0,y,.02,woodTrim,board,.006);
+      // Each slot is an independent print, replaceable through the image bank in index.html.
+      const prints = [
+        { id:'wanted', title:'WANTED', x:-.59, y:-.37, w:.29, h:.25, angle:-.045, photo:true },
+        { id:'portrait', title:'PHOTO / 01', x:-.27, y:-.405, w:.22, h:.21, angle:.10, photo:true },
+        { id:'records', title:'CASE NOTES', x:.06, y:-.37, w:.32, h:.27, angle:-.08 },
+        { id:'reference', title:'REFERENCE', x:.43, y:-.36, w:.25, h:.22, angle:.09, photo:true },
+        { id:'memo', title:'MEMO', x:.34, y:-.46, w:.13, h:.12, angle:-.14 },
+        { id:'index', title:'HNJ / INDEX', x:.73, y:-.37, w:.21, h:.24, angle:.025 }
+      ];
+      for (const [i, print] of prints.entries()) {
+        const source = document.querySelector('[data-board-print="' + print.id + '"]');
+        const mat = canvasMaterial(384,480,(c,w,h)=>{
+          c.fillStyle = i === 4 ? '#c5ab71' : '#d2c4a9';
+          c.fillRect(0,0,w,h);
+          if (source?.naturalWidth) {
+            const scale = Math.min(w/source.naturalWidth,h/source.naturalHeight);
+            const iw = source.naturalWidth*scale, ih = source.naturalHeight*scale;
+            c.drawImage(source,(w-iw)/2,(h-ih)/2,iw,ih);
+            return;
+          }
+          c.fillStyle='#473d32';c.font='bold 38px Georgia';c.fillText(print.title,30,68,w-60);
+          if (print.photo) {
+            c.fillStyle='#817e72';c.fillRect(30,98,w-60,280);
+            c.fillStyle='#e0d8c7';c.font='18px monospace';c.fillText('ORIGINAL PENDING',48,240);
+          } else {
+            c.fillStyle='#746b5955';
+            for (let y=110;y<408;y+=26) c.fillRect(30,y,w-75-(y%52),2);
+          }
+        });
+        mat.bumpMap = paperMicro;
+        mat.bumpScale = .00015;
+        const sheet = box(print.w,print.h,.002,print.x,print.y,.043+i*.002,mat,board);
+        sheet.rotation.z = print.angle;
+        const pin = cylinder(.005,.005,.008,print.x-print.h*.44*Math.sin(print.angle),
+          print.y+print.h*.44*Math.cos(print.angle),.052+i*.002,brass,board,12);
+        pin.rotation.x = Math.PI/2;
       }
       for(const sign of [-1,1])for(let z=-2.8;z<3.3;z+=1.05){if(sign<0&&z>-1.7&&z<.1)continue;box(.032,1.67,1.02,sign*3.12,2.15,z,wood,details,.003);}
       for(let x=-2.65;x<3;x+=1.06)box(1.035,1.67,.032,x,2.15,-3.30,wood,details,.003);
@@ -440,25 +466,14 @@
       for(const y of [.36,.86,1.36,1.86])tubeHandle(0,y+.14,.355,.15,tall);
       for(const y of [.31,.57,.83])tubeHandle(0,y+.035,.368,.14,low);
       for(const x of [.33,.65])for(const z of [.61,.83]){const rivet=cylinder(.003,.003,.002,x,.887,z,brass,details,10);rivet.castShadow=false;}
-      // Thin vellum layers lift a few selected sheets from the photographic board. The image still determines their layout.
-      if(boardImage?.naturalWidth){
-        const cropRects=[[.014,.023,.139,.365],[.446,.052,.112,.206],[.852,.027,.133,.322],[.478,.608,.095,.280]];
-        for(let i=0;i<cropRects.length;i++){
-          const [x,y,w,h]=cropRects[i],map=boardFinish.map.clone();map.repeat.set(w,h);map.offset.set(x,1-y-h);map.needsUpdate=true;textures.set('board-paper-'+i,{color:map});
-          const mat=new T.MeshStandardMaterial({map,roughness:.95,bumpMap:paperMicro,bumpScale:.00015,side:T.DoubleSide});ownedMaterials.add(mat);
-          const geo=new T.PlaneGeometry(2.46*w,1.30*h,4,6),pos=geo.attributes.position;
-          for(let j=0;j<pos.count;j++){const v=pos.getY(j)/(1.30*h)+.5;pos.setZ(j,.0015+Math.pow(1-v,4)*(.005+i*.001));}geo.computeVertexNormals();geometries.set('board-paper-'+i,geo);
-          const sheet=new T.Mesh(geo,mat);sheet.position.set((x+w/2-.5)*2.46,(.5-y-h/2)*1.30,.025);sheet.castShadow=sheet.receiveShadow=true;board.add(sheet);
-        }
-      }
       // Static contact occlusion only, attached to the receiving surfaces. It remains below the soft key-light shadows.
       const shadowCanvas=document.createElement('canvas');shadowCanvas.width=shadowCanvas.height=128;
       const sc=shadowCanvas.getContext('2d'),sg=sc.createRadialGradient(64,64,9,64,64,63);sg.addColorStop(0,'rgba(0,0,0,.58)');sg.addColorStop(.45,'rgba(0,0,0,.28)');sg.addColorStop(1,'rgba(0,0,0,0)');sc.fillStyle=sg;sc.fillRect(0,0,128,128);
       const contactMap=new T.CanvasTexture(shadowCanvas);textures.set('contact-map',{map:contactMap});
       function contact(w,d,x,y,z,opacity=.4,parent=details){const mat=new T.MeshBasicMaterial({map:contactMap,color:'#17130f',transparent:true,opacity,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1});ownedMaterials.add(mat);
         const geo=new T.PlaneGeometry(w,d);geometries.set('contact-'+geometries.size,geo);const mesh=new T.Mesh(geo,mat);mesh.rotation.x=-Math.PI/2;mesh.position.set(x,y,z);mesh.renderOrder=1;parent.add(mesh);}
-      for(const x of [-1.0168,1.0168])for(const z of [-.55,.55])contact(.28,.28,x,.023,z,.62);
-      for(const z of [-1.08,1.12])contact(.88,.92,0,.023,z,.44);
+      for(const x of [-1.0168,1.0168])for(const z of [-.55,.55])contact(.28,.28,x,.023,z+DESK_Z,.62);
+      contact(.88,.92,0,.023,DESK_Z+.92,.44);
       contact(1.18,.9,-2.30,.003,-.10,.48);contact(1.12,.87,2.38,.003,-.54,.50);
       contact(.17,.17,-.40,.8405,-.12,.42);contact(.45,.34,.49,.8405,.72,.45);contact(.39,.32,-.55,.8405,-.76,.42);contact(.13,.13,.57,.8405,-.74,.35);
       contact(1.8,.9,-1.95,.003,-2.45,.35);
@@ -471,6 +486,11 @@
 
       // Re-space only objects on the working surface, not wall/cabinet dressing.
       for(const child of details.children){if(Math.abs(child.position.x)<.85&&Math.abs(child.position.z)<1.2&&child.position.y>=.77&&child.position.y<1.10){if(child.position.x>=.32&&child.position.z>=.59&&child.position.y<.94){child.position.x+=.214;child.position.z-=.902;}child.position.x*=1.42;child.position.z*=.55;}}
+      const workSurface = new T.Group();
+      workSurface.position.z = DESK_Z;
+      const surfacePieces = details.children.filter(child => Math.abs(child.position.x)<1.18 && Math.abs(child.position.z)<.72 && child.position.y>=.77 && child.position.y<1.10);
+      details.add(workSurface);
+      workSurface.add(...surfacePieces);
       caseFile.position.set(-.06,.7855,.18);caseFile.scale.setScalar(1.12);
       // Desk evidence is real metre-scale geometry. Text uses local canvas labels, never a scene plate.
       const deskItems={};
@@ -481,16 +501,16 @@
         const tex=new T.CanvasTexture(cv);tex.colorSpace=T.SRGBColorSpace;textures.set('desk-'+key,{color:tex});
         const mat=new T.MeshStandardMaterial({map:tex,roughness:.94,bumpMap:paperMicro,bumpScale:.00018,side:T.DoubleSide});ownedMaterials.add(mat);
         const geo=new T.PlaneGeometry(pw,ph,12,16),vertices=geo.attributes.position;for(let i=0;i<vertices.count;i++){const u=vertices.getX(i)/pw+.5,v=vertices.getY(i)/ph+.5;vertices.setZ(i,.0012*Math.pow(u,5)*Math.pow(1-v,3));}geo.computeVertexNormals();geometries.set('desk-'+key,geo);const mesh=new T.Mesh(geo,mat);
-        mesh.rotation.x=-Math.PI/2;mesh.position.set(x,key==='photo'?.827:key==='photo3'?.786:key==='photo2'?.785:.782,z);mesh.castShadow=mesh.receiveShadow=true;details.add(mesh);deskItems[key]=mesh;if(key==='photo'&&window.HNJCaseData?.photo){const image=new Image();image.onload=()=>{c.fillStyle='#e5dfd0';c.fillRect(0,0,w,h);const scale=Math.min((w-48)/image.width,(h-48)/image.height);c.drawImage(image,(w-image.width*scale)/2,(h-image.height*scale)/2,image.width*scale,image.height*scale);tex.needsUpdate=true;};image.src=window.HNJCaseData.photo;}return mesh;
+        mesh.rotation.x=-Math.PI/2;mesh.position.set(x,key==='photo'?.827:key==='photo3'?.786:key==='photo2'?.785:.786,z);mesh.castShadow=mesh.receiveShadow=true;workSurface.add(mesh);deskItems[key]=mesh;if(key==='photo'&&window.HNJCaseData?.photo){const image=new Image();image.onload=()=>{c.fillStyle='#e5dfd0';c.fillRect(0,0,w,h);const scale=Math.min((w-48)/image.width,(h-48)/image.height);c.drawImage(image,(w-image.width*scale)/2,(h-image.height*scale)/2,image.width*scale,image.height*scale);tex.needsUpdate=true;};image.src=window.HNJCaseData.photo;}return mesh;
       }
       deskCard('photo','PHOTO / ASSET PENDING',.015,.18,.14,.18,'#b7b2a4').rotation.z=.10;
-      deskCard('note',window.HNJCaseData?.memo||'NOTE',.60,.21,.18,.14,'#c4b48e');
+      deskCard('note',window.HNJCaseData?.memo||'NOTE',.37,.075,.18,.14,'#c4b48e');
       deskCard('photo2','PHOTO / 02',-.40,.04,.135,.175,'#b9b4a7').rotation.z=-.09;
       deskCard('photo3','PHOTO / 03',-.43,.08,.13,.17,'#b5b0a2').rotation.z=.06;
       // Bent metal paperclip at the file's free corner, with a small physical gap above the cover.
       const clipCurve=new T.CatmullRomCurve3([new T.Vector3(-.11,.014,-.14),new T.Vector3(-.11,.014,-.09),new T.Vector3(-.095,.014,-.086),new T.Vector3(-.09,.014,-.14),new T.Vector3(-.105,.014,-.145),new T.Vector3(-.105,.014,-.10)]);
       const clipGeometry=new T.TubeGeometry(clipCurve,40,.0009,8,false);geometries.set('file-clip',clipGeometry);const fileClip=new T.Mesh(clipGeometry,darkMetal);fileClip.castShadow=true;
-      const cassette=new T.Group();cassette.name='cassette-player';cassette.position.set(.74,.785,-.36);details.add(cassette);
+      const cassette=new T.Group();cassette.name='cassette-player';cassette.position.set(.65,.785,-.40);workSurface.add(cassette);
       box(.29,.052,.175,0,.026,0,darkMetal,cassette,.009);
       box(.173,.003,.096,.037,.054,-.01,charcoal,cassette,.004);
       for(const x of [-.002,.075]){cylinder(.025,.025,.003,x,.057,-.01,upholstery,cassette,40);cylinder(.016,.016,.004,x,.059,-.01,binderLabel,cassette,32);cylinder(.004,.004,.005,x,.062,-.01,darkMetal,cassette,16);}
@@ -505,6 +525,15 @@
       fileClip.position.set(.1265,-.011,0);
       deskItems.coverHinge=coverHinge;
       deskItems.file=caseFile;deskItems.cassette=cassette;
+
+      // Loose forms and a capped pen sit clear of the projected click targets.
+      for (let i=0;i<3;i++) {
+        const form = box(.205,.0007,.146,-.66+i*.018,.782+i*.001,-.28+i*.012,
+          pageEdges,workSurface,.0002);
+        form.rotation.y = -.24+i*.09;
+      }
+      const pen = cylinder(.005,.0045,.135,.29,.789,.35,darkMetal,workSurface,16);
+      pen.rotation.set(Math.PI/2,0,-.24);
 
       // Blurred light cards provide subdued metal/leather reflections without an external HDR asset.
       const envCanvas=document.createElement('canvas');envCanvas.width=256;envCanvas.height=128;
@@ -588,7 +617,7 @@
         setView(name) { const result = setView(name); container.dataset.roomView = result; return result; },
         transitionTo(name, duration) { return transitionTo(name, duration).then(() => { container.dataset.roomView = activeView; }); },
         getView: () => activeView,
-        getObjects: () => Object.freeze({ table, investigatorChair: scene.getObjectByName('investigator-chair'), subjectChair: scene.getObjectByName('subject-chair'), mainLight }),
+        getObjects: () => Object.freeze({ table, investigatorChair: scene.getObjectByName('investigator-chair'), mainLight }),
         resize: onResize,
         dispose() {
           if (disposed) return; disposed = true; transition?.cancel();
