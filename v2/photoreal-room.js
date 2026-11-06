@@ -36,11 +36,11 @@ function mesh(geometry,material,parent=scene){const m=new T.Mesh(geometry,materi
 function box(w,h,d,x,y,z,mat,parent=scene){const m=mesh(new T.BoxGeometry(w,h,d),mat,parent);m.position.set(x,y,z);return m;}
 function cylinder(rt,rb,h,x,y,z,mat,parent=scene){const m=mesh(new T.CylinderGeometry(rt,rb,h,48),mat,parent);m.position.set(x,y,z);return m;}
 const floor=box(8,.16,8,0,-.08,0,materials.wood);floor.material=materials.joinery;
-box(8,3.3,.15,0,1.65,-3.75,materials.wall);
+box(8,3.3,.15,0,1.65,-3.0,materials.wall);
 box(.15,3.3,8,-4,1.65,0,materials.wall);
 box(.15,3.3,8,4,1.65,0,materials.wall);
-for(let x=-3.5;x<4;x+=.86){box(.035,2.7,.09,x,1.65,-3.65,materials.joinery);box(.76,.045,.09,x+.39,.92,-3.64,materials.joinery);}
-box(7.8,.17,.11,0,.16,-3.59,materials.joinery);
+// Aged plaster replaces the repeated acoustic-panel grid.\nconst plaster=new T.MeshStandardMaterial({color:'#625c52',roughness:1});\nbox(7.8,2.9,.014,0,1.78,-2.915,plaster);\nbox(7.8,.68,.055,0,.34,-2.89,materials.joinery);\nbox(7.8,.045,.075,0,.71,-2.85,materials.joinery);
+box(7.8,.12,.11,0,.07,-2.84,materials.joinery);
 const desk=new T.Group();desk.position.set(0,0,-1.48);scene.add(desk);
 // Controlled desk proportions: wide along X, shallow along Z, feet touching floor.
 const deskTop=box(2.95,.095,1.34,0,.797,0,materials.wood,desk);
@@ -112,13 +112,13 @@ const rim=new T.SpotLight('#d8aa79',2.1,7,.95,.9,1.6);rim.position.set(2.4,2.6,-
 scene.add(new T.HemisphereLight('#c6b8a6','#30221c',.95));
 // Soft overhead practical bounce: lifts evidence without flattening the warm desk-lamp pool.
 const ceilingBounce=new T.PointLight('#d8c3a6',1.25,6,2);ceilingBounce.position.set(.2,2.7,-1.75);scene.add(ceilingBounce);
-const boardWash=new T.SpotLight('#c6b7a4',2.0,5,.78,.9,2);boardWash.position.set(0,2.95,-2.0);boardWash.target.position.set(0,1.8,-3.5);scene.add(boardWash,boardWash.target);
-const frame=box(2.0,1.13,.07,0,1.82,-3.54,materials.joinery);
+const boardWash=new T.SpotLight('#c6b7a4',2.0,5,.78,.9,2);boardWash.position.set(0,2.95,-2.0);boardWash.target.position.set(0,1.8,-2.72);scene.add(boardWash,boardWash.target);
+const frame=box(2.0,1.13,.07,0,1.82,-2.76,materials.joinery);
 const cork=new T.MeshStandardMaterial({color:'#765139',roughness:1});
-box(1.84,.99,.013,0,1.82,-3.49,cork);
+box(1.84,.99,.013,0,1.82,-2.713,cork);
 for(let i=0;i<5;i++){
  const m=new T.MeshStandardMaterial({map:printTexture(i%2?'PERSONNEL':'FIELD NOTES',9),roughness:.95});
- const p=mesh(new T.PlaneGeometry(.29,.39),m);p.position.set(-.65+(i%3)*.62,1.62+Math.floor(i/3)*.46,-3.472);p.rotation.z=(i-2)*.05;
+ const p=mesh(new T.PlaneGeometry(.29,.39),m);p.position.set(-.65+(i%3)*.62,1.62+Math.floor(i/3)*.46,-2.702);p.rotation.z=(i-2)*.05;
 }
 const views={overview:{radius:3.25,az:.04,el:.55,target:[0,.86,-1.48]},desk:{radius:2.25,az:.02,el:.77,target:[0,.86,-1.48]},evidence:{radius:1.4,az:0,el:1.16,target:[-.1,.87,-1.48]}};
 let az=.04,el=.55,radius=3.25,target=new T.Vector3(0,.86,-1.48),drag=false,lastX=0,lastY=0;
