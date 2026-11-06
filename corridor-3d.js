@@ -215,6 +215,7 @@
         }
         const m=new T.Mesh(geometry.get(key),material);m.position.set(0,y,z);m.castShadow=m.receiveShadow=true;parent.add(m);return m;
       }
+      const HANDLE_Y = 1.14;
       function door(x, z, rotation = 0, main = false) {
         const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = rotation; scene.add(g);
         g.name = main ? 'investigation-door-closed' : 'office-door-closed';
@@ -234,13 +235,13 @@
         box(.023, 2.52, .018, .723, 1.26, .10, woodRail, g);
         box(1.49, .026, .025, 0, 2.522, .10, woodRail, g);
         box(1.20, .012, .18, 0, .006, .04, brass, g);
-        const rosette = cylinder(.043, .043, .018, .45, 1.04, .075, brass, g); rosette.rotation.x = Math.PI / 2;
+        const rosette = cylinder(.043, .043, .018, .45, HANDLE_Y, .075, brass, g); rosette.rotation.x = Math.PI / 2;
         if (!geometry.has('door-lever')) geometry.set('door-lever', new T.TubeGeometry(new T.CatmullRomCurve3([
-          new T.Vector3(.45, 1.04, .09), new T.Vector3(.45, 1.04, .14),
-          new T.Vector3(.40, 1.035, .155), new T.Vector3(.28, 1.035, .155),new T.Vector3(.265,1.035,.143)
+          new T.Vector3(.45, HANDLE_Y, .09), new T.Vector3(.45, HANDLE_Y, .14),
+          new T.Vector3(.40, HANDLE_Y-.005, .155), new T.Vector3(.28, HANDLE_Y-.005, .155),new T.Vector3(.265,HANDLE_Y-.005,.143)
         ]), 32, .0105, 12, false));
         const lever = new T.Mesh(geometry.get('door-lever'), brass); lever.castShadow = true; g.add(lever);
-        for (const y of [1.014, 1.066]) {
+        for (const y of [HANDLE_Y-.026, HANDLE_Y+.026]) {
           const screw = cylinder(.004, .004, .004, .45, y, .086, brass, g, 12); screw.rotation.x = Math.PI / 2;
           box(.0045, .0008, .001, .45, y, .089, gap, g);
         }
@@ -251,15 +252,15 @@
         if (main) {
           g.children[0].visible=false;
           const leaf=new T.Group();leaf.position.x=-.58;leaf.name='hinged-door-leaf';
-          const moving=g.children.filter((m,i)=>(i>=1&&i<leafGeometryEnd)||m===lever||(m.position.x>.20&&m.position.y>.9&&m.position.y<1.12));
+          const moving=g.children.filter((m,i)=>(i>=1&&i<leafGeometryEnd)||m===lever||(m.position.x>.20&&Math.abs(m.position.y-HANDLE_Y)<.065));
           g.add(leaf);for(const m of moving){g.remove(m);m.position.x+=.58;leaf.add(m);}g.userData.leaf=leaf;
         } else { g.userData.variant = sideDoors.length; sideDoors.push(g); }
         rectangleFrame(g,1.42,2.55,1.27,.122,.075,woodTrim,true);
         // Three-part jamb reveal and strike plate provide scale at the latch.
         box(.018,2.36,.030,.590,1.18,.058,woodRail,g,.002);
         box(.018,2.36,.030,-.590,1.18,.058,woodRail,g,.002);
-        box(.020,.125,.035,.600,1.04,.077,brass,g,.002);
-        box(.021,.034,.009,.601,1.04,.098,gap,g,.001);
+        box(.020,.125,.035,.600,HANDLE_Y,.077,brass,g,.002);
+        box(.021,.034,.009,.601,HANDLE_Y,.098,gap,g,.001);
 
         return g;
       }
@@ -511,7 +512,7 @@
         return {x:left.x,y:left.y,width:right.x-left.x,height:right.y-left.y,mouthX:(ml.x+mr.x)/2,mouthY:(ml.y+mr.y)/2,mouthWidth:mr.x-ml.x};
       }
       function handleProjection() {
-        const rect=stage.getBoundingClientRect(),v=new T.Vector3(.38,1.04,.20).project(camera);
+        const rect=stage.getBoundingClientRect(),v=new T.Vector3(.38,HANDLE_Y,.20).project(camera);
         return {x:(v.x+1)*rect.width/2,y:(1-v.y)*rect.height/2};
       }
       function onResize() { resize(); render(); }

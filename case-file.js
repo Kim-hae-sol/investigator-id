@@ -105,7 +105,15 @@ tapeButton.onclick = async () => {
   busy = false;
   deckButton.focus();
 };
-window.addEventListener('investigation:music-state',e=>{cassette.textContent=e.detail.playing?'▣ STOP':'▣ PLAY';cassette.setAttribute('aria-pressed',String(e.detail.playing));targets.cassette.setAttribute('aria-pressed',String(e.detail.playing));});
+window.addEventListener('investigation:music-state',e=>{cassette.textContent=e.detail.playing?'▣ STOP':'▣ PLAY';cassette.setAttribute('aria-pressed',String(e.detail.playing));targets.cassette.setAttribute('aria-pressed',String(e.detail.playing));
+  if (!active || deckState !== 'loaded') return;
+  const camera = window.HNJDeskCamera;
+  camera.room().getDeskItems().tapeDeck.setPlaying(e.detail.playing);
+  if (!busy) {
+    if (opened) camera.refreshReading();
+    else camera.refresh();
+  }
+});
 function inspect(kind){lastFocus=document.activeElement;viewer.dataset.kind=kind;const body=viewer.querySelector('.viewer-body');body.replaceChildren();if(kind==='photo'){if(data.photo){const img=new Image();img.src=data.photo;img.alt='허남준 원본 사진';body.append(img);}else{const p=document.createElement('div');p.className='case-photo-placeholder';p.textContent='PHOTO / ASSET PENDING';body.append(p);}}else{const p=document.createElement('p');p.className='case-memo';p.textContent=data.memo;body.append(p);}viewer.showModal();}
 targets.photo.onclick=()=>inspect('photo');targets.photo2.onclick=()=>inspect('photo');targets.photo3.onclick=()=>inspect('photo');targets.note.onclick=()=>inspect('note');
 function show(i){index=Math.max(0,Math.min(data.sections.length-1,i));const s=data.sections[index];reader.querySelector('h1').textContent=s.title;reader.querySelector('.case-subtitle').textContent=s.subtitle;const identity=window.HNJ.getIdentity();reader.querySelector('.case-assigned').textContent='담당 조사관 · '+(identity?.name||'—');reader.querySelector('.case-reference').textContent='HNJ / '+s.id.toUpperCase();

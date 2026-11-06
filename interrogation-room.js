@@ -287,17 +287,18 @@
       const lampShade = new T.Mesh(new T.CylinderGeometry(.23, .36, .18, 36, 1, true), brass);
       lampShade.position.y = -.07; lampShade.castShadow = true; pendant.add(lampShade);
       const diffuser = new T.Mesh(new T.CircleGeometry(.29, 36), shade); diffuser.rotation.x = -Math.PI / 2; diffuser.position.y = -.16; pendant.add(diffuser);
-      const mainLight = new T.SpotLight('#ffedda', 16, 6.5, .76, .95, 1.7);
+      const mainLight = new T.SpotLight('#ffebd1', 14, 6.5, .76, .95, 1.7);
       mainLight.position.set(-.36, 2.66, DESK_Z + .56); mainLight.target.position.set(.05, .72, DESK_Z); mainLight.castShadow = true;
-      mainLight.shadow.mapSize.set(2048, 2048); mainLight.shadow.bias = -.00016; mainLight.shadow.normalBias = .005;
+      mainLight.shadow.mapSize.set(2048, 2048); mainLight.shadow.bias = -.00016; mainLight.shadow.normalBias = .0025;
       mainLight.shadow.radius = 5; mainLight.shadow.camera.near = .1; mainLight.shadow.camera.far = 8; scene.add(mainLight, mainLight.target);
       const warmBounce = new T.PointLight('#e7d0b5', 2.8, 5.6, 2); warmBounce.position.set(.8, 1.88, DESK_Z+.72); scene.add(warmBounce);
-      const wallBounce = new T.DirectionalLight('#c4bbb0', .30); wallBounce.position.set(-.8, 2.45, -2.55); scene.add(wallBounce);
-      const sideFill = new T.DirectionalLight('#d5cec1', .21); sideFill.position.set(-3.0, 2.2, -1.2); scene.add(sideFill);
+      const sideLightLevel = .70;
+      const wallBounce = new T.DirectionalLight('#c4bbb0', .30 * sideLightLevel); wallBounce.position.set(-.8, 2.45, -2.55); scene.add(wallBounce);
+      const sideFill = new T.DirectionalLight('#d5cec1', .21 * sideLightLevel); sideFill.position.set(-3.0, 2.2, -1.2); scene.add(sideFill);
       const ambient = new T.HemisphereLight('#c5bfb2', '#393028', .22); scene.add(ambient);
       scene.add(new T.AmbientLight('#c2b5a1', .07));
-      const wallGraze=new T.PointLight('#d1c4b2',2.2,3.8,2);wallGraze.position.set(-1.9,2.30,-2.0);scene.add(wallGraze);
-      const windowFill=new T.SpotLight('#ded4c2',2.4,6.5,1.0,1,2);windowFill.position.set(-2.82,2.05,-.82);windowFill.target.position.set(.3,.78,0);scene.add(windowFill,windowFill.target);
+      const wallGraze=new T.PointLight('#d1c4b2',2.2 * sideLightLevel,3.8,2);wallGraze.position.set(-1.9,2.30,-2.0);scene.add(wallGraze);
+      const windowFill=new T.SpotLight('#ded4c2',2.4 * sideLightLevel,6.5,1.0,1,2);windowFill.position.set(-2.82,2.05,-.82);windowFill.target.position.set(.3,.78,0);scene.add(windowFill,windowFill.target);
 
       // Reference look: layered walnut joinery, coffered ceiling, warm practicals and a working records wall.
       const details = new T.Group(); details.name='room-dressing'; scene.add(details);
@@ -448,10 +449,10 @@
       for(const x of [-2.95,2.95]){
         const fixture=new T.Group();fixture.position.set(x,2.15,-3.21);details.add(fixture);
         box(.105,.31,.035,0,0,0,darkMetal,fixture,.009);
-        const glowMat=new T.MeshStandardMaterial({color:'#ddcfad',emissive:'#ffdeac',emissiveIntensity:1.1,roughness:.5});ownedMaterials.add(glowMat);
+        const glowMat=new T.MeshStandardMaterial({color:'#ddcfad',emissive:'#ffdeac',emissiveIntensity:1.1 * sideLightLevel,roughness:.5});ownedMaterials.add(glowMat);
         cylinder(.047,.047,.25,0,.03,.09,glowMat,fixture,48);
         for(const y of [-.11,.17])cylinder(.062,.062,.022,0,y,.09,brass,fixture,32);
-        const glow=new T.PointLight('#ffdfae',1.6,3.3,2);glow.position.set(x,2.17,-2.97);scene.add(glow);
+        const glow=new T.PointLight('#ffdfae',1.6 * sideLightLevel,3.3,2);glow.position.set(x,2.17,-2.97);scene.add(glow);
       }
       // Adjustable task lamp on a side records desk; its separate light pools over papers and the board.
       const sideDesk=new T.Group();sideDesk.position.set(-1.95,0,-2.45);details.add(sideDesk);
@@ -468,7 +469,7 @@
         const x=1.66+(i%2)*.54,z=-2.58+(i===2?.55:0),y=.18;
         box(.46,.35,.42,x,y,z,paper,details,.006);box(.48,.035,.44,x,.37,z,woodTrim,details,.003);box(.11,.035,.004,x,.25,z+.213,charcoal,details,.002);
       }
-      const boardLight=new T.PointLight('#edc191',2.6,4.5,2);boardLight.position.set(1.1,2.50,-2.62);scene.add(boardLight);
+      const boardLight=new T.PointLight('#edc191',2.6 * sideLightLevel,4.5,2);boardLight.position.set(1.1,2.50,-2.62);scene.add(boardLight);
       // Small real hardware, surface intersections and restrained wear: all at the existing prop locations.
       function tubeHandle(x,y,z,width,parent){
         const path=new T.CatmullRomCurve3([new T.Vector3(x-width/2,y,z),new T.Vector3(x-width/2,y,z+.027),new T.Vector3(x+width/2,y,z+.027),new T.Vector3(x+width/2,y,z)]);
@@ -555,16 +556,40 @@
       box(.28,.033,.023,0,.041,-.077,darkMetal,cassette,.003);
       box(.066,.033,.137,-.107,.041,-.007,darkMetal,cassette,.003);
       box(.025,.033,.137,.127,.041,-.007,darkMetal,cassette,.003);
-      box(.157,.004,.111,.029,.028,-.008,charcoal,cassette);
-      for (const x of [.006,.052]) {
-        cylinder(.008,.008,.011,x,.033,-.013,brass,cassette,20);
+      // The 100.5 × 64.7 mm cassette seats in a 105 × 69 mm pocket.
+      const pocket = { x:.029, y:.033, z:-.009, width:.105, depth:.069 };
+      const carrier = new T.MeshStandardMaterial({
+        color:'#3c3933',roughness:.72,metalness:.24
+      });
+      ownedMaterials.add(carrier);
+      box(.155,.004,.112,pocket.x,.030,pocket.z,charcoal,cassette);
+      for (const sign of [-1,1]) {
+        box(.028,.017,.112,pocket.x+sign*(pocket.width/2+.014),.040,pocket.z,carrier,cassette,.002);
+        box(pocket.width,.017,.021,pocket.x,.040,pocket.z+sign*(pocket.depth/2+.0105),carrier,cassette,.002);
+        const guide = cylinder(.0018,.0018,.006,pocket.x+sign*.047,.035,pocket.z-.026,brass,cassette,12);
+        guide.castShadow = false;
       }
+      for (const offset of [-.023,.023]) {
+        const hub = pocket.x+offset;
+        cylinder(.010,.010,.002,hub,.0335,pocket.z-.005,darkMetal,cassette,24);
+        cylinder(.003,.003,.006,hub,.036,pocket.z-.005,brass,cassette,16);
+      }
+      const head = box(.012,.006,.006,pocket.x,.035,pocket.z+.031,brass,cassette,.001);
+      head.castShadow = false;
+      cylinder(.003,.003,.007,pocket.x+.031,.035,pocket.z+.027,charcoal,cassette,20);
       for (let i=0;i<8;i++) {
         box(.044,.001,.002,-.107,.058,-.056+i*.012,charcoal,cassette);
       }
+      let playKey;
       for (let i=0;i<4;i++) {
-        box(.024,.006,.019,-.052+i*.039,.062,.069,darkMetal,cassette,.002);
+        const key=box(.024,.006,.019,-.052+i*.039,.062,.069,darkMetal,cassette,.002);
+        if(i===2) playKey=key;
       }
+      const statusLight = new T.MeshStandardMaterial({
+        color:'#6f3b28',emissive:'#ed6133',emissiveIntensity:0,roughness:.48
+      });
+      ownedMaterials.add(statusLight);
+      box(.004,.002,.005,.111,.059,.062,statusLight,cassette,.0005);
 
       const lid = new T.Group();
       lid.position.set(.029,.059,-.066);
@@ -591,13 +616,21 @@
       deskItems.tapeDeck = {
         lidAt(progress) { lid.rotation.x = -1.15 * progress; },
         insertAt(progress) {
-          const seat = new T.Vector3(.029,.031,-.009);
+          const seat = new T.Vector3(pocket.x,pocket.y,pocket.z);
           cassette.localToWorld(seat);
           workSurface.worldToLocal(seat);
-          const lift = Math.sin(progress*Math.PI) * .135;
-          tape.position.copy(tapeRest).lerp(seat,progress);
-          tape.position.y += lift;
-          tape.rotation.set(-Math.sin(progress*Math.PI)*.42,.23+(-.10-.23)*progress,0);
+          const approach = Math.min(1, progress/.70);
+          const settle = Math.max(0,(progress-.70)/.30);
+          tape.position.copy(tapeRest).lerp(seat,approach);
+          tape.position.y += progress < .70
+            ? .064*Math.sin(approach*Math.PI/2)
+            : .064*(1-settle);
+          const tilt = progress < .70 ? Math.sin(approach*Math.PI)*.31 : 0;
+          tape.rotation.set(-tilt,.23+(-.10-.23)*approach,0);
+        },
+        setPlaying(playing) {
+          playKey.position.y = playing ? .059 : .062;
+          statusLight.emissiveIntensity = playing ? .62 : 0;
         }
       };
       const coverHinge = new T.Group();
