@@ -4,13 +4,13 @@
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#100e0d;color:#e5d6bd;font:14px system-ui}
 #stage{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
-.panel{position:fixed;top:22px;left:24px;max-width:300px;pointer-events:none;text-shadow:0 2px 12px #000}
+.panel{position:fixed;top:22px;left:24px;max-width:300px;pointer-events:none;text-shadow:0 2px 12px #000;background:#17120f91;padding:12px;border:1px solid #7a644733}
 .panel small{letter-spacing:.26em;color:#c4a477}.panel h1{font:24px Georgia;margin:12px 0}.panel p{line-height:1.6;color:#c7b7a0}
 .actions{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
 button{background:#1c1917e8;border:1px solid #8b7456;color:#eee0c7;padding:11px 15px;cursor:pointer;border-radius:3px}
 button:focus-visible{outline:2px solid #e7c590}
 #note{position:fixed;right:22px;bottom:24px;color:#d2bea0;background:#17130ec9;padding:12px;max-width:220px}
-@media(max-width:650px){.panel{left:14px;top:12px}.panel h1{font-size:19px}.actions{bottom:74px}button{padding:9px}#note{bottom:12px;right:12px}}
+@media(max-width:650px){.panel{left:12px;top:12px;max-width:210px;padding:9px}.panel h1{font-size:16px;margin:5px 0}.panel p{font-size:11px;margin:3px 0}.panel small{font-size:9px}.actions{bottom:76px}button{padding:9px}#note{bottom:12px;right:12px;font-size:11px;max-width:160px;padding:7px}}
 </style></head><body>
 <div id="stage" aria-label="새 실사형 조사실 3D 시안"></div>
 <div class="panel"><small>HNJ / ROOM STUDY 01</small><h1>Records & Investigation</h1><p>기존 사이트와 분리한 실시간 3D 시안.<br>드래그: 시점 이동 · 휠: 거리 조절 · 서류 클릭: 단서 확인</p></div>
@@ -23,5 +23,5 @@ button:focus-visible{outline:2px solid #e7c590}
 <img data-pbr="leather-color" src="../assets/pbr/leather-color.jpg"><img data-pbr="leather-normal" src="../assets/pbr/leather-normal.jpg"><img data-pbr="leather-roughness" src="../assets/pbr/leather-roughness.jpg">
 <img data-table="0" src="../assets/models/table/textures/dining_table_nor_gl_2k.jpg"><img data-table="1" src="../assets/models/table/textures/dining_table_diff_2k.jpg"><img data-table="2" src="../assets/models/table/textures/dining_table_arm_2k.jpg">
 </div>
-<script src="../vendor/three.local.js"></script><script src="../table-asset.js"></script><script src="../static-model.js"></script><script src="photoreal-room.js"></script>
+<script src="../vendor/three.local.js"></script><script src="../table-asset.js"></script><script src="../static-model.js"></script><script src="photoreal-room.js?v=20261107-props1"></script>
 </body></html>
