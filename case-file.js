@@ -42,17 +42,18 @@ deckBack.textContent = '책상으로 돌아가기';
 deckBack.hidden = true;
 root.append(deckBack);
 deckBack.onclick = async () => {
-  if (busy || deckState !== 'open') return;
+  if (busy || !root.dataset.tapeFocus) return;
   busy = true;
   const deck = window.HNJDeskCamera.room().getDeskItems().tapeDeck;
   await motion(420, progress => {
-    deck.lidAt(1-progress);
+    if (deckState==='open') deck.lidAt(1-progress);
     window.HNJDeskCamera.tapeView(1-progress);
   });
-  deckState = 'closed';
+  if (deckState==='open') deckState = 'closed';
   deckBack.hidden = true;
   delete root.dataset.tapeFocus;
-  label(deckButton, '카세트 덮개 열기');
+  label(deckButton, deckState==='loaded'?'카세트 플레이어 살펴보기':'카세트 덮개 열기');
+  project();
   busy = false;
   deckButton.focus();
 };
@@ -79,7 +80,17 @@ async function openDeck() {
   busy = false;
   tapeButton.focus();
 }
-deckButton.onclick = () => deckState === 'loaded' ? music() : openDeck();
+deckButton.onclick = async () => {
+  if (busy || opened) return;
+  if (deckState !== 'loaded') return openDeck();
+  if (root.dataset.tapeFocus) return music();
+  busy=true;
+  root.dataset.tapeFocus='true';
+  await motion(480,p=>window.HNJDeskCamera.tapeView(p));
+  label(deckButton,'카세트 재생 / 정지');
+  deckBack.hidden=false;
+  busy=false;
+};
 tapeButton.onclick = async () => {
   if (busy || opened || deckState === 'loaded') return;
   if (deckState === 'closed') {
@@ -88,18 +99,17 @@ tapeButton.onclick = async () => {
   }
   busy = true;
   const deck = window.HNJDeskCamera.room().getDeskItems().tapeDeck;
-  await motion(670, progress => {
+  await motion(880, progress => {
     deck.insertAt(progress);
     window.HNJDeskCamera.tapeView(1);
   });
-  await motion(340, progress => {
+  await motion(440, progress => {
     deck.lidAt(1-progress);
-    window.HNJDeskCamera.tapeView(1-progress);
+    window.HNJDeskCamera.tapeView(1);
   });
   deckState = 'loaded';
-  deckBack.hidden = true;
-  delete root.dataset.tapeFocus;
   tapeButton.hidden = true;
+  window.HNJDeskCamera.tapeView(1);
   label(deckButton, '카세트 재생 / 정지');
   deckButton.setAttribute('aria-pressed','false');
   busy = false;
@@ -110,7 +120,8 @@ window.addEventListener('investigation:music-state',e=>{cassette.textContent=e.d
   const camera = window.HNJDeskCamera;
   camera.room().getDeskItems().tapeDeck.setPlaying(e.detail.playing);
   if (!busy) {
-    if (opened) camera.refreshReading();
+    if (root.dataset.tapeFocus) camera.tapeView(1);
+    else if (opened) camera.refreshReading();
     else camera.refresh();
   }
 });
@@ -305,7 +316,7 @@ async function close() {
 reader.querySelector('.case-close').onclick=close;
 targets.file.onclick=open;
 function motion(ms,fn){if(matchMedia('(prefers-reduced-motion: reduce)').matches){fn(1);return Promise.resolve();}return new Promise(resolve=>{let start;function frame(now){start??=now;const t=Math.min(1,(now-start)/ms);fn(t*t*(3-2*t));if(t<1)requestAnimationFrame(frame);else resolve();}requestAnimationFrame(frame);});}
-function project(){if(!active||opened)return;const items=window.HNJDeskCamera.room()?.getDeskItems();if(!items)return;for(const [key,b]of Object.entries(targets)){const obj=items[key];if(!obj||b.hidden)continue;const v=new THREE.Vector3();obj.getWorldPosition(v);const p=window.HNJDeskCamera.project(v.toArray());if(!p)continue;b.style.left=p.x+'px';b.style.top=p.y+'px';b.style.visibility=p.depth<1?'visible':'hidden';}}
+function project(){if(!active||opened)return;const items=window.HNJDeskCamera.room()?.getDeskItems();if(!items)return;for(const [key,b]of Object.entries(targets)){const obj=key==='cassette'&&deckState==='loaded'&&root.dataset.tapeFocus?items.tapeDeck.playKey:items[key];if(!obj||b.hidden)continue;const v=new THREE.Vector3();obj.getWorldPosition(v);const p=window.HNJDeskCamera.project(v.toArray());if(!p)continue;b.style.left=p.x+'px';b.style.top=p.y+'px';b.style.visibility=p.depth<1?'visible':'hidden';}}
 stage.addEventListener('corridor:render',project);window.addEventListener('resize',project);
 window.addEventListener('investigation:room-entered',()=>{active=true;layer.hidden=false;root.dataset.caseState='desk';project();});
 window.addEventListener('keydown',e=>{if(viewer.open)return;if(e.key==='Escape'&&!deckBack.hidden){deckBack.click();return;}if(!opened)return;if(e.key==='Escape')close();if(e.key==='ArrowRight'){e.preventDefault();turnTo(index+1);}if(e.key==='ArrowLeft'){e.preventDefault();turnTo(index-1);}});

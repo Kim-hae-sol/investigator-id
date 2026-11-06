@@ -44,7 +44,23 @@
   // Chair sound temporarily disabled: recorded candidates produced audible scraping.
   // Keep the seating camera animation intact; restore only after approving an unedited clip.
   function seatSound(){ /* No sound intentionally. */ }
-  function worldPose(name){const v=room.getViewPose(name);return {position:[v.position[0],v.position[1],v.position[2]-3.4],target:[v.target[0],v.target[1],v.target[2]-3.4],fov:v.fov};}
+  function worldPose(name){
+    const v=room.getViewPose(name);
+    const pose={position:[v.position[0],v.position[1],v.position[2]-3.4],target:[v.target[0],v.target[1],v.target[2]-3.4],fov:v.fov};
+    if(name==='reading'){
+      const file=room.getDeskItems().file;
+      // Outer cover at -.39, protruding index at .16, in the book's local space.
+      const center=file.localToWorld(new THREE.Vector3((-.39+.16)/2,.036,0));
+      pose.position[0]=pose.target[0]=center.x;
+      pose.position[2]=center.z+.066;
+      pose.target[2]=center.z;
+    }
+    if(name==='reading'||name==='tape'){
+      const aspect=stage.clientWidth/Math.max(1,stage.clientHeight);
+      pose.fov=THREE.MathUtils.radToDeg(2*Math.atan(Math.tan(THREE.MathUtils.degToRad(v.fov/2))*Math.max(1,1.6/aspect)));
+    }
+    return pose;
+  }
   function interpolate(a,b,t){return {position:a.position.map((v,i)=>v+(b.position[i]-v)*t),target:a.target.map((v,i)=>v+(b.target[i]-v)*t),fov:a.fov+(b.fov-a.fov)*t};}
   async function look(down){
     if(!entered||viewBusy||lookingDown===down)return;viewBusy=true;gaze.disabled=true;
@@ -57,6 +73,7 @@
     corridor.getRenderer().shadowMap.needsUpdate=true;
     corridor.roomPose(interpolate(worldPose('tabletop'),worldPose('tape'),progress));
   },project:point=>corridor?.projectWorld(point),refresh:()=>{corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(worldPose('tabletop'));},refreshReading:()=>{corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(worldPose('reading'));},move:async(open,onFrame)=>{const base=worldPose('tabletop'),close=worldPose('reading');await animate(650,t=>{const hinge=room.getDeskItems().coverHinge;if(hinge)hinge.rotation.z=Math.PI*(open?t:1-t);corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(interpolate(open?base:close,open?close:base,t));onFrame?.(t);});},room:()=>room};
+  window.addEventListener('resize',()=>{if(entered&&root.dataset.caseState==='reading')corridor.roomPose(worldPose('reading'));});
   gaze.addEventListener('click',()=>look(!lookingDown));
   window.addEventListener('keydown',event=>{if(window.HNJCaseFile||!entered||event.altKey||event.ctrlKey||event.metaKey)return;if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();look(event.key==='ArrowDown');}});
   target.addEventListener('click',async()=>{

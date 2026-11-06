@@ -9,7 +9,7 @@
     entry: Object.freeze({ position: [0, 1.70, 3.10], target: [0, 1.10, -.55], fov: 48 }),
     seated: Object.freeze({ position: [0, 1.48, DESK_Z + .91], target: [0, 1.05, DESK_Z - .45], fov: 46 }),
     tabletop: Object.freeze({ position: [0, 1.48, DESK_Z + .91], target: [0, .81, DESK_Z + .01], fov: 46 }),
-    tape: Object.freeze({ position: [.35, 1.10, DESK_Z + .045], target: [.40, .83, DESK_Z - .385], fov: 40 }),
+    tape: Object.freeze({ position: [.41, 1.15, DESK_Z - .01], target: [.48, .84, DESK_Z - .38], fov: 41 }),
     reading: Object.freeze({ position: [-.20, 1.62, DESK_Z + .25], target: [-.20, .817, DESK_Z + .185], fov: 35 })
   });
   const deadline = (promise, ms) => {
@@ -153,9 +153,9 @@
       box(.16, ROOM.height, ROOM.depth, -halfW - .08, ROOM.height / 2, 0, wall);
       box(.16, ROOM.height, ROOM.depth, halfW + .08, ROOM.height / 2, 0, wall);
       box(ROOM.width + .16, ROOM.height, .16, 0, ROOM.height / 2, -halfD - .08, wall);
-      // The doorway is physically open to the corridor; its hinged leaf belongs to the corridor.
-      for (const sign of [-1, 1]) box((ROOM.width-1.30)/2,ROOM.height,.16,sign*(1.30/2+(ROOM.width-1.30)/4),ROOM.height/2,halfD+.08,woodDark);
-      box(1.30,ROOM.height-2.48,.16,0,2.48+(ROOM.height-2.48)/2,halfD+.08,woodDark);
+      // Keep this lining on the room side of the threshold. Positive world Z would cover the corridor reader.
+      for (const sign of [-1, 1]) box((ROOM.width-1.30)/2,ROOM.height,.16,sign*(1.30/2+(ROOM.width-1.30)/4),ROOM.height/2,halfD-.08,woodDark);
+      box(1.30,ROOM.height-2.48,.16,0,2.48+(ROOM.height-2.48)/2,halfD-.08,woodDark);
 
       // Restrained chair rail and base trim keep the room dimensional without a crime-scene set dressing.
       for (const sign of [-1, 1]) {
@@ -164,7 +164,10 @@
         box(.028, .035, ROOM.depth - .10, sign * (halfW - .13), 1.02, 0, woodTrim);
       }
       box(ROOM.width - .24, .20, .055, 0, .10, -halfD + .07, woodTrim);
-      box(ROOM.width - .24, .20, .055, 0, .10, halfD - .07, woodTrim);
+      for(const side of [-1,1]){
+        const skirtingWidth=(ROOM.width-.24-1.30)/2;
+        box(skirtingWidth,.20,.055,side*(.65+skirtingWidth/2),.10,halfD-.07,woodTrim);
+      }
       for (const y of [1.0, 1.035]) box(ROOM.width - .30, .043, .032, 0, y, -halfD + .09, woodTrim);
 
       // No exterior window: a shallow recessed records alcove replaces the old blind.
@@ -323,17 +326,23 @@
       for (const y of [-.59,.59]) box(2.58,.065,.075,0,y,.02,woodTrim,board,.006);
       // Each slot is an independent print, replaceable through the image bank in index.html.
       const prints = [
-        { id:'wanted', title:'WANTED', x:-.59, y:-.37, w:.29, h:.25, angle:-.045, photo:true },
-        { id:'portrait', title:'PHOTO / 01', x:-.27, y:-.405, w:.22, h:.21, angle:.10, photo:true },
-        { id:'records', title:'CASE NOTES', x:.06, y:-.37, w:.32, h:.27, angle:-.08 },
-        { id:'reference', title:'REFERENCE', x:.43, y:-.36, w:.25, h:.22, angle:.09, photo:true },
-        { id:'memo', title:'MEMO', x:.34, y:-.46, w:.13, h:.12, angle:-.14 },
-        { id:'index', title:'HNJ / INDEX', x:.73, y:-.37, w:.21, h:.24, angle:.025 }
+        { id:'wanted', title:'WANTED', x:-.69, y:-.16, w:.35, h:.48, angle:-.064, photo:true },
+        { id:'portrait', title:'PHOTO / 01', x:-.42, y:-.37, w:.19, h:.21, angle:.13, photo:true },
+        { id:'records', title:'CASE NOTES', x:-.12, y:-.06, w:.32, h:.37, angle:-.08 },
+        { id:'reference', title:'REFERENCE', x:.45, y:-.15, w:.24, h:.26, angle:.09, photo:true },
+        { id:'memo', title:'MEMO', x:.31, y:-.35, w:.13, h:.12, angle:-.14 },
+        { id:'index', title:'HNJ / INDEX', x:.79, y:-.30, w:.24, h:.30, angle:.025 },
+        { id:'intake', title:'INTAKE LOG', x:-.92, y:.20, w:.28, h:.27, angle:.08 },
+        { id:'field', title:'FIELD NOTE', x:-.44, y:.27, w:.24, h:.25, angle:-.11 },
+        { id:'dispatch', title:'DISPATCH', x:.17, y:.30, w:.30, h:.23, angle:.07 },
+        { id:'archive', title:'CONTACT SHEET', x:.63, y:.20, w:.34, h:.30, angle:-.055, photo:true },
+        { id:'locator', title:'CROSS REF.', x:.97, y:.11, w:.18, h:.14, angle:.16 },
+        { id:'followup', title:'FOLLOW UP', x:-.06, y:-.40, w:.21, h:.12, angle:.09 }
       ];
       for (const [i, print] of prints.entries()) {
         const source = document.querySelector('[data-board-print="' + print.id + '"]');
         const mat = canvasMaterial(384,480,(c,w,h)=>{
-          c.fillStyle = i === 4 ? '#c5ab71' : '#d2c4a9';
+          c.fillStyle = ['#d2c4a9','#d9cfb7','#c5ab71','#cbbda1'][i%4];
           c.fillRect(0,0,w,h);
           if (source?.naturalWidth) {
             const scale = Math.min(w/source.naturalWidth,h/source.naturalHeight);
@@ -343,12 +352,16 @@
           }
           c.fillStyle='#473d32';c.font='bold 38px Georgia';c.fillText(print.title,30,68,w-60);
           if (print.photo) {
-            c.fillStyle='#817e72';c.fillRect(30,98,w-60,280);
-            c.fillStyle='#e0d8c7';c.font='18px monospace';c.fillText('ORIGINAL PENDING',48,240);
+            c.strokeStyle='#7b705f';
+            c.strokeRect(30,100,w-60,260);
+            c.beginPath();c.moveTo(30,100);c.lineTo(w-30,360);c.moveTo(w-30,100);c.lineTo(30,360);c.stroke();
+            c.fillStyle='#5f5447';c.font='18px monospace';c.fillText('ARCHIVE PRINT / RESERVED',34,400);
           } else {
             c.fillStyle='#746b5955';
             for (let y=110;y<408;y+=26) c.fillRect(30,y,w-75-(y%52),2);
           }
+          c.fillStyle='#5f5447';c.font='20px monospace';
+          c.fillText('HNJ / RECORD '+String(i+1).padStart(2,'0'),30,450);
         });
         mat.bumpMap = paperMicro;
         mat.bumpScale = .00015;
@@ -357,6 +370,18 @@
         const pin = cylinder(.005,.005,.008,print.x-print.h*.44*Math.sin(print.angle),
           print.y+print.h*.44*Math.cos(print.angle),.032+i*.0012,brass,board,12);
         pin.rotation.x = Math.PI/2;
+      }
+      const thread = new T.MeshStandardMaterial({color:'#713b2a',roughness:.95});
+      ownedMaterials.add(thread);
+      for(const [from,to] of [[0,2],[2,3],[2,7],[3,9],[8,9]]){
+        const anchor = i => {
+          const p=prints[i], offset=p.h*.44;
+          return new T.Vector3(p.x-offset*Math.sin(p.angle),p.y+offset*Math.cos(p.angle),.043+i*.0012);
+        };
+        const a=anchor(from), b=anchor(to), mid=a.clone().lerp(b,.5);mid.y-=.016;
+        const geometry=new T.TubeGeometry(new T.QuadraticBezierCurve3(a,mid,b),20,.0011,5,false);
+        geometries.set('board-thread-'+from+'-'+to,geometry);
+        board.add(new T.Mesh(geometry,thread));
       }
       for(const sign of [-1,1])for(let z=-2.8;z<3.3;z+=1.05){if(sign<0&&z>-1.7&&z<.1)continue;box(.032,1.67,1.02,sign*3.12,2.15,z,wood,details,.003);}
       for(let x=-2.65;x<3;x+=1.06)box(1.035,1.67,.032,x,2.15,-3.30,wood,details,.003);
@@ -404,7 +429,14 @@
       const mugProfile=[[0,0],[.038,0],[.041,.003],[.042,.008],[.045,.012],[.047,.024],[.050,.051],[.053,.079],[.054,.097],[.053,.101],[.050,.103],[.047,.100],[.046,.093],[.043,.060],[.039,.015],[0,.015]].map(p=>new T.Vector2(...p));
       const mugGeometry=new T.LatheGeometry(mugProfile,64);geometries.set('mug-lathe',mugGeometry);const mug=new T.Mesh(mugGeometry,ceramic);mug.position.set(-.40,.847,-.12);mug.castShadow=mug.receiveShadow=true;details.add(mug);
       const coffeeSurface=new T.MeshStandardMaterial({color:'#160e09',roughness:.24,metalness:0});ownedMaterials.add(coffeeSurface);const coffee=cylinder(.046,.046,.002,-.40,.945,-.12,coffeeSurface,details,48);
-      const handle=new T.Mesh(new T.TorusGeometry(.033,.007,16,48),ceramic);handle.position.set(-.46,.907,-.12);details.add(handle);
+      const handlePath=new T.CatmullRomCurve3([
+        new T.Vector3(-.042,.030,0),new T.Vector3(-.071,.026,0),
+        new T.Vector3(-.083,.006,0),new T.Vector3(-.073,-.019,0),new T.Vector3(-.036,-.031,0)
+      ]);
+      const handleGeometry=new T.TubeGeometry(handlePath,40,.0068,16,false);
+      geometries.set('mug-handle',handleGeometry);
+      const handle=new T.Mesh(handleGeometry,ceramic);
+      handle.position.set(-.40,.907,-.12);handle.castShadow=handle.receiveShadow=true;details.add(handle);
       const folderMat=canvasMaterial(512,768,(c,w,h)=>{
         const stock=c.createLinearGradient(0,0,w,h);stock.addColorStop(0,'#766146');stock.addColorStop(.28,'#ae966f');stock.addColorStop(1,'#927753');c.fillStyle=stock;c.fillRect(0,0,w,h);
         for(let i=0;i<18000;i++){c.fillStyle=i%2?'#f4e6c00c':'#342a1c0b';c.fillRect(random()*w,random()*h,1,2);}
@@ -525,7 +557,9 @@
       const clipGeometry=new T.TubeGeometry(clipCurve,40,.0009,8,false);geometries.set('file-clip',clipGeometry);const fileClip=new T.Mesh(clipGeometry,darkMetal);fileClip.castShadow=true;
       const cassette = new T.Group();
       cassette.name = 'cassette-player';
-      cassette.position.set(.51,.785,-.40);
+      cassette.position.set(.53,.782,-.37);
+      const deckScale=1.18;
+      cassette.scale.setScalar(deckScale);
       cassette.rotation.y = -.10;
       workSurface.add(cassette);
 
@@ -577,8 +611,13 @@
       const head = box(.012,.006,.006,pocket.x,.035,pocket.z+.031,brass,cassette,.001);
       head.castShadow = false;
       cylinder(.003,.003,.007,pocket.x+.031,.035,pocket.z+.027,charcoal,cassette,20);
-      for (let i=0;i<8;i++) {
-        box(.044,.001,.002,-.107,.058,-.056+i*.012,charcoal,cassette);
+      box(.052,.003,.108,-.107,.058,-.009,carrier,cassette,.0015);
+      for (let i=0;i<9;i++) {
+        box(.043,.0007,.0032,-.107,.0598,-.056+i*.011,charcoal,cassette,.00025);
+      }
+      for(const x of [-.048,.105]){
+        const hingePin=cylinder(.004,.004,.018,x,.060,-.066,brass,cassette,16);
+        hingePin.rotation.z=Math.PI/2;
       }
       let playKey;
       for (let i=0;i<4;i++) {
@@ -611,22 +650,23 @@
       const tapeModel = window.HNJStaticModel.create(window.HNJTapeAsset,'cassette',
         {anisotropy,materials:ownedMaterials,geometries,textures});
       tapeModel.position.y = .0036;
+      tape.scale.setScalar(deckScale);
       tape.add(tapeModel);
       deskItems.tape = tape;
       deskItems.tapeDeck = {
         lidAt(progress) { lid.rotation.x = -1.15 * progress; },
+        playKey,
         insertAt(progress) {
           const seat = new T.Vector3(pocket.x,pocket.y,pocket.z);
           cassette.localToWorld(seat);
           workSurface.worldToLocal(seat);
-          const approach = Math.min(1, progress/.70);
-          const settle = Math.max(0,(progress-.70)/.30);
-          tape.position.copy(tapeRest).lerp(seat,approach);
-          tape.position.y += progress < .70
-            ? .064*Math.sin(approach*Math.PI/2)
-            : .064*(1-settle);
-          const tilt = progress < .70 ? Math.sin(approach*Math.PI)*.31 : 0;
-          tape.rotation.set(-tilt,.23+(-.10-.23)*approach,0);
+          const lift=ease(clamp(progress/.24));
+          const slide=ease(clamp((progress-.20)/.48));
+          const drop=ease(clamp((progress-.68)/.32));
+          const clearance=seat.y+.065;
+          tape.position.copy(tapeRest).lerp(seat,slide);
+          tape.position.y=T.MathUtils.lerp(T.MathUtils.lerp(tapeRest.y,clearance,lift),seat.y,drop);
+          tape.rotation.set(-.24*lift*(1-slide),T.MathUtils.lerp(.23,-.10,slide),0);
         },
         setPlaying(playing) {
           playKey.position.y = playing ? .059 : .062;

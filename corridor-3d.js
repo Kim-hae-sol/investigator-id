@@ -302,7 +302,10 @@
           sign > 0 ? -Math.PI / 2 : Math.PI / 2, Math.PI / 2);
         contact(.22, SPACE.height, sign * (half - .11), SPACE.height / 2, -.044, 0, sign > 0 ? Math.PI : 0);
       }
-      box(SPACE.width, .145, .065, 0, .0725, .015, woodTrim);
+      for(const side of [-1,1]){
+        const skirtingWidth=(SPACE.width-1.30)/2;
+        box(skirtingWidth,.145,.065,side*(.65+skirtingWidth/2),.0725,.015,woodTrim);
+      }
       box(SPACE.width, .10, .12, 0, SPACE.height - .06, .02, ceiling);
       contact(.18, SPACE.width, 0, .09, -.044, 0, Math.PI / 2);
       const mainDoor = door(0, .045, 0, true);
@@ -470,7 +473,7 @@
         scene.add(mirror);
       }
       stage.prepend(canvas);
-      let progress = 0, bob = 0, sway = 0, lost = false, authProgress = 0, doorProgress = 0, entryProgress = 0, roomPose = null, roomLights = [], corridorLights = [];
+      let progress = 0, bob = 0, sway = 0, lost = false, authProgress = 0, doorProgress = 0, entryProgress = 0, roomPose = null, roomLights = [];
       const root = document.querySelector('#opening-sequence');
       function resize() {
         const rect = stage.getBoundingClientRect();
@@ -539,12 +542,12 @@
         readerProjection, readerFeedback, handleProjection,
         getRenderer:()=>renderer,
         roomPose(pose){roomPose=pose;render();},
-        async attachRoom(roomScene) {roomScene.position.set(0,0,-3.40);corridorLights=[];scene.traverse(o=>{if(o.isLight)corridorLights.push([o,o.intensity]);});scene.add(roomScene);
+        async attachRoom(roomScene) {roomScene.position.set(0,0,-3.40);scene.add(roomScene);
           roomLights=[];roomScene.traverse(o=>{if(o.isLight){roomLights.push([o,o.intensity]);o.intensity=0;}});
           if(renderer.compileAsync)await deadline(renderer.compileAsync(scene,camera),10000,'Connected room shader preparation timed out');
           renderer.shadowMap.autoUpdate=true;render();},
         openDoor(value){doorProgress=clamp(value);roomLights.forEach(([light,power])=>{light.intensity=power*clamp(doorProgress*3);});mainDoor.userData.leaf.rotation.y=doorProgress*Math.PI*.55;renderer.shadowMap.needsUpdate=true;render();},
-        enterRoom(value){entryProgress=clamp(value);corridorLights.forEach(([light,power])=>{light.intensity=power*(1-clamp((entryProgress-.45)/.55));});render();if(entryProgress===1)renderer.shadowMap.autoUpdate=false;},
+        enterRoom(value){entryProgress=clamp(value);render();if(entryProgress===1)renderer.shadowMap.autoUpdate=false;},
         authView(value) { authProgress=clamp(value); render(); },
         // room-entry.js gates the hinged leaf and room approach on HNJAccess.doorUnlocked.
         mainDoor, reader, dispose() {
