@@ -125,7 +125,43 @@ window.addEventListener('investigation:music-state',e=>{cassette.textContent=e.d
     else camera.refresh();
   }
 });
-function inspect(kind){lastFocus=document.activeElement;viewer.dataset.kind=kind;const body=viewer.querySelector('.viewer-body');body.replaceChildren();if(kind==='photo'){if(data.photo){const img=new Image();img.src=data.photo;img.alt='허남준 원본 사진';body.append(img);}else{const p=document.createElement('div');p.className='case-photo-placeholder';p.textContent='PHOTO / ASSET PENDING';body.append(p);}}else{const p=document.createElement('p');p.className='case-memo';p.textContent=data.memo;body.append(p);}viewer.showModal();}
+const memoKey='hnj-investigator-desk-memo';
+let memoText=data.memo;
+try { memoText=localStorage.getItem(memoKey) ?? memoText; } catch {}
+function reflectMemo() {
+  reader.querySelector('.folio-print-note .folio-print-face').textContent=memoText;
+  window.HNJDeskCamera.room()?.getDeskItems().writeNote(memoText);
+}
+function showMemo(body) {
+  const form=document.createElement('form');
+  form.className='desk-memo-pad';
+  const text=document.createElement('textarea');
+  text.setAttribute('aria-label','조사관 메모');
+  text.maxLength=360;
+  text.readOnly=true;
+  text.value=memoText;
+  const action=document.createElement('button');
+  action.type='submit';
+  action.textContent='수정';
+  form.append(text,action);
+  form.onsubmit=event=>{
+    event.preventDefault();
+    if(text.readOnly){
+      text.readOnly=false;
+      action.textContent='저장';
+      text.focus();
+      return;
+    }
+    memoText=text.value;
+    try { localStorage.setItem(memoKey,memoText); } catch {}
+    reflectMemo();
+    viewer.close();
+    if(opened) window.HNJDeskCamera.refreshReading();
+    else window.HNJDeskCamera.refresh();
+  };
+  body.append(form);
+}
+function inspect(kind){lastFocus=document.activeElement;viewer.dataset.kind=kind;const body=viewer.querySelector('.viewer-body');body.replaceChildren();if(kind==='photo'){if(data.photo){const img=new Image();img.src=data.photo;img.alt='허남준 원본 사진';body.append(img);}else{const p=document.createElement('div');p.className='case-photo-placeholder';p.textContent='PHOTO / ASSET PENDING';body.append(p);}}else{showMemo(body);}viewer.showModal();}
 targets.photo.onclick=()=>inspect('photo');targets.photo2.onclick=()=>inspect('photo');targets.photo3.onclick=()=>inspect('photo');targets.note.onclick=()=>inspect('note');
 function renderSection(scope, i) {
   const section = data.sections[i];
@@ -318,7 +354,7 @@ targets.file.onclick=open;
 function motion(ms,fn){if(matchMedia('(prefers-reduced-motion: reduce)').matches){fn(1);return Promise.resolve();}return new Promise(resolve=>{let start;function frame(now){start??=now;const t=Math.min(1,(now-start)/ms);fn(t*t*(3-2*t));if(t<1)requestAnimationFrame(frame);else resolve();}requestAnimationFrame(frame);});}
 function project(){if(!active||opened)return;const items=window.HNJDeskCamera.room()?.getDeskItems();if(!items)return;for(const [key,b]of Object.entries(targets)){const obj=key==='cassette'&&deckState==='loaded'&&root.dataset.tapeFocus?items.tapeDeck.playKey:items[key];if(!obj||b.hidden)continue;const v=new THREE.Vector3();obj.getWorldPosition(v);const p=window.HNJDeskCamera.project(v.toArray());if(!p)continue;b.style.left=p.x+'px';b.style.top=p.y+'px';b.style.visibility=p.depth<1?'visible':'hidden';}}
 stage.addEventListener('corridor:render',project);window.addEventListener('resize',project);
-window.addEventListener('investigation:room-entered',()=>{active=true;layer.hidden=false;root.dataset.caseState='desk';project();});
+window.addEventListener('investigation:room-entered',()=>{active=true;reflectMemo();window.HNJDeskCamera.refresh();layer.hidden=false;root.dataset.caseState='desk';project();});
 window.addEventListener('keydown',e=>{if(viewer.open)return;if(e.key==='Escape'&&!deckBack.hidden){deckBack.click();return;}if(!opened)return;if(e.key==='Escape')close();if(e.key==='ArrowRight'){e.preventDefault();turnTo(index+1);}if(e.key==='ArrowLeft'){e.preventDefault();turnTo(index-1);}});
 window.HNJCaseFile=Object.freeze({state:()=>({active,opened,busy,section:data.sections[index].id,photoAside})});
 })();

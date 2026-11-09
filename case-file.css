@@ -326,3 +326,19 @@
   z-index:4;right:auto;
   background:linear-gradient(90deg,#422b2390,transparent);
 }
+
+.case-viewer[data-kind=note][open] {
+  width:min(330px,82vw);
+  padding:30px 15px 17px;
+  background:#a69368;
+  border-radius:2px;
+  box-shadow:0 3px #746347,0 5px #a59268,0 7px #65573e,0 18px 34px #0008;
+}
+.case-viewer[data-kind=note]::backdrop {background:#14110e35}
+.desk-memo-pad {display:grid;justify-items:end;gap:7px}
+.desk-memo-pad textarea {
+  box-sizing:border-box;width:100%;min-height:150px;padding:18px 16px;resize:vertical;
+  border:0;border-radius:1px;color:#3c3222;background:#d4c29a;
+  font:16px/1.65 Georgia,serif;box-shadow:0 2px #b7a47e,0 4px #c6b38b;
+}
+.desk-memo-pad button {padding:5px 10px;border-bottom:1px solid #59492f}

@@ -9,7 +9,7 @@
     entry: Object.freeze({ position: [0, 1.70, 3.10], target: [0, 1.10, -.55], fov: 48 }),
     seated: Object.freeze({ position: [0, 1.48, DESK_Z + .91], target: [0, 1.05, DESK_Z - .45], fov: 46 }),
     tabletop: Object.freeze({ position: [0, 1.48, DESK_Z + .91], target: [0, .81, DESK_Z + .01], fov: 46 }),
-    tape: Object.freeze({ position: [.41, 1.15, DESK_Z - .01], target: [.48, .84, DESK_Z - .38], fov: 41 }),
+    tape: Object.freeze({ position: [.41, 1.15, DESK_Z + .06], target: [.43, .84, DESK_Z - .38], fov: 44 }),
     reading: Object.freeze({ position: [-.20, 1.62, DESK_Z + .25], target: [-.20, .817, DESK_Z + .185], fov: 35 })
   });
   const deadline = (promise, ms) => {
@@ -290,11 +290,11 @@
       const lampShade = new T.Mesh(new T.CylinderGeometry(.23, .36, .18, 36, 1, true), brass);
       lampShade.position.y = -.07; lampShade.castShadow = true; pendant.add(lampShade);
       const diffuser = new T.Mesh(new T.CircleGeometry(.29, 36), shade); diffuser.rotation.x = -Math.PI / 2; diffuser.position.y = -.16; pendant.add(diffuser);
-      const mainLight = new T.SpotLight('#ffebd1', 14, 6.5, .76, .95, 1.7);
-      mainLight.position.set(-.36, 2.66, DESK_Z + .56); mainLight.target.position.set(.05, .72, DESK_Z); mainLight.castShadow = true;
+      const mainLight = new T.SpotLight('#ffebd1', 14, 6.5, .65, .90, 1.7);
+      mainLight.position.set(-.36, 2.66, DESK_Z + .56); mainLight.target.position.set(-.04, .78, DESK_Z + .16); mainLight.castShadow = true;
       mainLight.shadow.mapSize.set(2048, 2048); mainLight.shadow.bias = -.00016; mainLight.shadow.normalBias = .0025;
       mainLight.shadow.radius = 5; mainLight.shadow.camera.near = .1; mainLight.shadow.camera.far = 8; scene.add(mainLight, mainLight.target);
-      const warmBounce = new T.PointLight('#e7d0b5', 2.8, 5.6, 2); warmBounce.position.set(.8, 1.88, DESK_Z+.72); scene.add(warmBounce);
+      const warmBounce = new T.PointLight('#e7d0b5', 2.0, 5.6, 2); warmBounce.position.set(.8, 1.88, DESK_Z+.72); scene.add(warmBounce);
       const sideLightLevel = .70;
       const wallBounce = new T.DirectionalLight('#c4bbb0', .30 * sideLightLevel); wallBounce.position.set(-.8, 2.45, -2.55); scene.add(wallBounce);
       const sideFill = new T.DirectionalLight('#d5cec1', .21 * sideLightLevel); sideFill.position.set(-3.0, 2.2, -1.2); scene.add(sideFill);
@@ -410,14 +410,21 @@
       // Bound ledgers with visible page blocks and individual cover thicknesses.
       const pageEdges=canvasMaterial(256,256,(c,w,h)=>{c.fillStyle='#c2b79b';c.fillRect(0,0,w,h);for(let y=0;y<h;y+=3){c.fillStyle=y%9?'#6e634a33':'#ebe3cb55';c.fillRect(0,y,w,1);}});
       pageEdges.bumpMap=paperMicro;pageEdges.bumpScale=.0002;
-      function ledger(x,y,z,w=.28,d=.22,h=.045,parent=details){
+      function ledger(x,y,z,w=.28,d=.22,h=.045,parent=details,cover=leather){
         const book=new T.Group();book.position.set(x,y,z);book.rotation.y=(random()-.5)*.13;parent.add(book);
         box(w,h*.70,d,0,0,0,pageEdges,book,.0018);
-        for(const sign of [-1,1])box(w+.014,.007,d+.014,0,sign*h*.45,0,leather,book,.0025);
-        box(.012,h,d+.014,-w/2,0,0,leather,book,.003);
+        for(const sign of [-1,1])box(w+.014,.007,d+.014,0,sign*h*.45,0,cover,book,.0025);
+        box(.012,h,d+.014,-w/2,0,0,cover,book,.003);
         for(const zz of [-d*.36,d*.36])box(.014,h*.65,.004,-w/2-.002,0,zz,brass,book,.001);
       }
-      for(let i=0;i<2;i++)ledger(-.50+i*.009,.87+i*.051,-.76,.30,.23,.045,details);
+      const ledgerCovers = ['#322821','#2c302b'].map(color=>{
+        const cover=leather.clone();
+        cover.color.set(color);
+        ownedMaterials.add(cover);
+        return cover;
+      });
+      ledger(-.51,.87,-.76,.31,.23,.045,details,ledgerCovers[0]);
+      ledger(-.48,.918,-.735,.274,.207,.041,details,ledgerCovers[1]);
       // File tray, brass pen cup and a ceramic mug leave the center clear for the future A4 folio.
       box(.33,.005,.25,.49,.8405,.72,darkMetal,details,.001);
       for(const x of [.33,.65])box(.003,.046,.25,x,.863,.72,darkMetal,details,.001);
@@ -529,8 +536,9 @@
       mugSet.position.set(-.613,window.HNJTableAsset ? .780 : .8375,-.066);
       workSurface.add(mugSet);
       const cup = new T.Group();
-      cup.position.set(.004,.005,-.002);
-      cup.rotation.y = .61;
+      const coasterTop = .006;
+      cup.position.set(.003,coasterTop,-.001);
+      cup.rotation.set(0,.82,0);
       mugSet.add(cup);
       function potteryPart(name,profile,material,parent) {
         const geometry=new T.LatheGeometry(profile.map(point=>new T.Vector2(...point)),96);
@@ -541,22 +549,30 @@
         return mesh;
       }
       const coffee = new T.MeshPhysicalMaterial({
-        color:'#211009',roughness:.24,ior:1.34,envMapIntensity:.43
+        color:'#160704',roughness:.29,ior:1.34,
+        specularIntensity:.37,specularColor:'#f8dfbf'
       });
       const coaster = new T.MeshStandardMaterial({
-        color:'#30231b',roughness:.88,bumpMap:leatherMicro,bumpScale:.00035
+        color:'#483327',roughness:.86,bumpMap:leatherMicro,bumpScale:.00032
       });
-      for(const mat of [coffee,coaster]) ownedMaterials.add(mat);
-      potteryPart('mug-leather-coaster',[
-        [0,0],[.080,0],[.083,.0008],[.084,.0023],[.083,.004],[.081,.005],[0,.005]
+      const cutEdge = new T.MeshStandardMaterial({
+        color:'#30231c',roughness:.96,bumpMap:leatherMicro,bumpScale:.00025
+      });
+      const foot = new T.MeshStandardMaterial({color:'#b9a992',roughness:.7});
+      for(const mat of [coffee,coaster,cutEdge,foot]) ownedMaterials.add(mat);
+      potteryPart('mug-coaster-cut-edge',[
+        [0,0],[.078,0],[.0805,.0007],[.0815,.002],[.0814,.0043],[.0806,.005],[0,.005]
+      ],cutEdge,mugSet);
+      potteryPart('mug-coaster-leather',[
+        [.0806,.0046],[.081,.0049],[.0802,.0056],[.0789,coasterTop],
+        [.0755,coasterTop],[.0747,.0057],[.074,.0057],[.0733,coasterTop],[0,coasterTop]
       ],coaster,mugSet);
-      // The source mugs use an untextured ceramic PBR material, separate from the cart atlas.
       const source = window.HNJMugAsset;
-      const ceramic = new T.MeshStandardMaterial({
-        color: new T.Color().fromArray(source.pbr.baseColorFactor),
-        roughness: source.pbr.roughnessFactor,
-        metalness: source.pbr.metallicFactor,
-        side: T.DoubleSide
+      const ceramic = new T.MeshPhysicalMaterial({
+        color:'#d9cdb8',metalness:source.pbr.metallicFactor,
+        roughness:.34,ior:1.48,clearcoat:.24,clearcoatRoughness:.29,
+        bumpMap:paperMicro,bumpScale:.000035,
+        side:T.DoubleSide
       });
       ownedMaterials.add(ceramic);
       const mugGeometry = new T.BufferGeometry();
@@ -567,15 +583,20 @@
       const mug = new T.Mesh(mugGeometry,ceramic);
       mug.castShadow = mug.receiveShadow = true;
       cup.scale.setScalar(.86);
+      // The imported rim and base are already level. Lift the body only by the foot height.
+      mug.position.y = .0015;
       cup.add(mug);
-      // Coffee remains a separate surface below the imported rim.
+      potteryPart('mug-ceramic-foot',[
+        [.043,.0017],[.043,0],[.0485,0],[.050,.0007],[.0505,.0017]
+      ],foot,cup);
+      // Raise only the last millimetres at the wall to form a restrained meniscus.
       const liquid = potteryPart('mug-coffee-meniscus',[
-        [.0478,.0915],[.047,.0905],[.045,.090],[0,.090]
+        [.0481,.0932],[.0477,.0922],[.0471,.0917],[.046,.0915],[.044,.0914],[0,.0914]
       ],coffee,cup);
       liquid.castShadow = false;
-      contact(.215,.209,-.006,.00025,.003,.67,mugSet);
-      contact(.106,.102,.004,.00525,-.002,.77,mugSet);
-      caseFile.position.set(-.06,.7855,.18);caseFile.scale.setScalar(1.12);
+      contact(.196,.188,.002,.00025,.002,.58,mugSet);
+      contact(.122,.117,.003,coasterTop+.00022,-.001,.76,mugSet);
+      caseFile.position.set(.018,.7855,.18);caseFile.scale.setScalar(1.12);
       // Desk evidence is real metre-scale geometry. Text uses local canvas labels, never a scene plate.
       const deskItems={};
       function deskCard(key,label,x,z,pw,ph,color){
@@ -584,20 +605,38 @@
         c.fillStyle='#34332d';c.font=portrait?'20px monospace':'28px monospace';c.textAlign='center';c.fillText(label,w/2,portrait?h-85:h/2,w-70);
         const tex=new T.CanvasTexture(cv);tex.colorSpace=T.SRGBColorSpace;textures.set('desk-'+key,{color:tex});
         const mat=new T.MeshStandardMaterial({map:tex,roughness:.94,bumpMap:paperMicro,bumpScale:.00018,side:T.DoubleSide});ownedMaterials.add(mat);
-        const geo=new T.PlaneGeometry(pw,ph,12,16),vertices=geo.attributes.position;for(let i=0;i<vertices.count;i++){const u=vertices.getX(i)/pw+.5,v=vertices.getY(i)/ph+.5;vertices.setZ(i,.0012*Math.pow(u,5)*Math.pow(1-v,3));}geo.computeVertexNormals();geometries.set('desk-'+key,geo);const mesh=new T.Mesh(geo,mat);
-        mesh.rotation.x=-Math.PI/2;mesh.position.set(x,key==='photo'?.827:key==='photo3'?.786:key==='photo2'?.785:.786,z);mesh.castShadow=mesh.receiveShadow=true;workSurface.add(mesh);deskItems[key]=mesh;if(key==='photo'&&window.HNJCaseData?.photo){const image=new Image();image.onload=()=>{c.fillStyle='#e5dfd0';c.fillRect(0,0,w,h);const scale=Math.min((w-48)/image.width,(h-48)/image.height);c.drawImage(image,(w-image.width*scale)/2,(h-image.height*scale)/2,image.width*scale,image.height*scale);tex.needsUpdate=true;};image.src=window.HNJCaseData.photo;}return mesh;
+        const geo=new T.PlaneGeometry(pw,ph,12,16),vertices=geo.attributes.position;for(let i=0;i<vertices.count;i++){const u=vertices.getX(i)/pw+.5,v=vertices.getY(i)/ph+.5;const curl = key==='note' ? .004 : .0025;vertices.setZ(i,curl*Math.pow(u,6)*Math.pow(1-v,3)+.0004*Math.sin(Math.PI*u)*Math.sin(Math.PI*v));}geo.computeVertexNormals();geometries.set('desk-'+key,geo);const mesh=new T.Mesh(geo,mat);
+        mesh.rotation.x=-Math.PI/2;mesh.position.set(x,key==='photo'?.827:key==='photo3'?.787:key==='photo2'?.785:.791,z);mesh.castShadow=mesh.receiveShadow=true;workSurface.add(mesh);deskItems[key]=mesh;if(key==='photo'&&window.HNJCaseData?.photo){const image=new Image();image.onload=()=>{c.fillStyle='#e5dfd0';c.fillRect(0,0,w,h);const scale=Math.min((w-48)/image.width,(h-48)/image.height);c.drawImage(image,(w-image.width*scale)/2,(h-image.height*scale)/2,image.width*scale,image.height*scale);tex.needsUpdate=true;};image.src=window.HNJCaseData.photo;}return mesh;
       }
-      deskCard('photo','PHOTO / ASSET PENDING',.015,.18,.14,.18,'#b7b2a4').rotation.z=.10;
-      deskCard('note',window.HNJCaseData?.memo||'NOTE',.37,.075,.18,.14,'#c4b48e');
-      deskCard('photo2','PHOTO / 02',-.40,.04,.135,.175,'#b9b4a7').rotation.z=-.09;
-      deskCard('photo3','PHOTO / 03',-.43,.08,.13,.17,'#b5b0a2').rotation.z=.06;
+      deskCard('photo','PHOTO / ASSET PENDING',.102,.214,.126,.165,'#b7b2a4').rotation.z=.15;
+      const note = deskCard('note','',.37,.10,.133,.114,'#c4b48e');
+      note.rotation.z=-.12;
+      const pad = new T.Group();
+      pad.position.set(note.position.x,.785,note.position.z);
+      pad.rotation.y=-.12;
+      workSurface.add(pad);
+      for(let i=0;i<4;i++) box(.133,.0015,.114,i*.0003,.00075+i*.0015,0,i%2?pageEdges:paper,pad,.0004);
+      deskItems.writeNote = value => {
+        const texture=note.material.map;
+        const ctx=texture.image.getContext('2d');
+        ctx.fillStyle='#c4b48e';
+        ctx.fillRect(0,0,768,512);
+        ctx.fillStyle='#423a2a';
+        ctx.font='28px serif';
+        ctx.textAlign='left';
+        const lines=value.match(/[^\n]{1,22}|\n/g)||[];
+        lines.filter(line=>line!=='\n').slice(0,8).forEach((line,i)=>ctx.fillText(line,52,87+i*47,664));
+        texture.needsUpdate=true;
+      };
+      deskCard('photo2','PHOTO / 02',-.365,.032,.148,.181,'#b9b4a7').rotation.z=-.17;
+      deskCard('photo3','PHOTO / 03',-.447,.105,.128,.159,'#b5b0a2').rotation.z=.095;
       // Bent metal paperclip at the file's free corner, with a small physical gap above the cover.
       const clipCurve=new T.CatmullRomCurve3([new T.Vector3(-.11,.014,-.14),new T.Vector3(-.11,.014,-.09),new T.Vector3(-.095,.014,-.086),new T.Vector3(-.09,.014,-.14),new T.Vector3(-.105,.014,-.145),new T.Vector3(-.105,.014,-.10)]);
       const clipGeometry=new T.TubeGeometry(clipCurve,40,.0009,8,false);geometries.set('file-clip',clipGeometry);const fileClip=new T.Mesh(clipGeometry,darkMetal);fileClip.castShadow=true;
       const cassette = new T.Group();
       cassette.name = 'cassette-player';
       cassette.position.set(.53,.782,-.37);
-      const deckScale=1.18;
+      const deckScale=1.416;
       cassette.scale.setScalar(deckScale);
       cassette.rotation.y = -.10;
       workSurface.add(cassette);
@@ -682,7 +721,7 @@
 
       const tape = new T.Group();
       tape.name = 'cassette-tape';
-      const tapeRest = new T.Vector3(.28,.789,-.335);
+      const tapeRest = new T.Vector3(.235,.789,-.33);
       tape.position.copy(tapeRest);
       tape.rotation.y = .23;
       workSurface.add(tape);
@@ -702,7 +741,7 @@
           const lift=ease(clamp(progress/.24));
           const slide=ease(clamp((progress-.20)/.48));
           const drop=ease(clamp((progress-.68)/.32));
-          const clearance=seat.y+.065;
+          const clearance=seat.y+.080;
           tape.position.copy(tapeRest).lerp(seat,slide);
           tape.position.y=T.MathUtils.lerp(T.MathUtils.lerp(tapeRest.y,clearance,lift),seat.y,drop);
           tape.rotation.set(-.24*lift*(1-slide),T.MathUtils.lerp(.23,-.10,slide),0);
@@ -761,6 +800,8 @@
       const pmrem=new T.PMREMGenerator(renderer),environment=pmrem.fromEquirectangular(env);scene.environment=environment.texture;env.dispose();pmrem.dispose();
 
       ownedMaterials.forEach(m=>{m.envMap=environment.texture;m.envMapIntensity=m.metalness>.35?.38:.12;});
+      ceramic.envMapIntensity=.24;
+      coffee.envMapIntensity=.16;
 
       let activeView = options.initialView && views[options.initialView] ? options.initialView : 'entry';
       let transition = null, disposed = false;
