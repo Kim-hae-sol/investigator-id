@@ -417,14 +417,54 @@
         box(.012,h,d+.014,-w/2,0,0,cover,book,.003);
         for(const zz of [-d*.36,d*.36])box(.014,h*.65,.004,-w/2-.002,0,zz,brass,book,.001);
       }
-      const ledgerCovers = ['#322821','#2c302b'].map(color=>{
+      function archiveBinder(x,y,z,w,d,h,color,number,angle){
+        const binder=new T.Group();
+        binder.position.set(x,y,z);
+        binder.rotation.y=angle+(random()-.5)*.055;
+        details.add(binder);
         const cover=leather.clone();
         cover.color.set(color);
+        cover.roughness=.94;
+        cover.bumpMap=leatherMicro;
+        cover.bumpScale=.00035;
         ownedMaterials.add(cover);
-        return cover;
-      });
-      ledger(-.51,.87,-.76,.31,.23,.045,details,ledgerCovers[0]);
-      ledger(-.48,.918,-.735,.274,.207,.041,details,ledgerCovers[1]);
+
+        const board=.0032;
+        for(const sign of [-1,1]){
+          box(w,board,d,0,sign*(h-board)/2,0,cover,binder,.0009);
+        }
+        box(w-.001,h,.007,0,0,d/2-.0035,cover,binder,.0014);
+        box(w-.016,h*.62,d-.020,.002,-.003,-.004,pageEdges,binder,.0008);
+        box(w-.020,.0012,d-.012,-.002,h*.31-.0024,-.005,paper,binder,.0002);
+        const edge=cover.clone();
+        edge.color.multiplyScalar(1.17);
+        ownedMaterials.add(edge);
+        box(w-.012,.00075,.001,0,(h-board)/2+.0013,-d/2+.0008,edge,binder,.0002);
+
+        const label=canvasMaterial(512,128,(c,width,height)=>{
+          c.fillStyle='#a39a82';c.fillRect(0,0,width,height);
+          c.strokeStyle='#746a58';c.strokeRect(8,8,width-16,height-16);
+          c.fillStyle='#3e382e';c.font='bold 36px monospace';
+          c.fillText('ARCHIVE / '+number,24,60);
+          c.font='23px monospace';c.fillText('REFERENCE COPY',25,97);
+        });
+        const plate=new T.Mesh(new T.PlaneGeometry(.116,.026),label);
+        geometries.set('archive-label-'+number,plate.geometry);
+        plate.position.set(-w*.15,0,d/2+.0003);
+        plate.receiveShadow=true;
+        binder.add(plate);
+
+        const recess=cylinder(.0061,.0061,.0007,w*.31,0,d/2+.0004,darkMetal,binder,24);
+        recess.rotation.x=Math.PI/2;
+        const ringGeometry=new T.TorusGeometry(.0062,.00075,8,24);
+        geometries.set('archive-pull-'+number,ringGeometry);
+        const ring=new T.Mesh(ringGeometry,brass);
+        ring.position.set(w*.31,0,d/2+.0008);
+        ring.receiveShadow=true;
+        binder.add(ring);
+      }
+      archiveBinder(-.51,.862,-.76,.31,.23,.045,'#343332','01',-.055);
+      archiveBinder(-.48,.900,-.735,.274,.207,.031,'#343b32','02',.07);
       const penCup=new T.Group();
       penCup.position.set(.57,.8405,-.74);
       details.add(penCup);
