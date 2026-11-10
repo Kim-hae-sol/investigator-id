@@ -70,31 +70,13 @@ async function pressPlay() {
   const camera=window.HNJDeskCamera;
   const key=camera.room().getDeskItems().tapeDeck.playKey;
   const height=key.position.y;
-  const context=window.HNJ.audio.getContext();
-  if(context){
-    const start=context.currentTime;
-    const output=context.createGain();
-    output.gain.value=.32;
-    output.connect(context.destination);
-    for(const [offset,frequency,level] of [[0,480,.047],[.025,290,.032]]){
-      const tone=context.createOscillator();
-      const envelope=context.createGain();
-      tone.type='triangle';
-      tone.frequency.setValueAtTime(frequency,start+offset);
-      tone.frequency.exponentialRampToValueAtTime(frequency*.6,start+offset+.045);
-      envelope.gain.setValueAtTime(level,start+offset);
-      envelope.gain.exponentialRampToValueAtTime(.0001,start+offset+.062);
-      tone.connect(envelope).connect(output);
-      tone.start(start+offset);
-      tone.stop(start+offset+.07);
-      if(offset)tone.onended=()=>output.disconnect();
-    }
-  }
+  window.HNJRoomFoley('play');
+  music();
   await motion(130,t=>{
     key.position.y=height-.004*Math.sin(Math.PI*t);
     camera.redraw(true);
   });
-  music();
+  camera.room().getDeskItems().tapeDeck.setPlaying(window.HNJRoomMusic.status().playing);
   camera.redraw(true);
   busy=false;
 }
@@ -133,7 +115,13 @@ tapeButton.onclick = async () => {
   }
   busy = true;
   const deck = window.HNJDeskCamera.room().getDeskItems().tapeDeck;
+  window.HNJ.audio.getContext();
+  let seatedSound=false;
   await motion(880, progress => {
+    if(progress>=.96&&!seatedSound){
+      seatedSound=true;
+      window.HNJRoomFoley('tape');
+    }
     deck.insertAt(progress);
     window.HNJDeskCamera.tapeView(1);
   });

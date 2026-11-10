@@ -24,26 +24,6 @@
     function ready(){if(window.HNJAccess.getState().authSceneOpen){requestAnimationFrame(ready);return;}position();target.hidden=false;}
     ready();
   });
-  function doorSound(){
-    if(!window.HNJ.audio.isEnabled())return;
-    const c=window.HNJ.audio.getContext();if(!c)return;
-    const gain=c.createGain(),filter=c.createBiquadFilter(),source=c.createBufferSource();
-    const b=c.createBuffer(1,c.sampleRate*.75,c.sampleRate),d=b.getChannelData(0);
-    for(let i=0;i<d.length;i++){const t=i/c.sampleRate;d[i]=(Math.random()*2-1)*(.5*Math.exp(-t*40)+.08*Math.sin(t*28)**2*Math.exp(-t*3));}
-    source.buffer=b;filter.type='lowpass';filter.frequency.value=1200;gain.gain.value=.095;
-    source.connect(filter).connect(gain).connect(c.destination);source.start();source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();document.querySelector('#sound-button').removeEventListener('click',mute);};
-    const mute=()=>{if(!window.HNJ.audio.isEnabled())gain.gain.setTargetAtTime(0,c.currentTime,.01);};
-    document.querySelector('#sound-button').addEventListener('click',mute);
-  }
-  // Subtle chair contact: a short wooden creak and cushioned seat impact.
-  // Synthesized locally so the site does not need an extra audio download.
-  // A quiet, non-tonal fabric/cushion impact when the investigator sits.
-  // Soft upholstered chair landing: filtered fabric rustle, no impact or pitch sweep.
-  // Real soft-chair landing, cropped from the user-supplied recording (1.84s–2.31s).
-  // Encoded as a tiny 8 kHz unsigned PCM sample to keep this change self-contained.
-  // Chair sound temporarily disabled: recorded candidates produced audible scraping.
-  // Keep the seating camera animation intact; restore only after approving an unedited clip.
-  function seatSound(){ /* No sound intentionally. */ }
   function worldPose(name){
     const v=room.getViewPose(name);
     const pose={position:[v.position[0],v.position[1],v.position[2]-3.4],target:[v.target[0],v.target[1],v.target[2]-3.4],fov:v.fov};
@@ -81,13 +61,13 @@
     busy=true;target.disabled=true;
     try {
       const next=await prepare();if(!next){preparation=null;throw new Error('Room preparation failed');}
-      await corridor.attachRoom(next.getScene());root.dataset.state='door-opening';target.hidden=true;doorSound();
+      await corridor.attachRoom(next.getScene());root.dataset.state='door-opening';target.hidden=true;window.HNJRoomFoley('door');
       await animate(1350,t=>{corridor.openDoor(t);window.HNJRoomMusic?.setDoorOpen(t);});root.dataset.state='room-entering';
       let step=0;await animate(2600,t=>{corridor.enterRoom(t);if(step<3&&t>=[.13,.43,.72][step])window.dispatchEvent(new CustomEvent('investigation:room-step',{detail:{index:step++}}));});
       root.dataset.state='room-seating';
       const approach={position:[0,1.70,-.30],target:[0,1.10,-3.95],fov:48},seated=worldPose('tabletop');
       let seatPlayed=false;
-      await animate(2200,t=>{const pose=interpolate(approach,seated,t);pose.position[0]=Math.sin(t*Math.PI)*.12;const lower=Math.max(0,(t-.42)/.58);pose.position[1]=1.70-(1.70-seated.position[1])*lower*lower*(3-2*lower);corridor.roomPose(pose);if(!seatPlayed&&t>=.82){seatPlayed=true;seatSound();}});
+      await animate(2200,t=>{const pose=interpolate(approach,seated,t);pose.position[0]=Math.sin(t*Math.PI)*.12;const lower=Math.max(0,(t-.42)/.58);pose.position[1]=1.70-(1.70-seated.position[1])*lower*lower*(3-2*lower);corridor.roomPose(pose);if(!seatPlayed&&t>=.82){seatPlayed=true;window.HNJRoomFoley('seat');}});
       entered=true;lookingDown=true;root.dataset.state='room';root.dataset.roomView='tabletop';gaze.textContent='정면 보기 ↑';gaze.setAttribute('aria-label','맞은편 용의자석 바라보기');gaze.hidden=true;root.setAttribute('aria-label','조사실 내부');corridor.getRenderer().domElement.setAttribute('aria-label','목재 벽과 기록 보드, 따뜻한 조명의 조사실');
       document.querySelector('#reader-target').hidden=true;
       window.dispatchEvent(new CustomEvent('investigation:room-entered',{detail:window.HNJ.getIdentity()}));
