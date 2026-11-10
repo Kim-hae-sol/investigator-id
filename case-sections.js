@@ -33,14 +33,26 @@
     parent.append(frame);
   }
 
+  function documentSheet(parent,title,format,expand) {
+    const sheet=region(parent,title,'document-sheet '+format);
+    if (expand) {
+      const button=element('button','펼쳐 보기','document-expand');
+      button.type='button';
+      button.setAttribute('aria-label',title+' 펼쳐 보기');
+      button.onclick=()=>expand(sheet,title,button);
+      sheet.append(button);
+    }
+    return sheet;
+  }
+
   const renderers=new Map([
-    ['opened',({left,right,materials})=>{
-      paragraphs(region(left,'사건 기록','chapter-document'),materials.record);
-      artwork(region(right,'WANTED','chapter-wanted'),materials.wanted,'wanted-art');
+    ['opened',({left,right,materials,expand})=>{
+      paragraphs(documentSheet(left,'사건 기록','document-a4',expand),materials.record);
+      artwork(documentSheet(right,'WANTED','document-poster',expand),materials.wanted,'wanted-art');
     }],
-    ['profile',({left,right,materials})=>{
-      artwork(region(left,'인물 사진','chapter-portrait'),materials.portrait,'portrait-art');
-      const profile=region(right,'신상 기록','chapter-profile');
+    ['profile',({right,materials})=>{
+      const profile=documentSheet(right,'신상 기록','document-a5 document-profile');
+      artwork(profile,materials.portrait,'portrait-art');
       const facts=element('dl');
       for (const {label,value} of materials.facts) facts.append(element('dt',label),element('dd',value));
       if (materials.facts.length) profile.append(facts);
@@ -49,7 +61,7 @@
     ['index',({left,right,sections,goTo,memo})=>{
       left.append(element('p','EVIDENCE / 01–03','chapter-separator'));
       if (memo) {
-        const note=region(left,'조사관 메모','chapter-document');
+        const note=documentSheet(left,'조사관 메모','document-a6');
         note.dataset.typeRecord='';
         paragraphs(note,[memo]);
       }
@@ -63,21 +75,26 @@
         row.append(button);
         list.append(row);
       }
-      region(right,'증거 목록','chapter-guide').append(list);
+      documentSheet(right,'증거 목록','document-a5').append(list);
     }],
-    ['photos',({right,materials})=>{
-      const envelope=region(right,'증거사진 봉투','chapter-envelope');
-      if (!materials.prints.length) paragraphs(envelope,[]);
-      for (const print of materials.prints) artwork(envelope,print,'evidence-print');
+    ['photos',({right,materials,expand})=>{
+      const stack=element('div','','document-evidence-stack');
+      right.append(stack);
+      const envelope=documentSheet(stack,'증거사진 봉투','chapter-envelope',expand);
+      const prints=element('div','','document-prints');
+      for (const print of materials.prints.length ? materials.prints : [null,null]) {
+        artwork(prints,print,'evidence-print '+(print?.orientation==='landscape'?'print-wide':''));
+      }
+      envelope.append(prints);
     }],
-    ['interview',({left,right,materials})=>{
-      paragraphs(region(left,'인터뷰 문서','chapter-document'),materials.transcript);
-      const statements=region(right,'발언 기록','chapter-statements');
+    ['interview',({left,right,materials,expand})=>{
+      paragraphs(documentSheet(left,'인터뷰 기록지','document-a4',expand),materials.transcript);
+      const statements=region(right,'발언 발췌','chapter-statements document-excerpts');
       if (!materials.statements.length) paragraphs(statements,[]);
       for (const statement of materials.statements) statements.append(element('blockquote',statement));
     }],
-    ['filmography',({right,materials})=>{
-      const board=region(right,'필모그래피 보드','chapter-board');
+    ['filmography',({right,materials,expand})=>{
+      const board=documentSheet(right,'필모그래피 보드','chapter-board document-board',expand);
       if (!materials.works.length) paragraphs(board,[]);
       else {
         const works=element('ul');
@@ -89,9 +106,9 @@
         board.append(works);
       }
     }],
-    ['final',({left,right,materials})=>{
-      paragraphs(region(left,'최종 수사 보고서','chapter-document'),materials.report);
-      const conclusion=region(right,'조사관 결론','chapter-conclusion');
+    ['final',({left,right,materials,expand})=>{
+      paragraphs(documentSheet(left,'최종 수사 보고서','document-a4',expand),materials.report);
+      const conclusion=documentSheet(right,'조사관 결론','document-a6 document-conclusion');
       if (materials.conclusion.length) conclusion.dataset.typeRecord='';
       paragraphs(conclusion,materials.conclusion);
     }]

@@ -442,3 +442,90 @@
 .case-tape-back:focus-visible,.case-cassette:focus-visible {
   outline:1px solid #ecdbbb;outline-offset:4px;
 }
+
+/* These are loose documents on the folio leaves. Their widths are visual sizes,
+   while the ratios describe their paper stock independently of the viewport. */
+.document-sheet {
+  position:relative;box-sizing:border-box;max-width:calc(100% - 8px);
+  padding:12px;margin:4px 4px 11px;
+  background:linear-gradient(152deg,#e6d6b9,#d7c39e);
+  border:1px solid #ac9671;
+  box-shadow:1px 2px #b29c77,2px 4px 5px #51392146;
+  overflow-wrap:anywhere;
+}
+.document-sheet .document-expand {
+  display:block;margin:3px 0 10px;padding:1px 0;
+  border-bottom:1px solid #927b59;font-size:11px;color:#51402d;
+}
+.document-a4 {width:82%;min-height:0;aspect-ratio:1 / 1.414;rotate:-1deg;margin-left:8px}
+.document-a5 {width:65%;aspect-ratio:1 / 1.414;rotate:1.1deg;margin-inline:auto}
+.document-a6 {width:56%;aspect-ratio:1.414 / 1;rotate:-1.5deg}
+.document-conclusion {margin:12% 0 12px 10%;rotate:1.6deg}
+.document-poster {width:77%;aspect-ratio:4 / 5;margin:13% auto 12px;rotate:2deg}
+.document-poster h2 {text-align:center;letter-spacing:.16em}
+.document-profile .portrait-art {width:62%;min-height:0;aspect-ratio:4 / 5;margin:0 0 10px}
+.document-profile dl {margin:0}
+.document-profile dt {font-weight:600}
+.document-profile dd {margin:0 0 5px}
+.document-sheet .wanted-art {min-height:0;aspect-ratio:4 / 5}
+.document-evidence-stack {padding:10px 3%}
+.document-evidence-stack .chapter-envelope {
+  width:86%;aspect-ratio:1.55 / 1;margin:8px auto 12px;rotate:-1.3deg;
+  background:linear-gradient(155deg,#cfb386,#b99a6a);
+}
+.document-evidence-stack .chapter-envelope::before {margin:0 0 8px}
+.document-prints {display:flex;align-items:center;gap:4px;padding:2px 0 6px}
+.document-prints .evidence-print {
+  width:40%;min-height:0;aspect-ratio:4 / 5;padding:4px;text-align:center;
+  background:#e2d4b8;box-shadow:1px 2px 3px #42322465;rotate:-4deg;
+}
+.document-prints .evidence-print:nth-child(even),.document-prints .print-wide {
+  width:52%;aspect-ratio:5 / 4;rotate:3deg;
+}
+.document-excerpts {width:74%;margin:13% auto 12px;padding:8px;border:0}
+.document-excerpts blockquote,.document-excerpts .chapter-empty {
+  padding:9px;background:#dfcda9;box-shadow:1px 2px 3px #51392145;rotate:1deg;
+}
+.document-excerpts blockquote:nth-of-type(even) {rotate:-1deg;margin-left:9px}
+.document-board {
+  width:95%;aspect-ratio:16 / 9;margin:14% auto 12px;rotate:-1deg;
+  background:#ba9e74;border:2px solid #917752;
+}
+.case-document-viewer {
+  box-sizing:border-box;width:min(94vw,calc(82dvh / 1.414 + 4rem),680px);
+  max-height:94dvh;max-width:none;padding:10px 15px 14px;
+  border:0;background:#33281e;color:#eadbbd;
+}
+.case-document-viewer[open] {display:flex;flex-direction:column}
+.case-document-viewer[data-format=wide] {width:min(94vw,calc(76dvh * 1.78 + 2rem),1050px)}
+.case-document-viewer::backdrop {background:#18120db3}
+.document-return {
+  align-self:flex-end;flex:none;margin:0 0 7px;padding:4px 2px;
+  color:inherit;background:none;border:0;border-bottom:1px solid #cdb88e80;cursor:pointer;
+}
+.document-reading {overflow:auto;overscroll-behavior:contain;min-height:0}
+.document-reading .document-sheet {
+  width:100%;max-width:none;margin:0;padding:clamp(14px,4vw,35px);rotate:none;
+  color:#382f25;font:16px/1.6 var(--desk-copy);box-shadow:none;
+}
+.document-reading .document-prints {flex-wrap:wrap;gap:12px}
+.document-reading .document-prints .evidence-print {max-width:190px}
+.document-return:focus-visible,.document-expand:focus-visible {outline:2px solid currentColor;outline-offset:2px}
+@media (max-width:650px) {
+  .document-sheet,.document-excerpts {width:calc(100% - 7px);padding:6px;margin:4px 3px 8px;rotate:none}
+  .document-evidence-stack {padding:0}
+  .document-evidence-stack .chapter-envelope {width:calc(100% - 7px)}
+  .document-prints .chapter-empty {font-size:9px}
+  .case-document-viewer {width:96vw;max-height:92dvh;padding:8px}
+}
+@media (min-width:651px) {
+  .document-profile {width:64%;display:grid;grid-template-columns:2fr 3fr;gap:6px;align-content:start}
+  .document-profile h2 {grid-column:1 / -1}
+  .document-profile .portrait-art {width:100%}
+}
+@media (max-width:650px) {
+  .document-a4 {width:96%}
+  .document-a5 {width:87%}
+  .document-a6 {width:79%}
+  .document-reading .document-sheet {width:100%}
+}

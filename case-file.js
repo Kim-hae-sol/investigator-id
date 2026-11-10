@@ -305,6 +305,31 @@ function inspect(kind){
 }
 targets.photo.onclick=()=>inspect('photo');targets.photo2.onclick=()=>inspect('photo');targets.photo3.onclick=()=>inspect('photo');
 targets.note.onclick=()=>showMemo(targets.note);
+const documentViewer=document.createElement('dialog');
+documentViewer.className='case-document-viewer';
+documentViewer.innerHTML='<button type="button" class="document-return">기록철로 돌아가기 ×</button><div class="document-reading"></div>';
+document.body.append(documentViewer);
+const documentReading=documentViewer.querySelector('.document-reading');
+let documentFocus=null;
+documentViewer.querySelector('button').onclick=()=>documentViewer.close();
+documentViewer.addEventListener('close',()=>{
+  if (documentViewer.open) return;
+  documentReading.replaceChildren();
+  documentFocus?.focus({preventScroll:true});
+});
+function expandDocument(sheet,title,trigger) {
+  if (busy || documentViewer.open) return;
+  finishTyping?.(true);
+  documentFocus=trigger;
+  const copy=sheet.cloneNode(true);
+  copy.querySelector('.document-expand')?.remove();
+  documentViewer.dataset.format=sheet.classList.contains('document-board')?'wide':'portrait';
+  documentViewer.setAttribute('aria-label',title);
+  documentReading.replaceChildren(copy);
+  documentViewer.showModal();
+  documentReading.scrollTop=0;
+}
+
 function renderSection(scope, i) {
   const section = data.sections[i];
   const identity = window.HNJ.getIdentity();
@@ -312,7 +337,7 @@ function renderSection(scope, i) {
   scope.querySelector('.case-assigned').textContent = '담당 조사관 · ' + (identity?.name || '—');
   window.HNJCaseSections.render(section,scope.querySelector('.case-chapter-left'),
     scope.querySelector('.case-chapter-right'),{
-      sections:data.sections,identity,memo:data.memo,
+      sections:data.sections,identity,memo:data.memo,expand:expandDocument,
       goTo:id=>turnTo(data.sections.findIndex(chapter=>chapter.id===id))
     });
   scope.querySelector('[data-prev]').disabled = i === 0;
@@ -588,6 +613,6 @@ function deskFrame(now){
 requestAnimationFrame(deskFrame);
 stage.addEventListener('corridor:render',project);window.addEventListener('resize',project);
 window.addEventListener('investigation:room-entered',()=>{active=true;reflectMemo();window.HNJDeskCamera.refresh();layer.hidden=false;root.dataset.caseState='desk';project();});
-window.addEventListener('keydown',e=>{if(viewer.open||memoDialog.open)return;if(e.key==='Escape'&&!deckBack.hidden){deckBack.click();return;}if(!opened)return;if(e.key==='Escape')close();if(e.key==='ArrowRight'){e.preventDefault();turnTo(index+1);}if(e.key==='ArrowLeft'){e.preventDefault();turnTo(index-1);}});
+window.addEventListener('keydown',e=>{if(viewer.open||memoDialog.open||documentViewer.open)return;if(e.key==='Escape'&&!deckBack.hidden){deckBack.click();return;}if(!opened)return;if(e.key==='Escape')close();if(e.key==='ArrowRight'){e.preventDefault();turnTo(index+1);}if(e.key==='ArrowLeft'){e.preventDefault();turnTo(index-1);}});
 window.HNJCaseFile=Object.freeze({state:()=>({active,opened,busy,section:data.sections[index].id,photoAside})});
 })();
