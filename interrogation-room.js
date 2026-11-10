@@ -290,15 +290,15 @@
       const lampShade = new T.Mesh(new T.CylinderGeometry(.23, .36, .18, 36, 1, true), brass);
       lampShade.position.y = -.07; lampShade.castShadow = true; pendant.add(lampShade);
       const diffuser = new T.Mesh(new T.CircleGeometry(.29, 36), shade); diffuser.rotation.x = -Math.PI / 2; diffuser.position.y = -.16; pendant.add(diffuser);
-      const mainLight = new T.SpotLight('#fff1e0', 13.79, 6.5, .65, .90, 1.7);
+      const mainLight = new T.SpotLight('#fff1e0', 15.2, 6.5, .65, .90, 1.7);
       mainLight.position.set(-.36, 2.66, DESK_Z + .56); mainLight.target.position.set(-.04, .78, DESK_Z + .16); mainLight.castShadow = true;
       mainLight.shadow.mapSize.set(2048, 2048); mainLight.shadow.bias = -.00016; mainLight.shadow.normalBias = .0025;
       mainLight.shadow.radius = 5; mainLight.shadow.camera.near = .1; mainLight.shadow.camera.far = 8; scene.add(mainLight, mainLight.target);
-      const warmBounce = new T.PointLight('#e4dcd0', 1.60, 5.6, 2); warmBounce.position.set(.8, 1.88, DESK_Z+.72); scene.add(warmBounce);
+      const warmBounce = new T.PointLight('#e4dcd0', 2.15, 5.6, 2); warmBounce.position.set(.8, 1.88, DESK_Z+.72); scene.add(warmBounce);
       const sideLightLevel = .70;
       const wallBounce = new T.DirectionalLight('#c2bfb9', .252 * sideLightLevel); wallBounce.position.set(-.8, 2.45, -2.55); scene.add(wallBounce);
       const sideFill = new T.DirectionalLight('#d4d0c8', .1785 * sideLightLevel); sideFill.position.set(-3.0, 2.2, -1.2); scene.add(sideFill);
-      const ambient = new T.HemisphereLight('#c5c1ba', '#393028', .187); scene.add(ambient);
+      const ambient = new T.HemisphereLight('#c5c1ba', '#49423a', .25); scene.add(ambient);
       scene.add(new T.AmbientLight('#c2b5a1', .07));
       const wallGraze=new T.PointLight('#d1cac0',1.925 * sideLightLevel,3.8,2);wallGraze.position.set(-1.9,2.30,-2.0);scene.add(wallGraze);
       const windowFill=new T.SpotLight('#ded9ce',2.04 * sideLightLevel,6.5,1.0,1,2);windowFill.position.set(-2.82,2.05,-.82);windowFill.target.position.set(.3,.78,0);scene.add(windowFill,windowFill.target);
@@ -495,7 +495,7 @@
         const x=1.66+(i%2)*.54,z=-2.58+(i===2?.55:0),y=.18;
         box(.46,.35,.42,x,y,z,paper,details,.006);box(.48,.035,.44,x,.37,z,woodTrim,details,.003);box(.11,.035,.004,x,.25,z+.213,charcoal,details,.002);
       }
-      const boardLight=new T.PointLight('#e9d2b6',2.509 * sideLightLevel,4.5,2);boardLight.position.set(1.1,2.50,-2.62);scene.add(boardLight);
+      const boardLight=new T.PointLight('#e9d2b6',2.95 * sideLightLevel,4.5,2);boardLight.position.set(1.1,2.50,-2.62);scene.add(boardLight);
       // Small real hardware, surface intersections and restrained wear: all at the existing prop locations.
       function tubeHandle(x,y,z,width,parent){
         const path=new T.CatmullRomCurve3([new T.Vector3(x-width/2,y,z),new T.Vector3(x-width/2,y,z+.027),new T.Vector3(x+width/2,y,z+.027),new T.Vector3(x+width/2,y,z)]);
@@ -596,6 +596,35 @@
       liquid.castShadow = false;
       contact(.196,.188,.002,.00025,.002,.58,mugSet);
       contact(.122,.117,.003,coasterTop+.00022,-.001,.76,mugSet);
+      const vaporCanvas=document.createElement('canvas');
+      vaporCanvas.width=vaporCanvas.height=64;
+      const vaporContext=vaporCanvas.getContext('2d');
+      const mist=vaporContext.createRadialGradient(32,32,0,32,32,31);
+      mist.addColorStop(0,'#fff');
+      mist.addColorStop(.45,'#ffffff55');
+      mist.addColorStop(1,'#ffffff00');
+      vaporContext.fillStyle=mist;
+      vaporContext.fillRect(0,0,64,64);
+      const vaporMap=new T.CanvasTexture(vaporCanvas);
+      textures.set('coffee-vapor',{map:vaporMap});
+      const wisps=Array.from({length:7},()=>{
+        const material=new T.SpriteMaterial({map:vaporMap,color:'#eee2d1',transparent:true,opacity:0,depthWrite:false});
+        ownedMaterials.add(material);
+        const wisp=new T.Sprite(material);
+        wisp.visible=false;
+        cup.add(wisp);
+        return wisp;
+      });
+      function animateSteam(seconds){
+        wisps.forEach((wisp,index)=>{
+          const age=(seconds/(2.4+index*.11)+index/7)%1;
+          const drift=Math.sin(seconds*1.7+index*2.4);
+          wisp.visible=true;
+          wisp.position.set(drift*(.004+age*.018),.094+age*.17,Math.sin(index*3+seconds)*.012);
+          wisp.scale.set(.014+age*.035,.035+age*.048,1);
+          wisp.material.opacity=.115*Math.sin(Math.PI*age)*(1-age);
+        });
+      }
       caseFile.position.set(.018,.7855,.18);caseFile.scale.setScalar(1.12);
       // Desk evidence is real metre-scale geometry. Text uses local canvas labels, never a scene plate.
       const deskItems={};
@@ -614,6 +643,7 @@
       const pad = new T.Group();
       pad.position.set(note.position.x,.785,note.position.z);
       pad.rotation.y=-.12;
+      note.userData.liftCompanion=pad;
       workSurface.add(pad);
       for(let i=0;i<4;i++) box(.133,.0015,.114,i*.0003,.00075+i*.0015,0,i%2?pageEdges:paper,pad,.0004);
       deskItems.writeNote = value => {
@@ -668,27 +698,27 @@
       box(.28,.033,.023,0,.041,-.077,darkMetal,cassette,.003);
       box(.066,.033,.137,-.107,.041,-.007,darkMetal,cassette,.003);
       box(.025,.033,.137,.127,.041,-.007,darkMetal,cassette,.003);
-      // The 100.5 × 64.7 mm cassette seats in a 105 × 69 mm pocket.
-      const pocket = { x:.029, y:.033, z:-.009, width:.105, depth:.069 };
+      // The 100.5 × 64.7 mm cassette seats in a 127 × 82 mm pocket.
+      const pocket = { x:.029, y:.033, z:-.009, width:.127, depth:.082 };
       const carrier = new T.MeshStandardMaterial({
         color:'#3c3933',roughness:.72,metalness:.24
       });
       ownedMaterials.add(carrier);
       box(.155,.004,.112,pocket.x,.030,pocket.z,charcoal,cassette);
       for (const sign of [-1,1]) {
-        box(.028,.017,.112,pocket.x+sign*(pocket.width/2+.014),.040,pocket.z,carrier,cassette,.002);
-        box(pocket.width,.017,.021,pocket.x,.040,pocket.z+sign*(pocket.depth/2+.0105),carrier,cassette,.002);
-        const guide = cylinder(.0018,.0018,.006,pocket.x+sign*.047,.035,pocket.z-.026,brass,cassette,12);
+        box(.017,.017,.112,pocket.x+sign*(pocket.width/2+.0085),.040,pocket.z,carrier,cassette,.002);
+        box(pocket.width,.017,.014,pocket.x,.040,pocket.z+sign*(pocket.depth/2+.007),carrier,cassette,.002);
+        const guide = cylinder(.0018,.0018,.006,pocket.x+sign*.056,.035,pocket.z-.026,brass,cassette,12);
         guide.castShadow = false;
       }
-      for (const offset of [-.023,.023]) {
+      for (const offset of [-.0276,.0276]) {
         const hub = pocket.x+offset;
         cylinder(.010,.010,.002,hub,.0335,pocket.z-.005,darkMetal,cassette,24);
         cylinder(.003,.003,.006,hub,.036,pocket.z-.005,brass,cassette,16);
       }
-      const head = box(.012,.006,.006,pocket.x,.035,pocket.z+.031,brass,cassette,.001);
+      const head = box(.012,.006,.006,pocket.x,.035,pocket.z+.038,brass,cassette,.001);
       head.castShadow = false;
-      cylinder(.003,.003,.007,pocket.x+.031,.035,pocket.z+.027,charcoal,cassette,20);
+      cylinder(.003,.003,.007,pocket.x+.031,.035,pocket.z+.035,charcoal,cassette,20);
       box(.052,.003,.108,-.107,.058,-.009,carrier,cassette,.0015);
       for (let i=0;i<9;i++) {
         box(.043,.0007,.0032,-.107,.0598,-.056+i*.011,charcoal,cassette,.00025);
@@ -721,14 +751,14 @@
 
       const tape = new T.Group();
       tape.name = 'cassette-tape';
-      const tapeRest = new T.Vector3(.235,.789,-.33);
+      const tapeRest = new T.Vector3(.215,.789,-.33);
       tape.position.copy(tapeRest);
       tape.rotation.y = .23;
       workSurface.add(tape);
       const tapeModel = window.HNJStaticModel.create(window.HNJTapeAsset,'cassette',
         {anisotropy,materials:ownedMaterials,geometries,textures});
       tapeModel.position.y = .0036;
-      tape.scale.setScalar(deckScale);
+      tape.scale.setScalar(deckScale*1.2);
       tape.add(tapeModel);
       deskItems.tape = tape;
       deskItems.tapeDeck = {
@@ -870,7 +900,7 @@
       ready = true; container.dataset.roomRenderer = 'webgl'; container.dataset.roomView = activeView;
       return Object.freeze({
         getScene: () => scene,
-        getDeskItems:()=>deskItems,
+        getDeskItems:()=>deskItems, animateSteam,
         getViewPose: name => views[name],
         views: Object.freeze(Object.keys(views)),
         setView(name) { const result = setView(name); container.dataset.roomView = result; return result; },

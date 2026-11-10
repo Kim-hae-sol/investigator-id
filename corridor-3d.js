@@ -538,6 +538,18 @@
         throw new Error('3D renderer did not produce a valid first frame');
       root.classList.add('has-3d');
       active = Object.freeze({ render, resize: onResize, getCamera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),
+        pickDesk(x,y,objects){
+          const bounds=stage.getBoundingClientRect();
+          const pointer=new T.Vector2((x-bounds.left)/bounds.width*2-1,1-(y-bounds.top)/bounds.height*2);
+          const ray=new T.Raycaster();
+          ray.setFromCamera(pointer,camera);
+          for(const hit of ray.intersectObjects(objects,true)){
+            for(let object=hit.object;object;object=object.parent){
+              if(objects.includes(object)) return object;
+            }
+          }
+          return null;
+        },
         projectWorld(point){const p=new T.Vector3(...point).project(camera),r=stage.getBoundingClientRect();return {x:(p.x+1)*r.width/2,y:(1-p.y)*r.height/2,depth:p.z};},
         readerProjection, readerFeedback, handleProjection,
         getRenderer:()=>renderer,

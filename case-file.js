@@ -64,6 +64,40 @@ function label(button, text) {
 function music() {
   if (deckState === 'loaded') window.HNJRoomMusic.toggle();
 }
+async function pressPlay() {
+  if(busy)return;
+  busy=true;
+  const camera=window.HNJDeskCamera;
+  const key=camera.room().getDeskItems().tapeDeck.playKey;
+  const height=key.position.y;
+  const context=window.HNJ.audio.getContext();
+  if(context){
+    const start=context.currentTime;
+    const output=context.createGain();
+    output.gain.value=.32;
+    output.connect(context.destination);
+    for(const [offset,frequency,level] of [[0,480,.047],[.025,290,.032]]){
+      const tone=context.createOscillator();
+      const envelope=context.createGain();
+      tone.type='triangle';
+      tone.frequency.setValueAtTime(frequency,start+offset);
+      tone.frequency.exponentialRampToValueAtTime(frequency*.6,start+offset+.045);
+      envelope.gain.setValueAtTime(level,start+offset);
+      envelope.gain.exponentialRampToValueAtTime(.0001,start+offset+.062);
+      tone.connect(envelope).connect(output);
+      tone.start(start+offset);
+      tone.stop(start+offset+.07);
+      if(offset)tone.onended=()=>output.disconnect();
+    }
+  }
+  await motion(130,t=>{
+    key.position.y=height-.004*Math.sin(Math.PI*t);
+    camera.redraw(true);
+  });
+  music();
+  camera.redraw(true);
+  busy=false;
+}
 cassette.onclick = music;
 async function openDeck() {
   if (!active || busy || opened || deckState !== 'closed') return;
@@ -83,7 +117,7 @@ async function openDeck() {
 deckButton.onclick = async () => {
   if (busy || opened) return;
   if (deckState !== 'loaded') return openDeck();
-  if (root.dataset.tapeFocus) return music();
+  if (root.dataset.tapeFocus) return pressPlay();
   busy=true;
   root.dataset.tapeFocus='true';
   await motion(480,p=>window.HNJDeskCamera.tapeView(p));
@@ -353,6 +387,79 @@ reader.querySelector('.case-close').onclick=close;
 targets.file.onclick=open;
 function motion(ms,fn){if(matchMedia('(prefers-reduced-motion: reduce)').matches){fn(1);return Promise.resolve();}return new Promise(resolve=>{let start;function frame(now){start??=now;const t=Math.min(1,(now-start)/ms);fn(t*t*(3-2*t));if(t<1)requestAnimationFrame(frame);else resolve();}requestAnimationFrame(frame);});}
 function project(){if(!active||opened)return;const items=window.HNJDeskCamera.room()?.getDeskItems();if(!items)return;for(const [key,b]of Object.entries(targets)){const obj=key==='cassette'&&deckState==='loaded'&&root.dataset.tapeFocus?items.tapeDeck.playKey:items[key];if(!obj||b.hidden)continue;const v=new THREE.Vector3();obj.getWorldPosition(v);const p=window.HNJDeskCamera.project(v.toArray());if(!p)continue;b.style.left=p.x+'px';b.style.top=p.y+'px';b.style.visibility=p.depth<1?'visible':'hidden';}}
+const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
+const hint=document.createElement('p');
+hint.className='desk-touch-hint';
+hint.textContent='책상 위 물건을 터치해 살펴보세요';
+layer.append(hint);
+let hovered=null;
+const lifts=new Map();
+function clearLifts(){
+  for(const [object,offset] of lifts)object.position.y-=offset;
+  lifts.clear();
+  hovered=null;
+  stage.style.cursor='';
+}
+function pickObject(event){
+  if(!active||busy||opened||viewer.open||layer.hidden)return null;
+  const camera=window.HNJDeskCamera;
+  const items=camera.room().getDeskItems();
+  const candidates=new Map();
+  for(const [key,button] of Object.entries(targets)){
+    if(button.hidden||button.disabled||!button.getClientRects().length)continue;
+    const mesh=key==='cassette'&&deckState==='loaded'&&root.dataset.tapeFocus?items.tapeDeck.playKey:items[key];
+    if(mesh)candidates.set(mesh,button);
+  }
+  const mesh=camera.pick(event.clientX,event.clientY,[...candidates.keys()]);
+  return mesh?{mesh,button:candidates.get(mesh)}:null;
+}
+stage.addEventListener('pointermove',event=>{
+  if(event.pointerType==='touch')return;
+  hovered=pickObject(event)?.mesh??null;
+  stage.style.cursor=hovered?'pointer':'';
+});
+stage.addEventListener('pointerleave',()=>{hovered=null;stage.style.cursor='';});
+stage.addEventListener('click',event=>{
+  const hit=pickObject(event);
+  if(!hit)return;
+  clearLifts();
+  window.HNJDeskCamera.redraw(true);
+  hit.button.click();
+});
+for(const button of Object.values(targets)){
+  button.addEventListener('click',()=>clearLifts(),{capture:true});
+}
+let lastDeskFrame=0;
+function deskFrame(now){
+  requestAnimationFrame(deskFrame);
+  if(document.hidden||!active||now-lastDeskFrame<40)return;
+  const elapsed=Math.min(50,now-lastDeskFrame);
+  lastDeskFrame=now;
+  const camera=window.HNJDeskCamera;
+  if(busy||opened||viewer.open||layer.hidden){
+    if(lifts.size)clearLifts();
+    return;
+  }
+  if(reducedMotion.matches)return;
+  if(hovered&&!lifts.has(hovered)){
+    lifts.set(hovered,0);
+    if(hovered.userData.liftCompanion)lifts.set(hovered.userData.liftCompanion,0);
+  }
+  let changed=false;
+  for(const [mesh,offset] of lifts){
+    const selected=mesh===hovered||mesh===hovered?.userData.liftCompanion;
+    const target=selected?(mesh===camera.room().getDeskItems().tapeDeck.playKey ? 0 : .0035):0;
+    const difference=target-offset;
+    const next=Math.abs(difference)<.00008?target:offset+difference*(1-Math.exp(-elapsed/61));
+    mesh.position.y+=next-offset;
+    changed ||= next!==offset;
+    if(next===0&&!selected)lifts.delete(mesh);
+    else lifts.set(mesh,next);
+  }
+  if(!root.dataset.tapeFocus)camera.room().animateSteam(now/1000);
+  if(changed||!root.dataset.tapeFocus)camera.redraw(changed);
+}
+requestAnimationFrame(deskFrame);
 stage.addEventListener('corridor:render',project);window.addEventListener('resize',project);
 window.addEventListener('investigation:room-entered',()=>{active=true;reflectMemo();window.HNJDeskCamera.refresh();layer.hidden=false;root.dataset.caseState='desk';project();});
 window.addEventListener('keydown',e=>{if(viewer.open)return;if(e.key==='Escape'&&!deckBack.hidden){deckBack.click();return;}if(!opened)return;if(e.key==='Escape')close();if(e.key==='ArrowRight'){e.preventDefault();turnTo(index+1);}if(e.key==='ArrowLeft'){e.preventDefault();turnTo(index-1);}});

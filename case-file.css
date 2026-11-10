@@ -342,3 +342,12 @@
   font:16px/1.65 Georgia,serif;box-shadow:0 2px #b7a47e,0 4px #c6b38b;
 }
 .desk-memo-pad button {padding:5px 10px;border-bottom:1px solid #59492f}
+
+.case-desk-targets .case-object {pointer-events:none}
+.case-desk-targets .case-object:hover {outline:0;background:transparent}
+.case-desk-targets .case-object:hover:not(:focus-visible)::after {opacity:0}
+.desk-touch-hint {display:none}
+@media (hover:none) and (pointer:coarse) {
+  .desk-touch-hint {display:block;position:absolute;bottom:5%;left:0;right:0;text-align:center;color:#e4d2af;font-size:12px;pointer-events:none}
+  [data-tape-focus] .desk-touch-hint {display:none}
+}
