@@ -529,3 +529,17 @@
   .document-a6 {width:79%}
   .document-reading .document-sheet {width:100%}
 }
+
+/* Page controls respond across their full face; focus rings stay keyboard-only. */
+.case-reader .case-pages button,.desk-note-controls button,.document-return {
+  min-height:34px;padding-inline:9px;border-radius:3px;
+}
+.case-reader .case-pages button:not(:disabled):hover,.desk-note-controls button:hover {
+  background:#6d503b18;border-color:transparent;
+}
+.case-reader .case-tabs button:not([aria-current=true]):hover {
+  background:#d0b68f;box-shadow:1px 3px 5px #30221770;
+}
+.case-tape-back:hover,.case-cassette:not(:disabled):hover,.document-return:hover {
+  background:#cfb58a23;border-color:transparent;
+}

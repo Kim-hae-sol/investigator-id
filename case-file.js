@@ -564,6 +564,7 @@ function clearLifts(){
   hovered=null;
   stage.style.cursor='';
 }
+const deskPickOffsets=[[1,0],[-1,0],[0,1],[0,-1],[.707,.707],[-.707,.707],[.707,-.707],[-.707,-.707]];
 function pickObject(event, includeHoverOnly=false){
   if(!active||busy||opened||viewer.open||memoMoving||memoDialog.open||layer.hidden)return null;
   const camera=window.HNJDeskCamera;
@@ -575,7 +576,16 @@ function pickObject(event, includeHoverOnly=false){
     if(mesh)candidates.set(mesh,button);
   }
   if(includeHoverOnly&&!root.dataset.tapeFocus)candidates.set(items.pen,null);
-  const mesh=camera.pick(event.clientX,event.clientY,[...candidates.keys()]);
+  const {clientX:x,clientY:y}=event;
+  let mesh=camera.pick(x,y,[...candidates.keys()]);
+  if (!mesh) {
+    const clickable=[...candidates].filter(([,button])=>button).map(([object])=>object);
+    const radius=event.pointerType==='touch'||event.sourceCapabilities?.firesTouchEvents?16:9;
+    for (const [dx,dy] of deskPickOffsets) {
+      mesh=camera.pick(x+dx*radius,y+dy*radius,clickable);
+      if(mesh)break;
+    }
+  }
   return mesh?{mesh,button:candidates.get(mesh)}:null;
 }
 stage.addEventListener('pointermove',event=>{
