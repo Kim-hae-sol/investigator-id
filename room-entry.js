@@ -28,9 +28,9 @@
     const v=room.getViewPose(name);
     const pose={position:[v.position[0],v.position[1],v.position[2]-3.4],target:[v.target[0],v.target[1],v.target[2]-3.4],fov:v.fov};
     if(name==='reading'){
-      const file=room.getDeskItems().file;
+      const {file,readingFileScale}=room.getDeskItems();
       // Outer cover at -.39, protruding index at .16, in the book's local space.
-      const center=file.localToWorld(new THREE.Vector3((-.39+.16)/2,.017,0));
+      const center=file.localToWorld(new THREE.Vector3((-.39+.16)/2*readingFileScale/file.scale.x,.017,0));
       pose.position[0]=pose.target[0]=center.x;
       pose.position[2]=center.z+.066;
       pose.target[2]=center.z;
@@ -52,7 +52,7 @@
   window.HNJDeskCamera={tapeView(progress){
     corridor.getRenderer().shadowMap.needsUpdate=true;
     corridor.roomPose(interpolate(worldPose('tabletop'),worldPose('tape'),progress));
-  },pick:(x,y,objects)=>corridor.pickDesk(x,y,objects),redraw:(shadows=false)=>{if(shadows)corridor.getRenderer().shadowMap.needsUpdate=true;corridor.render();},project:point=>corridor?.projectWorld(point),refresh:()=>{corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(worldPose('tabletop'));},refreshReading:()=>{corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(worldPose('reading'));},move:async(open,onFrame)=>{const base=worldPose('tabletop'),close=worldPose('reading');await animate(650,t=>{const hinge=room.getDeskItems().coverHinge;if(hinge)hinge.rotation.z=Math.PI*(open?t:1-t);corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(interpolate(open?base:close,open?close:base,t));onFrame?.(t);});},room:()=>room};
+  },pick:(x,y,objects)=>corridor.pickDesk(x,y,objects),redraw:(shadows=false)=>{if(shadows)corridor.getRenderer().shadowMap.needsUpdate=true;corridor.render();},project:point=>corridor?.projectWorld(point),refresh:()=>{corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(worldPose('tabletop'));},refreshReading:()=>{corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(worldPose('reading'));},move:async(open,onFrame)=>{const base=worldPose('tabletop'),close=worldPose('reading');await animate(650,t=>{room.getDeskItems().setFileOpen(open?t:1-t);corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(interpolate(open?base:close,open?close:base,t));onFrame?.(t);});},room:()=>room};
   window.addEventListener('resize',()=>{if(entered&&root.dataset.caseState==='reading')corridor.roomPose(worldPose('reading'));});
   gaze.addEventListener('click',()=>look(!lookingDown));
   window.addEventListener('keydown',event=>{if(window.HNJCaseFile||!entered||event.altKey||event.ctrlKey||event.metaKey)return;if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();look(event.key==='ArrowDown');}});

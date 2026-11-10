@@ -442,7 +442,7 @@
         const rim=c.createRadialGradient(w*.46,h*.43,h*.16,w*.48,h*.44,h*.64);
         rim.addColorStop(0,'#69462600');rim.addColorStop(1,'#53382091');
         c.fillStyle=rim;c.fillRect(0,0,w,h);
-        c.strokeStyle='#eed4a948';c.lineWidth=2;
+        c.strokeStyle='#b8976840';c.lineWidth=2;
         for(let i=0;i<96;i++){
           const side=i%2,x=side?w-random()*17:random()*17,y=random()*h;
           c.beginPath();c.moveTo(x,y);c.lineTo(x+(side?-1:1)*(3+random()*15),y+random()*9);c.stroke();
@@ -706,7 +706,10 @@
         workSurface.add(wad);
         contact(r*2.6,r*2.4,x,deskTop+.0002,z,.62,workSurface);
       }
-      caseFile.position.set(.018,.7855,.18);caseFile.scale.setScalar(1.12);
+      caseFile.position.set(.018,.7855,.18);
+      const readingFileScale=1.12;
+      const deskFileScale=readingFileScale*1.15;
+      caseFile.scale.set(deskFileScale,readingFileScale,deskFileScale);
       // Desk evidence is real metre-scale geometry. Text uses local canvas labels, never a scene plate.
       const deskItems={};
       function deskCard(key,label,x,z,pw,ph,color){
@@ -718,7 +721,7 @@
         const geo=new T.PlaneGeometry(pw,ph,12,16),vertices=geo.attributes.position;for(let i=0;i<vertices.count;i++){const u=vertices.getX(i)/pw+.5,v=vertices.getY(i)/ph+.5;const curl = key==='note' ? .0018 : .0025;const crease=key==='note' ? .00075*Math.sin(17*u+9*v)*Math.sin(Math.PI*u)*Math.sin(Math.PI*v) : 0;vertices.setZ(i,curl*Math.pow(u,6)*Math.pow(1-v,3)+crease);}geo.computeVertexNormals();geometries.set('desk-'+key,geo);const mesh=new T.Mesh(geo,mat);
         mesh.rotation.x=-Math.PI/2;mesh.position.set(x,key==='photo'?.786:key==='photo3'?.787:key==='photo2'?.785:.791,z);mesh.castShadow=mesh.receiveShadow=true;workSurface.add(mesh);deskItems[key]=mesh;if(key==='photo'&&window.HNJCaseData?.photo){const image=new Image();image.onload=()=>{c.fillStyle='#e5dfd0';c.fillRect(0,0,w,h);const scale=Math.min((w-48)/image.width,(h-48)/image.height);c.drawImage(image,(w-image.width*scale)/2,(h-image.height*scale)/2,image.width*scale,image.height*scale);tex.needsUpdate=true;};image.src=window.HNJCaseData.photo;}return mesh;
       }
-      deskCard('photo','PHOTO / ASSET PENDING',.228,.255,.126,.165,'#b7b2a4').rotation.z=.27;
+      deskCard('photo','PHOTO / ASSET PENDING',.280,.240,.126,.165,'#b7b2a4').rotation.z=.27;
       const note = deskCard('note','',.37,.06,.133,.114,'#c4b48e');
       note.rotation.z=-.25;
       note.position.y=.7879;
@@ -966,7 +969,7 @@
         color:'#c6b591',roughness:.96,bumpMap:paperMicro,bumpScale:.00014
       });
       const insertPaper = leafPaper.clone();
-      insertPaper.color.set('#d8cdb5');
+      insertPaper.color.set('#c9b99d');
       ownedMaterials.add(liner);ownedMaterials.add(leafPaper);ownedMaterials.add(insertPaper);
       const coverHinge = new T.Group();
       coverHinge.position.set(-.1265,.013,0);
@@ -991,7 +994,12 @@
         const sheet=box(width,.00055,depth,x,y,z,stock,parent,.00015);
         sheet.rotation.y=angle;
       }
-      deskItems.coverHinge=coverHinge;
+      deskItems.readingFileScale=readingFileScale;
+      deskItems.setFileOpen=amount=>{
+        const scale=T.MathUtils.lerp(deskFileScale,readingFileScale,amount);
+        caseFile.scale.x=caseFile.scale.z=scale;
+        coverHinge.rotation.z=Math.PI*amount;
+      };
       deskItems.file=caseFile;deskItems.cassette=cassette;
 
       // Loose forms and a capped pen sit clear of the projected click targets.
