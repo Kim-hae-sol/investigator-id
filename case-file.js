@@ -69,26 +69,29 @@ function label(button, text) {
   button.title = text;
   button.setAttribute('aria-label', text);
 }
-function music() {
-  if (deckState === 'loaded') window.HNJRoomMusic.toggle();
-}
 async function pressPlay() {
-  if(busy)return;
+  if(busy||deckState!=='loaded')return;
   busy=true;
   const camera=window.HNJDeskCamera;
-  const key=camera.room().getDeskItems().tapeDeck.playKey;
-  const height=key.position.y;
-  window.HNJRoomFoley('play');
-  music();
-  await motion(130,t=>{
-    key.position.y=height-.004*Math.sin(Math.PI*t);
+  const deck=camera.room().getDeskItems().tapeDeck;
+  try {
+    if(window.HNJ.audio.isEnabled())window.HNJRoomFoley('play');
+    window.HNJRoomMusic.toggle();
+    if(!reducedMotion.matches){
+      deck.pressKey(.4);
+      camera.redraw(true);
+      await motion(145,t=>{
+        deck.pressKey(t<.25?.4+2.4*t:(1-t)/.75);
+        camera.redraw(true);
+      });
+    }
+  } finally {
+    deck.pressKey(0);
     camera.redraw(true);
-  });
-  camera.room().getDeskItems().tapeDeck.setPlaying(window.HNJRoomMusic.status().playing);
-  camera.redraw(true);
-  busy=false;
+    busy=false;
+  }
 }
-cassette.onclick = music;
+cassette.onclick = pressPlay;
 async function openDeck() {
   if (!active || busy || opened || deckState !== 'closed') return;
   busy = true;
@@ -538,8 +541,11 @@ function deskFrame(now){
   const elapsed=Math.min(50,now-lastDeskFrame);
   lastDeskFrame=now;
   const camera=window.HNJDeskCamera;
+  const items=camera.room().getDeskItems();
+  const reelsMoving=!busy&&!reducedMotion.matches&&items.tapeDeck.advanceReels(elapsed/1000);
   if(busy||opened||viewer.open||memoDialog.open||layer.hidden){
     if(lifts.size)clearLifts();
+    if(reelsMoving)camera.redraw();
     return;
   }
   if(reducedMotion.matches)return;
@@ -548,7 +554,6 @@ function deskFrame(now){
 
   }
   let changed=false;
-  const items=camera.room().getDeskItems();
   for(const [mesh,offset] of lifts){
     const selected=mesh===hovered;
     const target=selected?(mesh===items.tapeDeck.playKey ? 0 : .0035):0;
@@ -561,7 +566,7 @@ function deskFrame(now){
     else lifts.set(mesh,next);
   }
   if(!root.dataset.tapeFocus)camera.room().animateSteam(now/1000);
-  if(changed||!root.dataset.tapeFocus)camera.redraw(changed);
+  if(changed||reelsMoving||!root.dataset.tapeFocus)camera.redraw(changed);
 }
 requestAnimationFrame(deskFrame);
 stage.addEventListener('corridor:render',project);window.addEventListener('resize',project);

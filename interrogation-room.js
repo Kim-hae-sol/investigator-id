@@ -818,7 +818,8 @@
         ctx.fillStyle='#302e28';ctx.fillRect(0,98,w,24);
         ctx.font='bold 25px monospace';ctx.fillText('CASSETTE RECORDER',35,42);
         ctx.font='16px monospace';ctx.fillText('PORTABLE / MONO',36,71);
-        ['STOP','REW','PLAY','REC'].forEach((name,i)=>ctx.fillText(name,320+i*137,72));
+        ctx.textAlign='center';
+        ['STOP','REW','PLAY','REC'].forEach((name,i)=>ctx.fillText(name,315+i*148,72));
         ctx.fillStyle='#722c22';ctx.fillRect(884,35,10,10);
       },.55);
       fascia.metalness=.26;
@@ -864,11 +865,27 @@
         const hingePin=cylinder(.004,.004,.018,x,.060,-.066,brass,cassette,16);
         hingePin.rotation.z=Math.PI/2;
       }
+      const playCap = new T.MeshStandardMaterial({
+        color:'#514c40',roughness:.52,metalness:.28
+      });
+      ownedMaterials.add(playCap);
       let playKey;
       for (let i=0;i<4;i++) {
-        const key=box(.024,.006,.019,-.052+i*.039,.062,.069,darkMetal,cassette,.002);
+        const key=box(.024,.006,.019,-.052+i*.039,.062,.069,i===2?playCap:darkMetal,cassette,.002);
         if(i===2) playKey=key;
       }
+      const playLegend = canvasMaterial(128,64,(ctx,w,h)=>{
+        ctx.fillStyle='#514c40';ctx.fillRect(0,0,w,h);
+        ctx.fillStyle='#e4d9bc';ctx.font='bold 29px monospace';
+        ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('▶',w/2,h/2);
+      },.58);
+      const legend = new T.Mesh(new T.PlaneGeometry(.016,.013),playLegend);
+      geometries.set('cassette-play-legend',legend.geometry);
+      legend.rotation.x=-Math.PI/2;
+      legend.position.y=.00315;
+      legend.receiveShadow=true;
+      playKey.add(legend);
+
       const statusLight = new T.MeshStandardMaterial({
         color:'#6f3b28',emissive:'#ed6133',emissiveIntensity:0,roughness:.48
       });
@@ -897,6 +914,21 @@
       tapeModel.position.y = .0036;
       tape.scale.setScalar(deckScale*1.2);
       tape.add(tapeModel);
+      // Spindles sit inside the two apertures of the scanned cassette mesh.
+      const reels = [-.0216,.0216].map(x=>{
+        const reel=new T.Group();
+        reel.position.set(x,.0013,-.0031);
+        tapeModel.add(reel);
+        cylinder(.0038,.0038,.0007,0,0,0,charcoal,reel,20);
+        for(let tooth=0;tooth<3;tooth++){
+          const angle=tooth*2*Math.PI/3;
+          const spoke=box(.0009,.0005,.0028,Math.sin(angle)*.0018,.00055,Math.cos(angle)*.0018,
+            brass,reel,.0001);
+          spoke.rotation.y=angle;
+        }
+        return reel;
+      });
+      let running=false;
       deskItems.tape = tape;
       deskItems.tapeDeck = {
         lidAt(progress) { lid.rotation.x = -1.15 * progress; },
@@ -913,9 +945,18 @@
           tape.position.y=T.MathUtils.lerp(T.MathUtils.lerp(tapeRest.y,clearance,lift),seat.y,drop);
           tape.rotation.set(-.24*lift*(1-slide),T.MathUtils.lerp(.23,-.10,slide),0);
         },
+        pressKey(depth) {
+          playKey.position.y=.062-.0045*depth;
+        },
         setPlaying(playing) {
-          playKey.position.y = playing ? .059 : .062;
-          statusLight.emissiveIntensity = playing ? .62 : 0;
+          running=playing;
+          statusLight.emissiveIntensity=playing?.85:0;
+        },
+        advanceReels(seconds) {
+          if(!running)return false;
+          reels[0].rotation.y-=seconds*1.8;
+          reels[1].rotation.y-=seconds*2.2;
+          return true;
         }
       };
       const liner = new T.MeshStandardMaterial({
