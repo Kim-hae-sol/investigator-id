@@ -191,10 +191,13 @@ let memoMoving=false, memoSource=null, memoMesh=null, memoFocus=null;
 function noteCorners() {
   if (memoMesh) {
     const camera=window.HNJDeskCamera;
-    const {width,height}=memoMesh.geometry.parameters;
+    const {widthSegments,heightSegments}=memoMesh.geometry.parameters;
+    const row=widthSegments+1;
+    const vertices=memoMesh.geometry.attributes.position;
     const rect=stage.getBoundingClientRect();
-    return [[-1,1],[1,1],[-1,-1],[1,-1]].map(([x,y])=>{
-      const point=camera.project(memoMesh.localToWorld(new THREE.Vector3(x*width/2,y*height/2,0)).toArray());
+    return [0,widthSegments,heightSegments*row,vertices.count-1].map(index=>{
+      const corner=new THREE.Vector3().fromBufferAttribute(vertices,index);
+      const point=camera.project(memoMesh.localToWorld(corner).toArray());
       return {x:point.x+rect.left,y:point.y+rect.top};
     });
   }
@@ -207,8 +210,7 @@ function animateNote(opening) {
   const w=memoSheet.offsetWidth, height=memoSheet.offsetHeight;
   const x=(memoDialog.clientWidth-w)/2, y=(memoDialog.clientHeight-height)/2;
   const destination=[{x,y},{x:x+w,y},{x,y:y+height},{x:x+w,y:y+height}];
-  return motion(430,t=>{
-    const p=opening?t:1-t;
+  const draw=p=>{
     const [a,b,c,d]=source.map((point,i)=>({
       x:point.x+(destination[i].x-point.x)*p,
       y:point.y+(destination[i].y-point.y)*p-18*Math.sin(Math.PI*p)
@@ -225,8 +227,10 @@ function animateNote(opening) {
     ].join(',')+')';
     memoDialog.style.setProperty('--desk-shade',String(.14*p));
     memoSheet.style.setProperty('--paper-lift',String(p));
-    memoSheet.style.setProperty('--note-ink',String(Math.max(0,(p-.45)/.55)));
-  });
+    memoSheet.style.setProperty('--note-ink',String(Math.max(0,(p-.35)/.65)));
+  };
+  draw(opening?0:1);
+  return motion(410,t=>draw(opening?t:1-t));
 }
 
 async function showMemo(source) {
@@ -244,12 +248,20 @@ async function showMemo(source) {
   if (memoMesh) {
     memoSheet.style.setProperty('--note-surface','url('+memoMesh.material.map.image.toDataURL()+')');
   } else memoSheet.style.removeProperty('--note-surface');
+  if (memoMesh && !reducedMotion.matches) {
+    const camera=window.HNJDeskCamera;
+    await motion(125,t=>{
+      camera.room().getDeskItems().curlNote(.014*t);
+      camera.redraw(true);
+    });
+  }
   memoDialog.showModal();
+  const flight=animateNote(true);
   if (memoMesh) {
     memoMesh.visible=false;
     window.HNJDeskCamera.redraw(true);
   }
-  await animateNote(true);
+  await flight;
   memoMoving=false;
   memoSheet.inert=false;
   memoSheet.querySelector('[data-return]').focus({preventScroll:true});
@@ -262,9 +274,14 @@ async function returnMemo() {
   await animateNote(false);
   if (memoMesh) {
     memoMesh.visible=true;
-    window.HNJDeskCamera.redraw(true);
+    const camera=window.HNJDeskCamera;
+    memoDialog.close();
+    await motion(115,t=>{
+      camera.room().getDeskItems().curlNote(.014*(1-t));
+      camera.redraw(true);
+    });
   }
-  memoDialog.close();
+  if (memoDialog.open) memoDialog.close();
   memoMoving=false;
   memoFocus?.focus({preventScroll:true});
 }
@@ -548,7 +565,7 @@ function clearLifts(){
   stage.style.cursor='';
 }
 function pickObject(event){
-  if(!active||busy||opened||viewer.open||memoDialog.open||layer.hidden)return null;
+  if(!active||busy||opened||viewer.open||memoMoving||memoDialog.open||layer.hidden)return null;
   const camera=window.HNJDeskCamera;
   const items=camera.room().getDeskItems();
   const candidates=new Map();
@@ -585,7 +602,7 @@ function deskFrame(now){
   const camera=window.HNJDeskCamera;
   const items=camera.room().getDeskItems();
   const reelsMoving=!busy&&!reducedMotion.matches&&items.tapeDeck.advanceReels(elapsed/1000);
-  if(busy||opened||viewer.open||memoDialog.open||layer.hidden){
+  if(busy||opened||viewer.open||memoMoving||memoDialog.open||layer.hidden){
     if(lifts.size)clearLifts();
     if(reelsMoving)camera.redraw();
     return;
@@ -598,7 +615,7 @@ function deskFrame(now){
   let changed=false;
   for(const [mesh,offset] of lifts){
     const selected=mesh===hovered;
-    const target=selected?(mesh===items.tapeDeck.playKey ? 0 : .0035):0;
+    const target=selected?(mesh===items.note ? .010 : mesh===items.tapeDeck.playKey ? 0 : .0035):0;
     const difference=target-offset;
     const next=Math.abs(difference)<.00008?target:offset+difference*(1-Math.exp(-elapsed/61));
     if(mesh===items.note){if(next!==offset)items.curlNote(next);}

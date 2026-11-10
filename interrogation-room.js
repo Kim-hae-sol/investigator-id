@@ -718,7 +718,7 @@
         c.fillStyle='#34332d';c.font=portrait?'20px monospace':'28px monospace';c.textAlign='center';c.fillText(label,w/2,portrait?h-85:h/2,w-70);
         const tex=new T.CanvasTexture(cv);tex.colorSpace=T.SRGBColorSpace;textures.set('desk-'+key,{color:tex});
         const mat=new T.MeshStandardMaterial({map:tex,roughness:.94,bumpMap:paperMicro,bumpScale:.00018,side:T.DoubleSide});ownedMaterials.add(mat);
-        const geo=new T.PlaneGeometry(pw,ph,12,16),vertices=geo.attributes.position;for(let i=0;i<vertices.count;i++){const u=vertices.getX(i)/pw+.5,v=vertices.getY(i)/ph+.5;const curl = key==='note' ? .0018 : .0025;const crease=key==='note' ? .00075*Math.sin(17*u+9*v)*Math.sin(Math.PI*u)*Math.sin(Math.PI*v) : 0;vertices.setZ(i,curl*Math.pow(u,6)*Math.pow(1-v,3)+crease);}geo.computeVertexNormals();geometries.set('desk-'+key,geo);const mesh=new T.Mesh(geo,mat);
+        const geo=new T.PlaneGeometry(pw,ph,12,16),vertices=geo.attributes.position;for(let i=0;i<vertices.count;i++){const u=vertices.getX(i)/pw+.5,v=vertices.getY(i)/ph+.5;const curl = key==='note' ? .0018 : .0025;vertices.setZ(i,curl*Math.pow(u,6)*Math.pow(1-v,3));}geo.computeVertexNormals();geometries.set('desk-'+key,geo);const mesh=new T.Mesh(geo,mat);
         mesh.rotation.x=-Math.PI/2;mesh.position.set(x,key==='photo'?.786:key==='photo3'?.787:key==='photo2'?.785:.791,z);mesh.castShadow=mesh.receiveShadow=true;workSurface.add(mesh);deskItems[key]=mesh;if(key==='photo'&&window.HNJCaseData?.photo){const image=new Image();image.onload=()=>{c.fillStyle='#e5dfd0';c.fillRect(0,0,w,h);const scale=Math.min((w-48)/image.width,(h-48)/image.height);c.drawImage(image,(w-image.width*scale)/2,(h-image.height*scale)/2,image.width*scale,image.height*scale);tex.needsUpdate=true;};image.src=window.HNJCaseData.photo;}return mesh;
       }
       deskCard('photo','PHOTO / ASSET PENDING',.280,.240,.126,.165,'#b7b2a4').rotation.z=.27;
@@ -728,6 +728,12 @@
       const pad = new T.Group();
       pad.position.set(note.position.x,.782,note.position.z);
       pad.rotation.y=-.25;
+      deskItems.fitNoteToDesk=()=>{
+        const narrow=container.clientWidth/Math.max(1,container.clientHeight)<.65;
+        note.position.x=pad.position.x=narrow?.135:.37;
+        note.position.z=pad.position.z=narrow?-.075:.06;
+      };
+      deskItems.fitNoteToDesk();
       workSurface.add(pad);
       for(let i=0;i<7;i++){
         box(.133,.0008,.114,(i%3-1)*.00026,.0004+i*.0008,0,i%2?pageEdges:paper,pad,.00015);
@@ -738,7 +744,7 @@
         for(let i=0;i<noteVertices.count;i++){
           const u=noteVertices.getX(i)/.133+.5;
           const v=noteVertices.getY(i)/.114+.5;
-          noteVertices.setZ(i,noteRest[i]+lift*u**5*(1-v)**3);
+          noteVertices.setZ(i,noteRest[i]+lift*u**3*(1-v)**2);
         }
         noteVertices.needsUpdate=true;
         note.geometry.computeVertexNormals();
@@ -748,23 +754,6 @@
         const ctx=texture.image.getContext('2d');
         ctx.fillStyle='#c4b48e';
         ctx.fillRect(0,0,768,512);
-        for(const [x,y,angle] of [[310,180,-.43],[566,349,.58],[154,383,.32]]){
-          ctx.save();
-          ctx.translate(x,y);
-          ctx.rotate(angle);
-          const fold=ctx.createLinearGradient(0,-22,0,22);
-          fold.addColorStop(0,'#ffffff00');
-          fold.addColorStop(.46,'#ffffff39');
-          fold.addColorStop(.53,'#59482932');
-          fold.addColorStop(1,'#59482900');
-          ctx.fillStyle=fold;
-          ctx.fillRect(-140,-22,280,44);
-          ctx.restore();
-        }
-        ctx.fillStyle='#52696b50';
-        for(let y=94;y<512;y+=47)ctx.fillRect(0,y,768,2);
-        ctx.fillStyle='#9c535651';
-        ctx.fillRect(42,0,2,512);
         ctx.fillStyle='#423a2a';
         ctx.font='28px serif';
         ctx.textAlign='left';

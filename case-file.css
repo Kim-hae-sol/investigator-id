@@ -327,7 +327,7 @@
 .desk-note-writing textarea {
   display:block;box-sizing:border-box;width:100%;padding:0 8px;margin:5px 0 12px;
   resize:none;border:0;border-radius:0;color:inherit;font:16px/25px Georgia,'Noto Serif KR',serif;
-  background:repeating-linear-gradient(transparent 0 24px,#637a7e44 24px 25px);
+  background:transparent;
 }
 .desk-note-sheet :focus-visible {outline:2px solid #796443;outline-offset:2px}
 

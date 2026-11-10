@@ -54,7 +54,9 @@
     corridor.roomPose(interpolate(worldPose('tabletop'),worldPose('tape'),progress));
   },pick:(x,y,objects)=>corridor.pickDesk(x,y,objects),redraw:(shadows=false)=>{if(shadows)corridor.getRenderer().shadowMap.needsUpdate=true;corridor.render();},project:point=>corridor?.projectWorld(point),refresh:()=>{corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(worldPose('tabletop'));},refreshReading:()=>{corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(worldPose('reading'));},move:async(open,onFrame)=>{const base=worldPose('tabletop'),close=worldPose('reading');await animate(650,t=>{room.getDeskItems().setFileOpen(open?t:1-t);corridor.getRenderer().shadowMap.needsUpdate=true;corridor.roomPose(interpolate(open?base:close,open?close:base,t));onFrame?.(t);});},room:()=>room};
   window.addEventListener('resize',()=>{
-    if(!entered || window.HNJCaseFile?.state().busy)return;
+    if(!entered)return;
+    room.getDeskItems().fitNoteToDesk();
+    if(window.HNJCaseFile?.state().busy)return;
     if(root.dataset.caseState==='reading')corridor.roomPose(worldPose('reading'));
     else {
       room.getDeskItems().setFileOpen(0);
