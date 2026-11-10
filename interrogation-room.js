@@ -461,13 +461,7 @@
       ownedMaterials.add(binding);
       box(.265,.0016,.371,0,.0008,0,binding,caseFile,.0007);
       box(.006,.011,.355,-.126,.006,0,binding,caseFile,.002);
-      // Individual documents sit at different depths and project past the folder edges.
-      for(let i=0;i<8;i++){
-        const document=box(.246+(i%3)*.004,.00085,.352+(i%4)*.009,
-          .009+i*.0009,.0022+i*.0011,-.009+(i%3)*.008,pageEdges,caseFile,.0003);
-        document.rotation.y=(i%4-1.5)*.024;
-      }
-      const cover=new T.Mesh(new T.PlaneGeometry(.253,.355,16,20),folderMat);cover.rotation.x=-Math.PI/2;cover.position.y=.009;const coverVertices=cover.geometry.attributes.position;for(let i=0;i<coverVertices.count;i++){const x=coverVertices.getX(i),y=coverVertices.getY(i);coverVertices.setZ(i,.0014*Math.pow(Math.max(0,(x+.1265)/.253),4)*Math.pow(Math.max(0,(.1775-y)/.355),2));}cover.geometry.computeVertexNormals();cover.castShadow=cover.receiveShadow=true;caseFile.add(cover);geometries.set('case-cover',cover.geometry);
+      const cover=new T.Mesh(new T.PlaneGeometry(.253,.355,16,20),folderMat);cover.rotation.x=-Math.PI/2;cover.position.y=.009;const coverVertices=cover.geometry.attributes.position;for(let i=0;i<coverVertices.count;i++){const x=coverVertices.getX(i),y=coverVertices.getY(i);coverVertices.setZ(i,.0014*Math.pow(Math.max(0,(x+.1265)/.253),4)*Math.pow(Math.max(0,(.1775-y)/.355),2));}cover.geometry.computeVertexNormals();cover.castShadow=true;caseFile.add(cover);geometries.set('case-cover',cover.geometry);
 
       // A dark leather blotter grounds the folder and separates the wood from loose papers.
       const blotter=material('leather','#665c4c',.88,.08,3.2,2.0);
@@ -911,24 +905,38 @@
           statusLight.emissiveIntensity = playing ? .62 : 0;
         }
       };
-      // Liner on the inside of the cover and two thin exposed signatures.
       const liner = new T.MeshStandardMaterial({
         color:'#ab9068',roughness:.96,bumpMap:paperMicro,bumpScale:.00022
       });
       const leafPaper = new T.MeshStandardMaterial({
         color:'#c6b591',roughness:.96,bumpMap:paperMicro,bumpScale:.00014
       });
-      ownedMaterials.add(liner);ownedMaterials.add(leafPaper);
+      const insertPaper = leafPaper.clone();
+      insertPaper.color.set('#d8cdb5');
+      ownedMaterials.add(liner);ownedMaterials.add(leafPaper);ownedMaterials.add(insertPaper);
       const coverHinge = new T.Group();
       coverHinge.position.set(-.1265,.013,0);
       caseFile.add(coverHinge);
-      box(.253,.0016,.355,.1265,-.0008,0,binding,coverHinge,.001);
-      box(.242,.0007,.345,.1265,-.002,0,liner,coverHinge,.0005);
-      box(.232,.0007,.334,.124,-.0028,.0015,leafPaper,coverHinge,.0004);
-      box(.232,.0009,.334,.001,.0111,.0015,leafPaper,caseFile,.0003);
+      const backing = box(.253,.0016,.355,.1265,-.00125,0,binding,coverHinge,.001);
+      backing.castShadow=false;
+      box(.242,.0007,.345,.1265,-.0025,0,liner,coverHinge,.0005);
       coverHinge.add(cover);
       cover.position.set(.1265,0,0);
-      box(.067,.0014,.022,.061,-.0005,-.181,liner,coverHinge,.001);
+      box(.067,.0014,.022,.061,-.00065,-.186,liner,coverHinge,.001);
+
+      // The projected reader is the top leaf. A few offset inserts sit directly
+      // beneath it, with some retained on the inside cover as it turns.
+      const inserts = [
+        [coverHinge,.239,.351,.129,-.0034,-.004,.023,insertPaper],
+        [coverHinge,.232,.343,.122,-.0043,.003,-.016,leafPaper],
+        [caseFile,.244,.355,.006,.0054,.004,-.021,leafPaper],
+        [caseFile,.238,.360,.010,.0064,-.006,.027,insertPaper],
+        [caseFile,.232,.344,.002,.0074,.003,-.014,leafPaper]
+      ];
+      for(const [parent,width,depth,x,y,z,angle,stock] of inserts){
+        const sheet=box(width,.00055,depth,x,y,z,stock,parent,.00015);
+        sheet.rotation.y=angle;
+      }
       deskItems.coverHinge=coverHinge;
       deskItems.file=caseFile;deskItems.cassette=cassette;
 
