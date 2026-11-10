@@ -290,16 +290,16 @@
       const lampShade = new T.Mesh(new T.CylinderGeometry(.23, .36, .18, 36, 1, true), brass);
       lampShade.position.y = -.07; lampShade.castShadow = true; pendant.add(lampShade);
       const diffuser = new T.Mesh(new T.CircleGeometry(.29, 36), shade); diffuser.rotation.x = -Math.PI / 2; diffuser.position.y = -.16; pendant.add(diffuser);
-      const mainLight = new T.SpotLight('#fff1e0', 15.2, 6.5, .65, .90, 1.7);
-      mainLight.position.set(-.36, 2.66, DESK_Z + .56); mainLight.target.position.set(-.04, .78, DESK_Z + .16); mainLight.castShadow = true;
+      const mainLight = new T.SpotLight('#fff1e0', 16.4, 4.3, .47, .80, 1.7);
+      mainLight.position.set(-.36, 2.66, DESK_Z + .56); mainLight.target.position.set(-.04, .78, DESK_Z + .20); mainLight.castShadow = true;
       mainLight.shadow.mapSize.set(2048, 2048); mainLight.shadow.bias = -.00016; mainLight.shadow.normalBias = .0025;
       mainLight.shadow.radius = 5; mainLight.shadow.camera.near = .1; mainLight.shadow.camera.far = 8; scene.add(mainLight, mainLight.target);
-      const warmBounce = new T.PointLight('#e4dcd0', 2.15, 5.6, 2); warmBounce.position.set(.8, 1.88, DESK_Z+.72); scene.add(warmBounce);
-      const sideLightLevel = .70;
+      const warmBounce = new T.PointLight('#e4dcd0', 1.32, 2.8, 2); warmBounce.position.set(.8, 1.88, DESK_Z+.72); scene.add(warmBounce);
+      const sideLightLevel = .32;
       const wallBounce = new T.DirectionalLight('#c2bfb9', .252 * sideLightLevel); wallBounce.position.set(-.8, 2.45, -2.55); scene.add(wallBounce);
       const sideFill = new T.DirectionalLight('#d4d0c8', .1785 * sideLightLevel); sideFill.position.set(-3.0, 2.2, -1.2); scene.add(sideFill);
-      const ambient = new T.HemisphereLight('#c5c1ba', '#49423a', .25); scene.add(ambient);
-      scene.add(new T.AmbientLight('#c2b5a1', .07));
+      const ambient = new T.HemisphereLight('#c5c1ba', '#49423a', .145); scene.add(ambient);
+      scene.add(new T.AmbientLight('#c2b5a1', .035));
       const wallGraze=new T.PointLight('#d1cac0',1.925 * sideLightLevel,3.8,2);wallGraze.position.set(-1.9,2.30,-2.0);scene.add(wallGraze);
       const windowFill=new T.SpotLight('#ded9ce',2.04 * sideLightLevel,6.5,1.0,1,2);windowFill.position.set(-2.82,2.05,-.82);windowFill.target.position.set(.3,.78,0);scene.add(windowFill,windowFill.target);
 
@@ -492,14 +492,17 @@
       function rod(a,b,r,mat,parent){const av=new T.Vector3(...a),bv=new T.Vector3(...b);const m=cylinder(r,r,av.distanceTo(bv),0,0,0,mat,parent,12);m.position.copy(av.add(bv).multiplyScalar(.5));m.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),new T.Vector3(...b).sub(new T.Vector3(...a)).normalize());return m;}
       rod([.36,.92,-.1],[.20,1.47,-.1],.014,darkMetal,sideDesk);rod([.20,1.47,-.1],[.47,1.70,-.1],.013,darkMetal,sideDesk);
       const taskShade=new T.Mesh(new T.ConeGeometry(.16,.20,32,1,true),darkMetal);taskShade.position.set(.47,1.61,-.10);taskShade.rotation.z=-.25;sideDesk.add(taskShade);
-      const taskLight=new T.SpotLight('#ffe0bc',10.8,4,.78,.9,2);taskLight.position.set(-1.48,1.57,-2.55);taskLight.target.position.set(-1.9,.85,-2.5);scene.add(taskLight,taskLight.target);
+      const taskLight=new T.SpotLight('#ffe0bc',5.6,2.6,.78,.9,2);taskLight.position.set(-1.48,1.57,-2.55);taskLight.target.position.set(-1.9,.85,-2.5);scene.add(taskLight,taskLight.target);
       for(let i=0;i<3;i++)ledger(-.35+i*.025,.93+i*.05,.03,.34,.25,.05,sideDesk);
       // Archive boxes, open shelving and varied binders are background detail rather than navigation UI.
       for(let i=0;i<3;i++){
         const x=1.66+(i%2)*.54,z=-2.58+(i===2?.55:0),y=.18;
         box(.46,.35,.42,x,y,z,paper,details,.006);box(.48,.035,.44,x,.37,z,woodTrim,details,.003);box(.11,.035,.004,x,.25,z+.213,charcoal,details,.002);
       }
-      const boardLight=new T.PointLight('#e9d2b6',2.95 * sideLightLevel,4.5,2);boardLight.position.set(1.1,2.50,-2.62);scene.add(boardLight);
+      const boardLight=new T.SpotLight('#ebd7bd',2.3,3.0,.69,.68,2);
+      boardLight.position.set(.15,2.62,-2.17);
+      boardLight.target.position.set(0,1.39,-3.17);
+      scene.add(boardLight,boardLight.target);
       // Small real hardware, surface intersections and restrained wear: all at the existing prop locations.
       function tubeHandle(x,y,z,width,parent){
         const path=new T.CatmullRomCurve3([new T.Vector3(x-width/2,y,z),new T.Vector3(x-width/2,y,z+.027),new T.Vector3(x+width/2,y,z+.027),new T.Vector3(x+width/2,y,z)]);
