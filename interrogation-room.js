@@ -656,9 +656,10 @@
         [.264,.204,-.002,.019,-.06],[.228,.209,.014,.027,.15],
         [.255,.196,-.009,.035,-.11],[.233,.201,.005,.041,.08]
       ];
-      function paperStack(name,x,z,layers){
+      function paperStack(name,x,z,angle,layers){
         const stack=new T.Group();
         stack.position.set(x,deskTop,z);
+        stack.rotation.y=angle;
         workSurface.add(stack);
         contact(.34,.32,x,deskTop+.0002,z,.57,workSurface);
         for(const [i,[width,depth,x,y,angle]] of layers.entries()){
@@ -682,14 +683,14 @@
           bundle.add(sheet);
         }
       }
-      paperStack('short',.77,.29,sheets);
+      paperStack('short',.70,.355,.16,sheets);
       const tallSheets=Array.from({length:18},(_,i)=>{
         const [width,depth,x,y,angle]=sheets[i%sheets.length];
         const tier=Math.floor(i/sheets.length);
         return [width-tier*.008,depth-tier*.006,x+tier*.009,y+tier*.044,angle-tier*.035];
       });
-      paperStack('tall',.84,-.015,tallSheets);
-      for(const [i,[x,z,r]] of [[-.62,.24,.032],[.61,.48,.026],[.88,.13,.022]].entries()){
+      paperStack('tall',.87,.025,-.20,tallSheets);
+      for(const [i,[x,z,r]] of [[-.62,.19,.032],[-.54,.32,.023],[.87,.45,.024]].entries()){
         const geometry=new T.IcosahedronGeometry(1,3);
         const vertices=geometry.attributes.position;
         for(let n=0;n<vertices.count;n++){
@@ -720,12 +721,12 @@
         const geo=new T.PlaneGeometry(pw,ph,12,16),vertices=geo.attributes.position;for(let i=0;i<vertices.count;i++){const u=vertices.getX(i)/pw+.5,v=vertices.getY(i)/ph+.5;const curl = key==='note' ? .006 : .0025;const crease=key==='note' ? .00075*Math.sin(17*u+9*v)*Math.sin(Math.PI*u)*Math.sin(Math.PI*v) : 0;vertices.setZ(i,curl*Math.pow(u,6)*Math.pow(1-v,3)+crease);}geo.computeVertexNormals();geometries.set('desk-'+key,geo);const mesh=new T.Mesh(geo,mat);
         mesh.rotation.x=-Math.PI/2;mesh.position.set(x,key==='photo'?.827:key==='photo3'?.787:key==='photo2'?.785:.791,z);mesh.castShadow=mesh.receiveShadow=true;workSurface.add(mesh);deskItems[key]=mesh;if(key==='photo'&&window.HNJCaseData?.photo){const image=new Image();image.onload=()=>{c.fillStyle='#e5dfd0';c.fillRect(0,0,w,h);const scale=Math.min((w-48)/image.width,(h-48)/image.height);c.drawImage(image,(w-image.width*scale)/2,(h-image.height*scale)/2,image.width*scale,image.height*scale);tex.needsUpdate=true;};image.src=window.HNJCaseData.photo;}return mesh;
       }
-      deskCard('photo','PHOTO / ASSET PENDING',.102,.214,.126,.165,'#b7b2a4').rotation.z=.15;
-      const note = deskCard('note','',.37,.10,.133,.114,'#c4b48e');
-      note.rotation.z=-.12;
+      deskCard('photo','PHOTO / ASSET PENDING',.105,.255,.126,.165,'#b7b2a4').rotation.z=.27;
+      const note = deskCard('note','',.37,.06,.133,.114,'#c4b48e');
+      note.rotation.z=-.25;
       const pad = new T.Group();
       pad.position.set(note.position.x,.785,note.position.z);
-      pad.rotation.y=-.12;
+      pad.rotation.y=-.25;
       note.userData.liftCompanion=pad;
       workSurface.add(pad);
       for(let i=0;i<4;i++) box(.133,.0015,.114,i*.0003,.00075+i*.0015,0,i%2?pageEdges:paper,pad,.0004);
@@ -758,8 +759,8 @@
         lines.filter(line=>line!=='\n').slice(0,8).forEach((line,i)=>ctx.fillText(line,52,87+i*47,664));
         texture.needsUpdate=true;
       };
-      deskCard('photo2','PHOTO / 02',-.365,.032,.148,.181,'#b9b4a7').rotation.z=-.17;
-      deskCard('photo3','PHOTO / 03',-.447,.105,.128,.159,'#b5b0a2').rotation.z=.095;
+      deskCard('photo2','PHOTO / 02',-.358,.062,.148,.181,'#b9b4a7').rotation.z=-.29;
+      deskCard('photo3','PHOTO / 03',-.456,.116,.128,.159,'#b5b0a2').rotation.z=.095;
       // Bent metal paperclip at the file's free corner, with a small physical gap above the cover.
       const clipCurve=new T.CatmullRomCurve3([new T.Vector3(-.11,.014,-.14),new T.Vector3(-.11,.014,-.09),new T.Vector3(-.095,.014,-.086),new T.Vector3(-.09,.014,-.14),new T.Vector3(-.105,.014,-.145),new T.Vector3(-.105,.014,-.10)]);
       const clipGeometry=new T.TubeGeometry(clipCurve,40,.0009,8,false);geometries.set('file-clip',clipGeometry);const fileClip=new T.Mesh(clipGeometry,darkMetal);fileClip.castShadow=true;
@@ -909,8 +910,8 @@
         form.rotation.y = -.24+i*.09;
       }
       const pen = new T.Group();
-      pen.position.set(.29,.787,.35);
-      pen.rotation.y = -.31;
+      pen.position.set(.265,.787,.395);
+      pen.rotation.y = -.91;
       workSurface.add(pen);
       const barrel = cylinder(.0045,.0047,.091,0,0,-.014,darkMetal,pen,24);
       barrel.rotation.x = Math.PI/2;
