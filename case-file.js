@@ -1,5 +1,4 @@
-/* Independent layers: projected 3D desk targets, readable folio, evidence viewer,
-   and persistent cassette. Future loose evidence belongs in evidenceLayer. */
+/* Projected 3D desk targets, readable folio, evidence viewer, and persistent cassette. */
 (()=>{'use strict';
 const data=window.HNJCaseData,root=document.querySelector('#opening-sequence'),stage=document.querySelector('#opening-stage');
 let active=false,opened=false,busy=false,index=0,lastFocus=null,photoAside=false;
@@ -8,28 +7,37 @@ const layer=document.createElement('div');layer.className='case-desk-targets';la
 const targets={};const labels={file:'CASE FILE : HNJ 열기',photo:'허남준 사진 확대',photo2:'사진 자료 02 확대',photo3:'사진 자료 03 확대',note:'조사관 메모 펼치기',cassette:'카세트 덮개 열기',tape:'테이프 삽입'};
 for(const [key,label]of Object.entries(labels)){const b=document.createElement('button');b.className='case-object case-'+key;b.type='button';b.setAttribute('aria-label',label);b.title=label;layer.append(b);targets[key]=b;}
 const reader=document.createElement('section');reader.className='case-reader';reader.hidden=true;reader.setAttribute('aria-label','CASE FILE : HNJ 기록철');
-reader.innerHTML='<div class="case-folio"><button class="case-close" type="button">파일 닫기 ×</button><div class="case-spread"><div class="folio-stock" aria-hidden="true"></div><article class="case-left"><small>CASE FILE : HNJ</small><h1></h1><p class="case-subtitle"></p><p class="case-assigned"></p><div class="case-rule"></div><span class="case-reference"></span><div class="folio-slip"><i class="folio-tie" aria-hidden="true"></i><span>FILE COPY</span><strong>HNJ</strong><span>ARCHIVE / 01</span></div></article><article class="case-right"><small>기록 구간</small><div class="case-content"></div><div class="folio-attachments"></div><nav class="case-pages" aria-label="기록 순서"><button type="button" data-prev>← 이전</button><span></span><button type="button" data-next>다음 →</button></nav></article></div><nav class="case-tabs" aria-label="챕터 인덱스"></nav></div>';
+reader.innerHTML=`
+  <div class="case-folio">
+    <button class="case-close" type="button">파일 닫기 ×</button>
+    <div class="case-spread">
+      <div class="folio-stock" aria-hidden="true"></div>
+      <article class="case-left">
+        <small>CASE FILE : HNJ</small>
+        <h1 tabindex="-1"></h1>
+        <p class="case-assigned"></p>
+        <div class="case-chapter-left"></div>
+      </article>
+      <article class="case-right">
+        <div class="case-chapter-right"></div>
+        <nav class="case-pages" aria-label="기록 순서">
+          <button type="button" data-prev>← 이전</button><span></span><button type="button" data-next>다음 →</button>
+        </nav>
+      </article>
+    </div>
+    <nav class="case-tabs" aria-label="챕터 인덱스"></nav>
+  </div>`;
 root.append(reader);
-const attachments = reader.querySelector('.folio-attachments');
-for (const [kind, number, title] of [['photo','01','사진 자료'], ['note','02','조사관 메모']]) {
-  const print = document.createElement('button');
-  print.type = 'button';
-  print.className = 'folio-print folio-print-' + kind;
-  print.innerHTML = '<span class="folio-print-number"></span><span class="folio-print-face" aria-hidden="true"></span><span class="folio-print-label"></span>';
-  print.querySelector('.folio-print-number').textContent = 'ATTACHMENT / ' + number;
-  print.querySelector('.folio-print-label').textContent = title;
-  if (kind === 'note') print.querySelector('.folio-print-face').textContent = data.memo;
-  if (kind === 'photo' && data.photo) {
-    const img = new Image();
-    img.src = data.photo;
-    img.alt = '';
-    print.querySelector('.folio-print-face').append(img);
-  }
-  print.onclick = () => inspect(kind);
-  attachments.append(print);
-}
-const evidenceLayer=document.createElement('div');evidenceLayer.className='case-evidence-layer';reader.append(evidenceLayer);
-const tabs=reader.querySelector('.case-tabs');data.sections.forEach((s,i)=>{const b=document.createElement('button');b.type='button';b.textContent=s.title;b.onclick=()=>turnTo(i);tabs.append(b);});
+const tabs=reader.querySelector('.case-tabs');
+data.sections.forEach((section,i)=>{
+  const button=document.createElement('button');
+  button.type='button';
+  button.textContent=String(i+1).padStart(2,'0');
+  button.setAttribute('aria-label',section.title);
+  button.title=section.title;
+  button.onclick=()=>turnTo(i);
+  tabs.append(button);
+});
 const viewer=document.createElement('dialog');viewer.className='case-viewer';viewer.innerHTML='<button type="button" class="viewer-close">닫기 ×</button><div class="viewer-body"></div>';document.body.append(viewer);viewer.querySelector('button').onclick=()=>viewer.close();
 viewer.addEventListener('click',e=>{if(e.target===viewer)viewer.close();});viewer.addEventListener('close',()=>lastFocus?.focus());
 const cassette=document.createElement('button');cassette.type='button';cassette.className='case-cassette';cassette.hidden=true;cassette.setAttribute('aria-label','카세트 재생');cassette.textContent='▣ PLAY';root.append(cassette);
@@ -221,7 +229,7 @@ async function showMemo(source) {
   if (!active || busy || memoMoving || memoDialog.open || viewer.open) return;
   memoMoving=true;
   memoFocus=source || document.activeElement;
-  memoSource=source || reader.querySelector('.folio-print-note');
+  memoSource=source || reader.querySelector('h1');
   memoMesh=source===targets.note ? window.HNJDeskCamera.room().getDeskItems().note : null;
   memoInput.value=memoDraft ?? memoText;
   memoStatus.textContent=memoDraft===null?'':'저장하지 않은 초안';
@@ -296,10 +304,12 @@ function renderSection(scope, i) {
   const section = data.sections[i];
   const identity = window.HNJ.getIdentity();
   scope.querySelector('h1').textContent = section.title;
-  scope.querySelector('.case-subtitle').textContent = section.subtitle;
   scope.querySelector('.case-assigned').textContent = '담당 조사관 · ' + (identity?.name || '—');
-  scope.querySelector('.case-reference').textContent = 'HNJ / ' + section.id.toUpperCase();
-  window.HNJCaseSections.render(section,scope.querySelector('.case-content'),{inspect,evidenceLayer,identity});
+  window.HNJCaseSections.render(section,scope.querySelector('.case-chapter-left'),
+    scope.querySelector('.case-chapter-right'),{
+      sections:data.sections,identity,
+      goTo:id=>turnTo(data.sections.findIndex(chapter=>chapter.id===id))
+    });
   scope.querySelector('[data-prev]').disabled = i === 0;
   scope.querySelector('[data-next]').disabled = i === data.sections.length-1;
   scope.querySelector('.case-pages span').textContent = String(i+1).padStart(2,'0') + ' / SECTION';
@@ -353,7 +363,9 @@ function snapshot(page) {
 async function turnTo(i) {
   if (!opened || busy || viewer.open || i===index || i<0 || i>=data.sections.length) return;
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const focusWasInContent=spread.contains(document.activeElement);
     show(i);
+    if (focusWasInContent && !spread.contains(document.activeElement)) reader.querySelector('h1').focus({preventScroll:true});
     return;
   }
   busy = true;
@@ -435,8 +447,8 @@ async function turnTo(i) {
       else button.disabled=previousDisabled[j];
     });
     busy = false;
-    if (focused instanceof HTMLElement && !focused.matches(':disabled')) focused.focus({preventScroll:true});
-    else tabs.children[index].focus({preventScroll:true});
+    if (focused instanceof HTMLElement && focused.isConnected && !focused.matches(':disabled')) focused.focus({preventScroll:true});
+    else reader.querySelector('h1').focus({preventScroll:true});
   }
 }
 reader.querySelector('[data-prev]').onclick=()=>turnTo(index-1);
