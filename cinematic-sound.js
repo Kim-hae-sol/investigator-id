@@ -25,7 +25,7 @@
     tape: {duration:.16, gain:.24, cutoff:1800, hits:[[0,1,520],[.05,.45,280]]},
     play: {duration:.13, gain:.25, cutoff:2200, hits:[[0,1,720],[.027,.38,410]]},
     door: {duration:.48, gain:.27, cutoff:770, hits:[[0,.9,155],[.12,.55,109],[.22,.35,145]]},
-    seat: {duration:.26, gain:.26, cutoff:460, hits:[[0,.48,128],[.055,1,86]]}
+    seat: {duration:.26, gain:.26, cutoff:460, hits:[[0,.48,128],[.014,1,86]]}
   };
   window.HNJRoomFoley = name => {
     const cue=foley[name];

@@ -66,8 +66,8 @@
       let step=0;await animate(2600,t=>{corridor.enterRoom(t);if(step<3&&t>=[.13,.43,.72][step])window.dispatchEvent(new CustomEvent('investigation:room-step',{detail:{index:step++}}));});
       root.dataset.state='room-seating';
       const approach={position:[0,1.70,-.30],target:[0,1.10,-3.95],fov:48},seated=worldPose('tabletop');
-      let seatPlayed=false;
-      await animate(2200,t=>{const pose=interpolate(approach,seated,t);pose.position[0]=Math.sin(t*Math.PI)*.12;const lower=Math.max(0,(t-.42)/.58);pose.position[1]=1.70-(1.70-seated.position[1])*lower*lower*(3-2*lower);corridor.roomPose(pose);if(!seatPlayed&&t>=.82){seatPlayed=true;window.HNJRoomFoley('seat');}});
+      await animate(2200,t=>{const pose=interpolate(approach,seated,t);pose.position[0]=Math.sin(t*Math.PI)*.12;const lower=Math.max(0,(t-.42)/.58);pose.position[1]=1.70-(1.70-seated.position[1])*lower*lower*(3-2*lower);corridor.roomPose(pose);});
+      window.HNJRoomFoley('seat');
       entered=true;lookingDown=true;root.dataset.state='room';root.dataset.roomView='tabletop';gaze.textContent='정면 보기 ↑';gaze.setAttribute('aria-label','맞은편 용의자석 바라보기');gaze.hidden=true;root.setAttribute('aria-label','조사실 내부');corridor.getRenderer().domElement.setAttribute('aria-label','목재 벽과 기록 보드, 따뜻한 조명의 조사실');
       document.querySelector('#reader-target').hidden=true;
       window.dispatchEvent(new CustomEvent('investigation:room-entered',{detail:window.HNJ.getIdentity()}));
