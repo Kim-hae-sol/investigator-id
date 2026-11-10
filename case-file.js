@@ -148,43 +148,150 @@ window.addEventListener('investigation:music-state',e=>{cassette.textContent=e.d
   }
 });
 const memoKey='hnj-investigator-desk-memo';
-let memoText=data.memo;
-try { memoText=localStorage.getItem(memoKey) ?? memoText; } catch {}
+const draftKey=memoKey+'-draft';
+let memoText='', memoDraft=null;
+try {
+  memoText=localStorage.getItem(memoKey) ?? '';
+  memoDraft=localStorage.getItem(draftKey);
+} catch {}
 function reflectMemo() {
-  reader.querySelector('.folio-print-note .folio-print-face').textContent=memoText;
-  window.HNJDeskCamera.room()?.getDeskItems().writeNote(memoText);
+  window.HNJDeskCamera.room()?.getDeskItems().writeNote(memoText || data.memo);
 }
-function showMemo(body) {
-  const form=document.createElement('form');
-  form.className='desk-memo-pad';
-  const text=document.createElement('textarea');
-  text.setAttribute('aria-label','조사관 메모');
-  text.maxLength=360;
-  text.readOnly=true;
-  text.value=memoText;
-  const action=document.createElement('button');
-  action.type='submit';
-  action.textContent='수정';
-  form.append(text,action);
-  form.onsubmit=event=>{
-    event.preventDefault();
-    if(text.readOnly){
-      text.readOnly=false;
-      action.textContent='저장';
-      text.focus();
-      return;
-    }
-    memoText=text.value;
-    try { localStorage.setItem(memoKey,memoText); } catch {}
-    reflectMemo();
-    viewer.close();
-    if(opened) window.HNJDeskCamera.refreshReading();
-    else window.HNJDeskCamera.refresh();
-  };
-  body.append(form);
+
+const memoDialog=document.createElement('dialog');
+memoDialog.className='desk-note-flight';
+memoDialog.setAttribute('aria-label','조사관 메모');
+memoDialog.innerHTML=`
+  <form class="desk-note-sheet">
+    <div class="desk-note-controls">
+      <button type="button" data-return>닫기 ×</button>
+    </div>
+    <section class="desk-note-record"><small>기본 기록</small><p></p></section>
+    <label class="desk-note-writing">내 메모<textarea maxlength="360" rows="4"></textarea></label>
+    <div class="desk-note-controls"><output aria-live="polite"></output><button type="submit">저장</button></div>
+  </form>`;
+document.body.append(memoDialog);
+const memoSheet=memoDialog.querySelector('form');
+const memoInput=memoSheet.querySelector('textarea');
+const memoStatus=memoSheet.querySelector('output');
+memoSheet.querySelector('.desk-note-record p').textContent=data.memo;
+let memoMoving=false, memoSource=null, memoMesh=null, memoFocus=null;
+
+function noteCorners() {
+  if (memoMesh) {
+    const camera=window.HNJDeskCamera;
+    const {width,height}=memoMesh.geometry.parameters;
+    const rect=stage.getBoundingClientRect();
+    return [[-1,1],[1,1],[-1,-1],[1,-1]].map(([x,y])=>{
+      const point=camera.project(memoMesh.localToWorld(new THREE.Vector3(x*width/2,y*height/2,0)).toArray());
+      return {x:point.x+rect.left,y:point.y+rect.top};
+    });
+  }
+  const {left,top,right,bottom}=memoSource.getBoundingClientRect();
+  return [{x:left,y:top},{x:right,y:top},{x:left,y:bottom},{x:right,y:bottom}];
 }
-function inspect(kind){lastFocus=document.activeElement;viewer.dataset.kind=kind;const body=viewer.querySelector('.viewer-body');body.replaceChildren();if(kind==='photo'){if(data.photo){const img=new Image();img.src=data.photo;img.alt='허남준 원본 사진';body.append(img);}else{const p=document.createElement('div');p.className='case-photo-placeholder';p.textContent='PHOTO / ASSET PENDING';body.append(p);}}else{showMemo(body);}viewer.showModal();}
-targets.photo.onclick=()=>inspect('photo');targets.photo2.onclick=()=>inspect('photo');targets.photo3.onclick=()=>inspect('photo');targets.note.onclick=()=>inspect('note');
+
+function animateNote(opening) {
+  const source=noteCorners();
+  const w=memoSheet.offsetWidth, height=memoSheet.offsetHeight;
+  const x=(memoDialog.clientWidth-w)/2, y=(memoDialog.clientHeight-height)/2;
+  const destination=[{x,y},{x:x+w,y},{x,y:y+height},{x:x+w,y:y+height}];
+  return motion(430,t=>{
+    const p=opening?t:1-t;
+    const [a,b,c,d]=source.map((point,i)=>({
+      x:point.x+(destination[i].x-point.x)*p,
+      y:point.y+(destination[i].y-point.y)*p-18*Math.sin(Math.PI*p)
+    }));
+    const dx1=b.x-d.x,dx2=c.x-d.x,dx3=a.x-b.x-c.x+d.x;
+    const dy1=b.y-d.y,dy2=c.y-d.y,dy3=a.y-b.y-c.y+d.y;
+    const det=dx1*dy2-dx2*dy1;
+    const g=Math.abs(det)<.001?0:(dx3*dy2-dx2*dy3)/det;
+    const h=Math.abs(det)<.001?0:(dx1*dy3-dx3*dy1)/det;
+    memoSheet.style.transform='matrix3d('+[
+      (b.x-a.x+g*b.x)/w,(b.y-a.y+g*b.y)/w,0,g/w,
+      (c.x-a.x+h*c.x)/height,(c.y-a.y+h*c.y)/height,0,h/height,
+      0,0,1,0,a.x,a.y,0,1
+    ].join(',')+')';
+    memoDialog.style.setProperty('--desk-shade',String(.27*p));
+    memoSheet.style.setProperty('--note-ink',String(Math.max(0,(p-.45)/.55)));
+  });
+}
+
+async function showMemo(source) {
+  if (!active || busy || memoMoving || memoDialog.open || viewer.open) return;
+  memoMoving=true;
+  memoFocus=source || document.activeElement;
+  memoSource=source || reader.querySelector('.folio-print-note');
+  memoMesh=source===targets.note ? window.HNJDeskCamera.room().getDeskItems().note : null;
+  memoInput.value=memoDraft ?? memoText;
+  memoStatus.textContent=memoDraft===null?'':'저장하지 않은 초안';
+  memoSheet.inert=true;
+  memoDialog.style.setProperty('--desk-shade','0');
+  memoSheet.style.setProperty('--note-ink','0');
+  if (memoMesh) {
+    memoSheet.style.setProperty('--note-surface','url('+memoMesh.material.map.image.toDataURL()+')');
+  } else memoSheet.style.removeProperty('--note-surface');
+  memoDialog.showModal();
+  if (memoMesh) {
+    memoMesh.visible=false;
+    window.HNJDeskCamera.redraw(true);
+  }
+  await animateNote(true);
+  memoMoving=false;
+  memoSheet.inert=false;
+  memoSheet.querySelector('[data-return]').focus({preventScroll:true});
+}
+
+async function returnMemo() {
+  if (!memoDialog.open || memoMoving) return;
+  memoMoving=true;
+  memoSheet.inert=true;
+  await animateNote(false);
+  if (memoMesh) {
+    memoMesh.visible=true;
+    window.HNJDeskCamera.redraw(true);
+  }
+  memoDialog.close();
+  memoMoving=false;
+  memoFocus?.focus({preventScroll:true});
+}
+memoSheet.querySelector('[data-return]').onclick=returnMemo;
+memoDialog.addEventListener('cancel',event=>{event.preventDefault();returnMemo();});
+memoInput.addEventListener('input',()=>{
+  memoDraft=memoInput.value;
+  try { localStorage.setItem(draftKey,memoDraft); memoStatus.textContent='초안 보관됨'; }
+  catch { memoStatus.textContent='이 탭에 초안 보관 중'; }
+});
+memoSheet.onsubmit=event=>{
+  event.preventDefault();
+  if (memoMoving) return;
+  try {
+    localStorage.setItem(memoKey,memoInput.value);
+    localStorage.removeItem(draftKey);
+  } catch {
+    memoStatus.textContent='저장할 수 없습니다. 초안은 이 탭에 남습니다.';
+    return;
+  }
+  memoText=memoInput.value;
+  memoDraft=null;
+  reflectMemo();
+  returnMemo();
+};
+
+function inspect(kind){
+  if(kind==='note'){showMemo(document.activeElement.closest('.case-reader button'));return;}
+  lastFocus=document.activeElement;
+  const body=viewer.querySelector('.viewer-body');
+  body.replaceChildren();
+  if(data.photo){
+    const img=new Image();img.src=data.photo;img.alt='허남준 원본 사진';body.append(img);
+  }else{
+    const p=document.createElement('div');p.className='case-photo-placeholder';p.textContent='PHOTO / ASSET PENDING';body.append(p);
+  }
+  viewer.showModal();
+}
+targets.photo.onclick=()=>inspect('photo');targets.photo2.onclick=()=>inspect('photo');targets.photo3.onclick=()=>inspect('photo');
+targets.note.onclick=()=>showMemo(targets.note);
 function renderSection(scope, i) {
   const section = data.sections[i];
   const identity = window.HNJ.getIdentity();
@@ -376,13 +483,17 @@ layer.append(hint);
 let hovered=null;
 const lifts=new Map();
 function clearLifts(){
-  for(const [object,offset] of lifts)object.position.y-=offset;
+  const items=window.HNJDeskCamera.room()?.getDeskItems();
+  for(const [object,offset] of lifts){
+    if(object===items?.note)items.curlNote(0);
+    else object.position.y-=offset;
+  }
   lifts.clear();
   hovered=null;
   stage.style.cursor='';
 }
 function pickObject(event){
-  if(!active||busy||opened||viewer.open||layer.hidden)return null;
+  if(!active||busy||opened||viewer.open||memoDialog.open||layer.hidden)return null;
   const camera=window.HNJDeskCamera;
   const items=camera.room().getDeskItems();
   const candidates=new Map();
@@ -417,22 +528,24 @@ function deskFrame(now){
   const elapsed=Math.min(50,now-lastDeskFrame);
   lastDeskFrame=now;
   const camera=window.HNJDeskCamera;
-  if(busy||opened||viewer.open||layer.hidden){
+  if(busy||opened||viewer.open||memoDialog.open||layer.hidden){
     if(lifts.size)clearLifts();
     return;
   }
   if(reducedMotion.matches)return;
   if(hovered&&!lifts.has(hovered)){
     lifts.set(hovered,0);
-    if(hovered.userData.liftCompanion)lifts.set(hovered.userData.liftCompanion,0);
+
   }
   let changed=false;
+  const items=camera.room().getDeskItems();
   for(const [mesh,offset] of lifts){
-    const selected=mesh===hovered||mesh===hovered?.userData.liftCompanion;
-    const target=selected?(mesh===camera.room().getDeskItems().tapeDeck.playKey ? 0 : .0035):0;
+    const selected=mesh===hovered;
+    const target=selected?(mesh===items.tapeDeck.playKey ? 0 : .0035):0;
     const difference=target-offset;
     const next=Math.abs(difference)<.00008?target:offset+difference*(1-Math.exp(-elapsed/61));
-    mesh.position.y+=next-offset;
+    if(mesh===items.note){if(next!==offset)items.curlNote(next);}
+    else mesh.position.y+=next-offset;
     changed ||= next!==offset;
     if(next===0&&!selected)lifts.delete(mesh);
     else lifts.set(mesh,next);
@@ -443,6 +556,6 @@ function deskFrame(now){
 requestAnimationFrame(deskFrame);
 stage.addEventListener('corridor:render',project);window.addEventListener('resize',project);
 window.addEventListener('investigation:room-entered',()=>{active=true;reflectMemo();window.HNJDeskCamera.refresh();layer.hidden=false;root.dataset.caseState='desk';project();});
-window.addEventListener('keydown',e=>{if(viewer.open)return;if(e.key==='Escape'&&!deckBack.hidden){deckBack.click();return;}if(!opened)return;if(e.key==='Escape')close();if(e.key==='ArrowRight'){e.preventDefault();turnTo(index+1);}if(e.key==='ArrowLeft'){e.preventDefault();turnTo(index-1);}});
+window.addEventListener('keydown',e=>{if(viewer.open||memoDialog.open)return;if(e.key==='Escape'&&!deckBack.hidden){deckBack.click();return;}if(!opened)return;if(e.key==='Escape')close();if(e.key==='ArrowRight'){e.preventDefault();turnTo(index+1);}if(e.key==='ArrowLeft'){e.preventDefault();turnTo(index-1);}});
 window.HNJCaseFile=Object.freeze({state:()=>({active,opened,busy,section:data.sections[index].id,photoAside})});
 })();

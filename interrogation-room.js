@@ -715,18 +715,31 @@
         c.fillStyle='#34332d';c.font=portrait?'20px monospace':'28px monospace';c.textAlign='center';c.fillText(label,w/2,portrait?h-85:h/2,w-70);
         const tex=new T.CanvasTexture(cv);tex.colorSpace=T.SRGBColorSpace;textures.set('desk-'+key,{color:tex});
         const mat=new T.MeshStandardMaterial({map:tex,roughness:.94,bumpMap:paperMicro,bumpScale:.00018,side:T.DoubleSide});ownedMaterials.add(mat);
-        const geo=new T.PlaneGeometry(pw,ph,12,16),vertices=geo.attributes.position;for(let i=0;i<vertices.count;i++){const u=vertices.getX(i)/pw+.5,v=vertices.getY(i)/ph+.5;const curl = key==='note' ? .006 : .0025;const crease=key==='note' ? .00075*Math.sin(17*u+9*v)*Math.sin(Math.PI*u)*Math.sin(Math.PI*v) : 0;vertices.setZ(i,curl*Math.pow(u,6)*Math.pow(1-v,3)+crease);}geo.computeVertexNormals();geometries.set('desk-'+key,geo);const mesh=new T.Mesh(geo,mat);
+        const geo=new T.PlaneGeometry(pw,ph,12,16),vertices=geo.attributes.position;for(let i=0;i<vertices.count;i++){const u=vertices.getX(i)/pw+.5,v=vertices.getY(i)/ph+.5;const curl = key==='note' ? .0018 : .0025;const crease=key==='note' ? .00075*Math.sin(17*u+9*v)*Math.sin(Math.PI*u)*Math.sin(Math.PI*v) : 0;vertices.setZ(i,curl*Math.pow(u,6)*Math.pow(1-v,3)+crease);}geo.computeVertexNormals();geometries.set('desk-'+key,geo);const mesh=new T.Mesh(geo,mat);
         mesh.rotation.x=-Math.PI/2;mesh.position.set(x,key==='photo'?.786:key==='photo3'?.787:key==='photo2'?.785:.791,z);mesh.castShadow=mesh.receiveShadow=true;workSurface.add(mesh);deskItems[key]=mesh;if(key==='photo'&&window.HNJCaseData?.photo){const image=new Image();image.onload=()=>{c.fillStyle='#e5dfd0';c.fillRect(0,0,w,h);const scale=Math.min((w-48)/image.width,(h-48)/image.height);c.drawImage(image,(w-image.width*scale)/2,(h-image.height*scale)/2,image.width*scale,image.height*scale);tex.needsUpdate=true;};image.src=window.HNJCaseData.photo;}return mesh;
       }
       deskCard('photo','PHOTO / ASSET PENDING',.228,.255,.126,.165,'#b7b2a4').rotation.z=.27;
       const note = deskCard('note','',.37,.06,.133,.114,'#c4b48e');
       note.rotation.z=-.25;
+      note.position.y=.7879;
       const pad = new T.Group();
-      pad.position.set(note.position.x,.785,note.position.z);
+      pad.position.set(note.position.x,.782,note.position.z);
       pad.rotation.y=-.25;
-      note.userData.liftCompanion=pad;
       workSurface.add(pad);
-      for(let i=0;i<4;i++) box(.133,.0015,.114,i*.0003,.00075+i*.0015,0,i%2?pageEdges:paper,pad,.0004);
+      for(let i=0;i<7;i++){
+        box(.133,.0008,.114,(i%3-1)*.00026,.0004+i*.0008,0,i%2?pageEdges:paper,pad,.00015);
+      }
+      const noteVertices=note.geometry.attributes.position;
+      const noteRest=Float32Array.from({length:noteVertices.count},(_,i)=>noteVertices.getZ(i));
+      deskItems.curlNote = lift => {
+        for(let i=0;i<noteVertices.count;i++){
+          const u=noteVertices.getX(i)/.133+.5;
+          const v=noteVertices.getY(i)/.114+.5;
+          noteVertices.setZ(i,noteRest[i]+lift*u**5*(1-v)**3);
+        }
+        noteVertices.needsUpdate=true;
+        note.geometry.computeVertexNormals();
+      };
       deskItems.writeNote = value => {
         const texture=note.material.map;
         const ctx=texture.image.getContext('2d');
