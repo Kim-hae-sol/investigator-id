@@ -337,8 +337,14 @@
 .case-viewer[data-kind=note]::backdrop {background:#14110e35}
 .desk-memo-pad {display:grid;justify-items:end;gap:7px}
 .desk-memo-pad textarea {
-  box-sizing:border-box;width:100%;min-height:150px;padding:18px 16px;resize:vertical;
-  border:0;border-radius:1px;color:#3c3222;background:#d4c29a;
+  box-sizing:border-box;width:100%;min-height:150px;padding:18px 16px 18px 35px;resize:none;
+  border:0;border-radius:1px;color:#3c3222;
+  background:
+    linear-gradient(90deg,transparent 25px,#9d655d55 25px 26px,transparent 26px),
+    repeating-linear-gradient(0deg,#657d8050 0 1px,transparent 1px 26.4px) 0 13px,
+    linear-gradient(141deg,transparent 30%,#fff5 43%,#68523229 44%,transparent 56%),
+    linear-gradient(29deg,transparent 46%,#674c262c 60%,#fff5 61%,transparent 72%),
+    linear-gradient(101deg,#cab685,#e8d8b3 49%,#d3bf92);
   font:16px/1.65 Georgia,serif;box-shadow:0 2px #b7a47e,0 4px #c6b38b;
 }
 .desk-memo-pad button {padding:5px 10px;border-bottom:1px solid #59492f}

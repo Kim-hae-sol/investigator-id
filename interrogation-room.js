@@ -425,13 +425,17 @@
       });
       ledger(-.51,.87,-.76,.31,.23,.045,details,ledgerCovers[0]);
       ledger(-.48,.918,-.735,.274,.207,.041,details,ledgerCovers[1]);
-      // File tray, brass pen cup and a ceramic mug leave the center clear for the future A4 folio.
-      box(.33,.005,.25,.49,.8405,.72,darkMetal,details,.001);
-      for(const x of [.33,.65])box(.003,.046,.25,x,.863,.72,darkMetal,details,.001);
-      box(.33,.046,.003,.49,.863,.60,darkMetal,details,.001);
-      for(let i=0;i<9;i++){const sheet=box(.28,.0008,.21,.49+(i%3-1)*.001,.845+i*.00085,.72,paper,details);sheet.rotation.y=(i-4)*.002;}
       const penCupGeo=new T.LatheGeometry([[0,0],[.038,0],[.043,.099],[.041,.105],[.037,.105],[.035,.014],[0,.014]].map(p=>new T.Vector2(...p)),48);geometries.set('pen-cup',penCupGeo);const penCup=new T.Mesh(penCupGeo,brass);penCup.position.set(.57,.8405,-.74);penCup.castShadow=penCup.receiveShadow=true;details.add(penCup);
-      for(let i=0;i<3;i++){const pen=cylinder(.003,.003,.20,.55+i*.016,.98,-.74,darkMetal,details,8);pen.rotation.z=(i-1)*.11;}
+      for(const [x,length,angle,color] of [[.551,.143,-.12,darkMetal],[.577,.161,.08,charcoal]]){
+        const pen=new T.Group();
+        pen.position.set(x,.943,-.74);
+        pen.rotation.z=angle;
+        details.add(pen);
+        cylinder(.0036,.0036,length,0,0,0,color,pen,12);
+        cylinder(.0041,.0041,.013,0,length/2-.006,0,color,pen,12);
+        cylinder(.004,.004,.002,0,length/2-.015,0,brass,pen,12);
+        box(.0016,.022,.003,.004,length/2-.016,0,brass,pen,.0005);
+      }
       const folderMat=canvasMaterial(512,768,(c,w,h)=>{
         const stock=c.createLinearGradient(0,0,w,h);stock.addColorStop(0,'#766146');stock.addColorStop(.28,'#ae966f');stock.addColorStop(1,'#927753');c.fillStyle=stock;c.fillRect(0,0,w,h);
         for(let i=0;i<18000;i++){c.fillStyle=i%2?'#f4e6c00c':'#342a1c0b';c.fillRect(random()*w,random()*h,1,2);}
@@ -504,7 +508,6 @@
       }
       for(const y of [.36,.86,1.36,1.86])tubeHandle(0,y+.14,.355,.15,tall);
       for(const y of [.31,.57,.83])tubeHandle(0,y+.035,.368,.14,low);
-      for(const x of [.33,.65])for(const z of [.61,.83]){const rivet=cylinder(.003,.003,.002,x,.887,z,brass,details,10);rivet.castShadow=false;}
       // Static contact occlusion only, attached to the receiving surfaces. It remains below the soft key-light shadows.
       const shadowCanvas=document.createElement('canvas');shadowCanvas.width=shadowCanvas.height=128;
       const sc=shadowCanvas.getContext('2d'),sg=sc.createRadialGradient(64,64,9,64,64,63);sg.addColorStop(0,'rgba(0,0,0,.58)');sg.addColorStop(.45,'rgba(0,0,0,.28)');sg.addColorStop(1,'rgba(0,0,0,0)');sc.fillStyle=sg;sc.fillRect(0,0,128,128);
@@ -514,7 +517,7 @@
       for(const x of [-1.0168,1.0168])for(const z of [-.55,.55])contact(.28,.28,x,.023,z+DESK_Z,.62);
       contact(.88,.92,0,.023,DESK_Z+.92,.44);
       contact(1.18,.9,-2.30,.003,-.10,.48);contact(1.12,.87,2.38,.003,-.54,.50);
-      contact(.45,.34,.49,.8405,.72,.45);contact(.39,.32,-.55,.8405,-.76,.42);contact(.13,.13,.57,.8405,-.74,.35);
+      contact(.39,.32,-.55,.8405,-.76,.42);contact(.13,.13,.57,.8405,-.74,.35);
       contact(1.8,.9,-1.95,.003,-2.45,.35);
 
       // A 778 mm real tabletop (instead of the old 838 mm slab). Keep all tabletop
@@ -607,7 +610,7 @@
       vaporContext.fillRect(0,0,64,64);
       const vaporMap=new T.CanvasTexture(vaporCanvas);
       textures.set('coffee-vapor',{map:vaporMap});
-      const wisps=Array.from({length:7},()=>{
+      const wisps=Array.from({length:10},()=>{
         const material=new T.SpriteMaterial({map:vaporMap,color:'#eee2d1',transparent:true,opacity:0,depthWrite:false});
         ownedMaterials.add(material);
         const wisp=new T.Sprite(material);
@@ -617,12 +620,12 @@
       });
       function animateSteam(seconds){
         wisps.forEach((wisp,index)=>{
-          const age=(seconds/(2.4+index*.11)+index/7)%1;
+          const age=(seconds/(2.4+index*.11)+index/wisps.length)%1;
           const drift=Math.sin(seconds*1.7+index*2.4);
           wisp.visible=true;
           wisp.position.set(drift*(.004+age*.018),.094+age*.17,Math.sin(index*3+seconds)*.012);
           wisp.scale.set(.014+age*.035,.035+age*.048,1);
-          wisp.material.opacity=.115*Math.sin(Math.PI*age)*(1-age);
+          wisp.material.opacity=.155*Math.sin(Math.PI*age)*(1-age);
         });
       }
       caseFile.position.set(.018,.7855,.18);caseFile.scale.setScalar(1.12);
@@ -634,7 +637,7 @@
         c.fillStyle='#34332d';c.font=portrait?'20px monospace':'28px monospace';c.textAlign='center';c.fillText(label,w/2,portrait?h-85:h/2,w-70);
         const tex=new T.CanvasTexture(cv);tex.colorSpace=T.SRGBColorSpace;textures.set('desk-'+key,{color:tex});
         const mat=new T.MeshStandardMaterial({map:tex,roughness:.94,bumpMap:paperMicro,bumpScale:.00018,side:T.DoubleSide});ownedMaterials.add(mat);
-        const geo=new T.PlaneGeometry(pw,ph,12,16),vertices=geo.attributes.position;for(let i=0;i<vertices.count;i++){const u=vertices.getX(i)/pw+.5,v=vertices.getY(i)/ph+.5;const curl = key==='note' ? .004 : .0025;vertices.setZ(i,curl*Math.pow(u,6)*Math.pow(1-v,3)+.0004*Math.sin(Math.PI*u)*Math.sin(Math.PI*v));}geo.computeVertexNormals();geometries.set('desk-'+key,geo);const mesh=new T.Mesh(geo,mat);
+        const geo=new T.PlaneGeometry(pw,ph,12,16),vertices=geo.attributes.position;for(let i=0;i<vertices.count;i++){const u=vertices.getX(i)/pw+.5,v=vertices.getY(i)/ph+.5;const curl = key==='note' ? .006 : .0025;const crease=key==='note' ? .00075*Math.sin(17*u+9*v)*Math.sin(Math.PI*u)*Math.sin(Math.PI*v) : 0;vertices.setZ(i,curl*Math.pow(u,6)*Math.pow(1-v,3)+crease);}geo.computeVertexNormals();geometries.set('desk-'+key,geo);const mesh=new T.Mesh(geo,mat);
         mesh.rotation.x=-Math.PI/2;mesh.position.set(x,key==='photo'?.827:key==='photo3'?.787:key==='photo2'?.785:.791,z);mesh.castShadow=mesh.receiveShadow=true;workSurface.add(mesh);deskItems[key]=mesh;if(key==='photo'&&window.HNJCaseData?.photo){const image=new Image();image.onload=()=>{c.fillStyle='#e5dfd0';c.fillRect(0,0,w,h);const scale=Math.min((w-48)/image.width,(h-48)/image.height);c.drawImage(image,(w-image.width*scale)/2,(h-image.height*scale)/2,image.width*scale,image.height*scale);tex.needsUpdate=true;};image.src=window.HNJCaseData.photo;}return mesh;
       }
       deskCard('photo','PHOTO / ASSET PENDING',.102,.214,.126,.165,'#b7b2a4').rotation.z=.15;
@@ -651,6 +654,23 @@
         const ctx=texture.image.getContext('2d');
         ctx.fillStyle='#c4b48e';
         ctx.fillRect(0,0,768,512);
+        for(const [x,y,angle] of [[310,180,-.43],[566,349,.58],[154,383,.32]]){
+          ctx.save();
+          ctx.translate(x,y);
+          ctx.rotate(angle);
+          const fold=ctx.createLinearGradient(0,-22,0,22);
+          fold.addColorStop(0,'#ffffff00');
+          fold.addColorStop(.46,'#ffffff39');
+          fold.addColorStop(.53,'#59482932');
+          fold.addColorStop(1,'#59482900');
+          ctx.fillStyle=fold;
+          ctx.fillRect(-140,-22,280,44);
+          ctx.restore();
+        }
+        ctx.fillStyle='#52696b50';
+        for(let y=94;y<512;y+=47)ctx.fillRect(0,y,768,2);
+        ctx.fillStyle='#9c535651';
+        ctx.fillRect(42,0,2,512);
         ctx.fillStyle='#423a2a';
         ctx.font='28px serif';
         ctx.textAlign='left';
