@@ -997,7 +997,7 @@
       deskItems.readingFileScale=readingFileScale;
       deskItems.setFileOpen=amount=>{
         const aspect=container.clientWidth/Math.max(1,container.clientHeight);
-        const fittedDeskScale=deskFileScale*Math.min(1,aspect/.54);
+        const fittedDeskScale=deskFileScale*Math.min(1,aspect/.62);
         const scale=T.MathUtils.lerp(fittedDeskScale,readingFileScale,amount);
         caseFile.scale.x=caseFile.scale.z=scale;
         coverHinge.rotation.z=Math.PI*amount;
