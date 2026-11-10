@@ -425,16 +425,63 @@
       });
       ledger(-.51,.87,-.76,.31,.23,.045,details,ledgerCovers[0]);
       ledger(-.48,.918,-.735,.274,.207,.041,details,ledgerCovers[1]);
-      const penCupGeo=new T.LatheGeometry([[0,0],[.038,0],[.043,.099],[.041,.105],[.037,.105],[.035,.014],[0,.014]].map(p=>new T.Vector2(...p)),48);geometries.set('pen-cup',penCupGeo);const penCup=new T.Mesh(penCupGeo,brass);penCup.position.set(.57,.8405,-.74);penCup.castShadow=penCup.receiveShadow=true;details.add(penCup);
-      for(const [x,length,angle,color] of [[.551,.143,-.12,darkMetal],[.577,.161,.08,charcoal]]){
+      const penCup=new T.Group();
+      penCup.position.set(.57,.8405,-.74);
+      details.add(penCup);
+      const cupSteel=new T.MeshStandardMaterial({color:'#393735',metalness:.42,roughness:.62});
+      ownedMaterials.add(cupSteel);
+      const meshCanvas=document.createElement('canvas');
+      meshCanvas.width=1024;
+      meshCanvas.height=256;
+      const meshInk=meshCanvas.getContext('2d');
+      meshInk.strokeStyle='#c0c0c0';
+      meshInk.lineWidth=3.5;
+      for(let x=-320;x<=1344;x+=32){
+        for(const slope of [-320,320]){
+          meshInk.beginPath();
+          meshInk.moveTo(x,0);
+          meshInk.lineTo(x+slope,256);
+          meshInk.stroke();
+        }
+      }
+      const meshTexture=new T.CanvasTexture(meshCanvas);
+      meshTexture.anisotropy=anisotropy;
+      textures.set('pen-cup-mesh',{map:meshTexture});
+      const meshSteel=cupSteel.clone();
+      meshSteel.map=meshTexture;
+      meshSteel.alphaTest=.33;
+      meshSteel.side=T.DoubleSide;
+      ownedMaterials.add(meshSteel);
+      const sideGeometry=new T.CylinderGeometry(.041,.036,.084,48,1,true);
+      geometries.set('pen-cup-side',sideGeometry);
+      const meshWall=new T.Mesh(sideGeometry,meshSteel);
+      meshWall.position.y=.049;
+      meshWall.castShadow=meshWall.receiveShadow=true;
+      penCup.add(meshWall);
+      cylinder(.037,.035,.006,0,.003,0,cupSteel,penCup,48);
+      for(const [radius,height,wire] of [[.0365,.007,.0018],[.041,.091,.0023]]){
+        const geometry=new T.TorusGeometry(radius,wire,10,48);
+        geometries.set('pen-cup-rim-'+height,geometry);
+        const rim=new T.Mesh(geometry,cupSteel);
+        rim.rotation.x=-Math.PI/2;
+        rim.position.y=height;
+        rim.castShadow=rim.receiveShadow=true;
+        penCup.add(rim);
+      }
+
+      for(const {foot,edge,length,radius,body} of [
+        {foot:[-.012,.006],edge:[-.032,.016],length:.143,radius:.0035,body:darkMetal},
+        {foot:[.012,-.005],edge:[.027,-.024],length:.159,radius:.0041,body:charcoal}
+      ]){
         const pen=new T.Group();
-        pen.position.set(x,.943,-.74);
-        pen.rotation.z=angle;
-        details.add(pen);
-        cylinder(.0036,.0036,length,0,0,0,color,pen,12);
-        cylinder(.0041,.0041,.013,0,length/2-.006,0,color,pen,12);
-        cylinder(.004,.004,.002,0,length/2-.015,0,brass,pen,12);
-        box(.0016,.022,.003,.004,length/2-.016,0,brass,pen,.0005);
+        pen.position.set(foot[0],.007,foot[1]);
+        const axis=new T.Vector3(edge[0]-foot[0],.084,edge[1]-foot[1]).normalize();
+        pen.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),axis);
+        penCup.add(pen);
+        cylinder(radius,radius*.83,length,0,length/2,0,body,pen,16);
+        cylinder(radius*1.13,radius*1.13,.023,0,length-.012,0,body,pen,16);
+        cylinder(radius*1.12,radius*1.12,.0014,0,length-.024,0,cupSteel,pen,16);
+        box(.0014,.018,.0027,radius*1.14,length-.013,0,cupSteel,pen,.0004);
       }
       const folderMat=canvasMaterial(512,768,(c,w,h)=>{
         const stock=c.createLinearGradient(0,0,w,h);stock.addColorStop(0,'#766146');stock.addColorStop(.28,'#ae966f');stock.addColorStop(1,'#927753');c.fillStyle=stock;c.fillRect(0,0,w,h);
@@ -514,7 +561,7 @@
       for(const x of [-1.0168,1.0168])for(const z of [-.55,.55])contact(.28,.28,x,.023,z+DESK_Z,.62);
       contact(.88,.92,0,.023,DESK_Z+.92,.44);
       contact(1.18,.9,-2.30,.003,-.10,.48);contact(1.12,.87,2.38,.003,-.54,.50);
-      contact(.39,.32,-.55,.8405,-.76,.42);contact(.13,.13,.57,.8405,-.74,.35);
+      contact(.39,.32,-.55,.8405,-.76,.42);contact(.103,.106,.57,.8395,-.74,.43);
       contact(1.8,.9,-1.95,.003,-2.45,.35);
 
       // A 778 mm real tabletop (instead of the old 838 mm slab). Keep all tabletop
