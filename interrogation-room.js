@@ -648,29 +648,27 @@
       loosePaper.side=T.DoubleSide;
       ownedMaterials.add(loosePaper);
       const deskTop=window.HNJTableAsset ? .780 : .8375;
-      const sheets=[
-        [.268,.219,-.016,.005,-.14],[.251,.218,.009,.012,.06],
-        [.264,.204,-.002,.019,-.06],[.228,.209,.014,.027,.15],
-        [.255,.196,-.009,.035,-.11],[.233,.201,.005,.041,.08]
-      ];
       function paperStack(name,x,z,angle,layers){
         const stack=new T.Group();
         stack.position.set(x,deskTop,z);
         stack.rotation.y=angle;
         workSurface.add(stack);
-        contact(.34,.32,x,deskTop+.0002,z,.57,workSurface);
-        for(const [i,[width,depth,x,y,angle]] of layers.entries()){
+        const [baseWidth,baseDepth]=layers[0];
+        contact(baseWidth*1.22,baseDepth*1.20,x,deskTop+.0002,z,.51,workSurface);
+        let height=0;
+        for(const [i,[width,depth,dx,dz,rotation,thickness]] of layers.entries()){
           const bundle=new T.Group();
-          bundle.position.set(x,y,(i%3-1)*.009);
-          bundle.rotation.y=angle;
+          bundle.position.set(dx,height+thickness,dz);
+          bundle.rotation.y=rotation;
           stack.add(bundle);
-          box(width-.009,.006,depth-.007,0,-.003,0,pageEdges,bundle,.0015);
+          box(width-.0015,thickness,depth-.0015,0,-thickness/2,0,pageEdges,bundle,.00025);
           const top=new T.PlaneGeometry(width,depth,12,10);
           const points=top.attributes.position;
+          const curl=i===layers.length-1?.0032:0;
           for(let n=0;n<points.count;n++){
             const u=points.getX(n)/width+.5;
             const v=points.getY(n)/depth+.5;
-            points.setZ(n,.006*u**6*v**3+.002*Math.sin(u*5+i)*Math.sin(Math.PI*v));
+            points.setZ(n,.00012+curl*u**6*v**3);
           }
           top.computeVertexNormals();
           geometries.set('desk-newspaper-'+name+'-'+i,top);
@@ -678,15 +676,26 @@
           sheet.rotation.x=-Math.PI/2;
           sheet.castShadow=sheet.receiveShadow=true;
           bundle.add(sheet);
+          height+=thickness+.00012;
         }
       }
-      paperStack('short',.70,.355,.16,sheets);
-      const tallSheets=Array.from({length:18},(_,i)=>{
-        const [width,depth,x,y,angle]=sheets[i%sheets.length];
-        const tier=Math.floor(i/sheets.length);
-        return [width-tier*.008,depth-tier*.006,x+tier*.009,y+tier*.044,angle-tier*.035];
-      });
-      paperStack('tall',.87,.025,-.20,tallSheets);
+      // Larger working packet on the left, with a shorter set of reference slips on the right.
+      paperStack('working',-.535,-.225,-.13,[
+        [.223,.167,0,0,-.025,.0034],
+        [.210,.153,.008,-.004,.055,.0028],
+        [.227,.159,-.008,.006,-.077,.0041],
+        [.202,.149,.012,.003,.092,.0025],
+        [.214,.156,-.004,-.009,-.047,.0036],
+        [.189,.137,-.016,.010,.11,.0023],
+        [.207,.147,.009,-.004,-.10,.0032],
+        [.174,.124,.016,.009,.071,.0022]
+      ]);
+      paperStack('reference',.578,.095,.19,[
+        [.165,.119,0,0,.015,.0025],
+        [.153,.112,-.011,.004,-.085,.0020],
+        [.171,.121,.008,-.008,.105,.0028],
+        [.142,.101,-.013,.007,-.045,.0019]
+      ]);
       for(const [i,[x,z,r]] of [[-.62,.19,.032],[-.54,.32,.023],[.87,.45,.024]].entries()){
         const geometry=new T.IcosahedronGeometry(1,3);
         const vertices=geometry.attributes.position;
