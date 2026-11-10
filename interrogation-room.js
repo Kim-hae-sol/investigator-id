@@ -459,16 +459,16 @@
         color: '#645039', roughness: .94, bumpMap: paperMicro, bumpScale: .00035
       });
       ownedMaterials.add(binding);
-      box(.265,.005,.366,0,.0025,0,binding,caseFile,.002);
-      box(.016,.029,.362,-.123,.017,0,binding,caseFile,.004);
-      // Separate signatures leave visible fore-edge lines and slightly staggered corners.
-      for (let i = 0; i < 7; i++) {
-        const signature = box(.237 + (i % 3) * .002,.0032,.339 + (i % 2) * .003,
-          .005 + (i % 2) * .001,.0066 + i * .0034,(i % 3 - 1) * .0018,pageEdges,caseFile,.0005);
-        signature.rotation.y = (i % 3 - 1) * .004;
+      box(.265,.0016,.371,0,.0008,0,binding,caseFile,.0007);
+      box(.006,.011,.355,-.126,.006,0,binding,caseFile,.002);
+      // Individual documents sit at different depths and project past the folder edges.
+      for(let i=0;i<8;i++){
+        const document=box(.246+(i%3)*.004,.00085,.352+(i%4)*.009,
+          .009+i*.0009,.0022+i*.0011,-.009+(i%3)*.008,pageEdges,caseFile,.0003);
+        document.rotation.y=(i%4-1.5)*.024;
       }
       const cover=new T.Mesh(new T.PlaneGeometry(.253,.355,16,20),folderMat);cover.rotation.x=-Math.PI/2;cover.position.y=.009;const coverVertices=cover.geometry.attributes.position;for(let i=0;i<coverVertices.count;i++){const x=coverVertices.getX(i),y=coverVertices.getY(i);coverVertices.setZ(i,.0014*Math.pow(Math.max(0,(x+.1265)/.253),4)*Math.pow(Math.max(0,(.1775-y)/.355),2));}cover.geometry.computeVertexNormals();cover.castShadow=cover.receiveShadow=true;caseFile.add(cover);geometries.set('case-cover',cover.geometry);
-      box(.058,.0018,.025,-.076,.023,-.177,paper,caseFile,.002);
+
       // A dark leather blotter grounds the folder and separates the wood from loose papers.
       const blotter=material('leather','#665c4c',.88,.08,3.2,2.0);
       box(1.04,.004,.68,0,.841,.21,blotter,details,.006);
@@ -722,9 +722,9 @@
         const tex=new T.CanvasTexture(cv);tex.colorSpace=T.SRGBColorSpace;textures.set('desk-'+key,{color:tex});
         const mat=new T.MeshStandardMaterial({map:tex,roughness:.94,bumpMap:paperMicro,bumpScale:.00018,side:T.DoubleSide});ownedMaterials.add(mat);
         const geo=new T.PlaneGeometry(pw,ph,12,16),vertices=geo.attributes.position;for(let i=0;i<vertices.count;i++){const u=vertices.getX(i)/pw+.5,v=vertices.getY(i)/ph+.5;const curl = key==='note' ? .006 : .0025;const crease=key==='note' ? .00075*Math.sin(17*u+9*v)*Math.sin(Math.PI*u)*Math.sin(Math.PI*v) : 0;vertices.setZ(i,curl*Math.pow(u,6)*Math.pow(1-v,3)+crease);}geo.computeVertexNormals();geometries.set('desk-'+key,geo);const mesh=new T.Mesh(geo,mat);
-        mesh.rotation.x=-Math.PI/2;mesh.position.set(x,key==='photo'?.827:key==='photo3'?.787:key==='photo2'?.785:.791,z);mesh.castShadow=mesh.receiveShadow=true;workSurface.add(mesh);deskItems[key]=mesh;if(key==='photo'&&window.HNJCaseData?.photo){const image=new Image();image.onload=()=>{c.fillStyle='#e5dfd0';c.fillRect(0,0,w,h);const scale=Math.min((w-48)/image.width,(h-48)/image.height);c.drawImage(image,(w-image.width*scale)/2,(h-image.height*scale)/2,image.width*scale,image.height*scale);tex.needsUpdate=true;};image.src=window.HNJCaseData.photo;}return mesh;
+        mesh.rotation.x=-Math.PI/2;mesh.position.set(x,key==='photo'?.786:key==='photo3'?.787:key==='photo2'?.785:.791,z);mesh.castShadow=mesh.receiveShadow=true;workSurface.add(mesh);deskItems[key]=mesh;if(key==='photo'&&window.HNJCaseData?.photo){const image=new Image();image.onload=()=>{c.fillStyle='#e5dfd0';c.fillRect(0,0,w,h);const scale=Math.min((w-48)/image.width,(h-48)/image.height);c.drawImage(image,(w-image.width*scale)/2,(h-image.height*scale)/2,image.width*scale,image.height*scale);tex.needsUpdate=true;};image.src=window.HNJCaseData.photo;}return mesh;
       }
-      deskCard('photo','PHOTO / ASSET PENDING',.105,.255,.126,.165,'#b7b2a4').rotation.z=.27;
+      deskCard('photo','PHOTO / ASSET PENDING',.228,.255,.126,.165,'#b7b2a4').rotation.z=.27;
       const note = deskCard('note','',.37,.06,.133,.114,'#c4b48e');
       note.rotation.z=-.25;
       const pad = new T.Group();
@@ -764,9 +764,35 @@
       };
       deskCard('photo2','PHOTO / 02',-.358,.062,.148,.181,'#b9b4a7').rotation.z=-.29;
       deskCard('photo3','PHOTO / 03',-.456,.116,.128,.159,'#b5b0a2').rotation.z=.095;
-      // Bent metal paperclip at the file's free corner, with a small physical gap above the cover.
-      const clipCurve=new T.CatmullRomCurve3([new T.Vector3(-.11,.014,-.14),new T.Vector3(-.11,.014,-.09),new T.Vector3(-.095,.014,-.086),new T.Vector3(-.09,.014,-.14),new T.Vector3(-.105,.014,-.145),new T.Vector3(-.105,.014,-.10)]);
-      const clipGeometry=new T.TubeGeometry(clipCurve,40,.0009,8,false);geometries.set('file-clip',clipGeometry);const fileClip=new T.Mesh(clipGeometry,darkMetal);fileClip.castShadow=true;
+      const wireMetal=new T.MeshStandardMaterial({color:'#aaa496',metalness:.76,roughness:.32});
+      ownedMaterials.add(wireMetal);
+      function fastenerWire(name,parent,points,radius=.00085){
+        const curve=new T.CatmullRomCurve3(points.map(point=>new T.Vector3(...point)));
+        const geometry=new T.TubeGeometry(curve,48,radius,8,false);
+        geometries.set(name,geometry);
+        const wire=new T.Mesh(geometry,wireMetal);
+        wire.castShadow=true;
+        parent.add(wire);
+      }
+      // The outer loop crosses the top edge and returns beneath the paper.
+      fastenerWire('folder-paperclip',caseFile,[
+        [-.081,.012,-.137],[-.081,.012,-.192],[-.076,.010,-.201],
+        [-.070,.005,-.196],[-.070,.004,-.146],[-.064,.005,-.139],
+        [-.059,.009,-.146],[-.059,.012,-.181]
+      ]);
+      const binder=new T.Group();
+      binder.position.set(.133,.007,.051);
+      caseFile.add(binder);
+      box(.014,.013,.029,.006,0,0,darkMetal,binder,.001);
+      for(const side of [-1,1]){
+        const jaw=box(.018,.0015,.028,-.003,side*.004,0,darkMetal,binder,.0006);
+        jaw.rotation.z=side*.16;
+        fastenerWire('folder-binder-handle-'+side,binder,[
+          [.005,side*.006,-.011],[-.009,side*.009,-.008],
+          [-.028,side*.011,-.005],[-.034,side*.012,0],
+          [-.028,side*.011,.005],[-.009,side*.009,.008],[.005,side*.006,.011]
+        ],.00075);
+      }
       const cassette = new T.Group();
       cassette.name = 'cassette-player';
       cassette.position.set(.53,.782,-.37);
@@ -894,15 +920,15 @@
       });
       ownedMaterials.add(liner);ownedMaterials.add(leafPaper);
       const coverHinge = new T.Group();
-      coverHinge.position.set(-.1265,.033,0);
+      coverHinge.position.set(-.1265,.013,0);
       caseFile.add(coverHinge);
-      box(.253,.0035,.355,.1265,-.002,0,binding,coverHinge,.001);
-      box(.242,.0012,.345,.1265,-.0044,0,liner,coverHinge,.0005);
-      box(.232,.0011,.334,.124,-.0052,.0015,leafPaper,coverHinge,.0004);
-      box(.232,.0009,.334,.001,.0296,.0015,leafPaper,caseFile,.0003);
-      coverHinge.add(cover, fileClip);
+      box(.253,.0016,.355,.1265,-.0008,0,binding,coverHinge,.001);
+      box(.242,.0007,.345,.1265,-.002,0,liner,coverHinge,.0005);
+      box(.232,.0007,.334,.124,-.0028,.0015,leafPaper,coverHinge,.0004);
+      box(.232,.0009,.334,.001,.0111,.0015,leafPaper,caseFile,.0003);
+      coverHinge.add(cover);
       cover.position.set(.1265,0,0);
-      fileClip.position.set(.1265,-.011,0);
+      box(.067,.0014,.022,.061,-.0005,-.181,liner,coverHinge,.001);
       deskItems.coverHinge=coverHinge;
       deskItems.file=caseFile;deskItems.cassette=cassette;
 

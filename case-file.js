@@ -8,7 +8,7 @@ const layer=document.createElement('div');layer.className='case-desk-targets';la
 const targets={};const labels={file:'CASE FILE : HNJ 열기',photo:'허남준 사진 확대',photo2:'사진 자료 02 확대',photo3:'사진 자료 03 확대',note:'조사관 메모 펼치기',cassette:'카세트 덮개 열기',tape:'테이프 삽입'};
 for(const [key,label]of Object.entries(labels)){const b=document.createElement('button');b.className='case-object case-'+key;b.type='button';b.setAttribute('aria-label',label);b.title=label;layer.append(b);targets[key]=b;}
 const reader=document.createElement('section');reader.className='case-reader';reader.hidden=true;reader.setAttribute('aria-label','CASE FILE : HNJ 기록철');
-reader.innerHTML='<div class="case-folio"><button class="case-close" type="button">파일 닫기 ×</button><div class="case-spread"><div class="folio-stock" aria-hidden="true"></div><article class="case-left"><i class="folio-clip" aria-hidden="true"></i><small>CASE FILE : HNJ</small><h1></h1><p class="case-subtitle"></p><p class="case-assigned"></p><div class="case-rule"></div><span class="case-reference"></span><div class="folio-slip"><i class="folio-tie" aria-hidden="true"></i><span>FILE COPY</span><strong>HNJ</strong><span>ARCHIVE / 01</span></div></article><article class="case-right"><small>기록 구간</small><div class="case-content"></div><div class="folio-attachments"></div><nav class="case-pages" aria-label="기록 순서"><button type="button" data-prev>← 이전</button><span></span><button type="button" data-next>다음 →</button></nav></article></div><nav class="case-tabs" aria-label="챕터 인덱스"></nav></div>';
+reader.innerHTML='<div class="case-folio"><button class="case-close" type="button">파일 닫기 ×</button><div class="case-spread"><div class="folio-stock" aria-hidden="true"></div><article class="case-left"><small>CASE FILE : HNJ</small><h1></h1><p class="case-subtitle"></p><p class="case-assigned"></p><div class="case-rule"></div><span class="case-reference"></span><div class="folio-slip"><i class="folio-tie" aria-hidden="true"></i><span>FILE COPY</span><strong>HNJ</strong><span>ARCHIVE / 01</span></div></article><article class="case-right"><small>기록 구간</small><div class="case-content"></div><div class="folio-attachments"></div><nav class="case-pages" aria-label="기록 순서"><button type="button" data-prev>← 이전</button><span></span><button type="button" data-next>다음 →</button></nav></article></div><nav class="case-tabs" aria-label="챕터 인덱스"></nav></div>';
 root.append(reader);
 const attachments = reader.querySelector('.folio-attachments');
 for (const [kind, number, title] of [['photo','01','사진 자료'], ['note','02','조사관 메모']]) {
@@ -206,8 +206,8 @@ function show(i) {
 const folio = reader.querySelector('.case-folio');
 const spread = reader.querySelector('.case-spread');
 const bookCorners = [
-  [-.367,.036,-.167],[.114,.036,-.167],
-  [-.367,.036,.167],[.114,.036,.167]
+  [-.367,.017,-.167],[.114,.017,-.167],
+  [-.367,.017,.167],[.114,.017,.167]
 ];
 function alignFolio() {
   if (reader.hidden) return;
@@ -339,13 +339,6 @@ async function open() {
   if (!active || busy || opened) return;
   busy=true;layer.hidden=true;photoAside=true;
   const camera=window.HNJDeskCamera;
-  const photo=camera.room().getDeskItems().photo;
-  const start=photo.position.x,startY=photo.position.y;
-  await motion(260,t=>{
-    photo.position.x=start+(-.39-start)*t;
-    photo.position.y=startY+(.786-startY)*Math.max(0,(t-.62)/.38);
-    camera.refresh();
-  });
   show(index);
   reader.style.opacity='0';
   reader.inert=true;

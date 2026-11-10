@@ -30,7 +30,7 @@
     if(name==='reading'){
       const file=room.getDeskItems().file;
       // Outer cover at -.39, protruding index at .16, in the book's local space.
-      const center=file.localToWorld(new THREE.Vector3((-.39+.16)/2,.036,0));
+      const center=file.localToWorld(new THREE.Vector3((-.39+.16)/2,.017,0));
       pose.position[0]=pose.target[0]=center.x;
       pose.position[2]=center.z+.066;
       pose.target[2]=center.z;
