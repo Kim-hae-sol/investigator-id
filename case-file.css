@@ -294,35 +294,8 @@
 .case-reader:not(.folio-compact) .case-tabs {right:-54px}
 .case-reader:not(.folio-compact) .folio-clip {top:-4px}
 .case-content {min-height: 52px}
-.case-spread {perspective: 2200px;perspective-origin: 50% 52%}
-.turn-leaf,.turn-shadow {
-  position:absolute;inset:0;pointer-events:none;
-}
-.turn-leaf {z-index:5;transform-style:preserve-3d}
-.turn-strip {
-  position:absolute;top:0;left:0;
-  transform-style:preserve-3d;
-}
-.turn-face {
-  position:absolute;inset:0;overflow:hidden;
-  backface-visibility:hidden;
-  background:#dfcaa4;
-}
-.turn-back {transform:rotateY(180deg)}
-.turn-face::after {
-  content:"";position:absolute;inset:0;
-  background:#50351e;opacity:var(--crease,0);
-}
-.case-spread .turn-copy {
-  position:absolute;top:0;margin:0;
-  box-sizing:border-box;transform:none;overflow:hidden;
-}
-.case-reader:not(.folio-compact) .case-spread .turn-copy {padding:39px 43px 33px}
-.case-spread .turn-under {z-index:2;pointer-events:none}
-.turn-shadow {
-  z-index:4;right:auto;
-  background:linear-gradient(90deg,#422b2390,transparent);
-}
+.case-type-tail {color:transparent;user-select:none}
+.case-reader .case-type-skip {font-size:12px;border-bottom:1px solid #947f5e;padding:2px 0}
 
 .desk-note-flight[open] {
   position:fixed;inset:0;margin:0;width:100%;height:100%;max-width:none;max-height:none;

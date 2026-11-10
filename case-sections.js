@@ -46,8 +46,13 @@
       if (materials.facts.length) profile.append(facts);
       else paragraphs(profile,[]);
     }],
-    ['index',({left,right,sections,goTo})=>{
+    ['index',({left,right,sections,goTo,memo})=>{
       left.append(element('p','EVIDENCE / 01–03','chapter-separator'));
+      if (memo) {
+        const note=region(left,'조사관 메모','chapter-document');
+        note.dataset.typeRecord='';
+        paragraphs(note,[memo]);
+      }
       const list=element('ol','','chapter-evidence-list');
       for (const id of ['photos','interview','filmography']) {
         const chapter=sections.find(section=>section.id===id);
@@ -86,7 +91,9 @@
     }],
     ['final',({left,right,materials})=>{
       paragraphs(region(left,'최종 수사 보고서','chapter-document'),materials.report);
-      paragraphs(region(right,'조사관 결론','chapter-conclusion'),materials.conclusion);
+      const conclusion=region(right,'조사관 결론','chapter-conclusion');
+      if (materials.conclusion.length) conclusion.dataset.typeRecord='';
+      paragraphs(conclusion,materials.conclusion);
     }]
   ]);
 

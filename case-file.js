@@ -307,7 +307,7 @@ function renderSection(scope, i) {
   scope.querySelector('.case-assigned').textContent = '담당 조사관 · ' + (identity?.name || '—');
   window.HNJCaseSections.render(section,scope.querySelector('.case-chapter-left'),
     scope.querySelector('.case-chapter-right'),{
-      sections:data.sections,identity,
+      sections:data.sections,identity,memo:data.memo,
       goTo:id=>turnTo(data.sections.findIndex(chapter=>chapter.id===id))
     });
   scope.querySelector('[data-prev]').disabled = i === 0;
@@ -353,103 +353,99 @@ function alignFolio() {
 stage.addEventListener('corridor:render',alignFolio);
 new ResizeObserver(alignFolio).observe(stage);
 
-function snapshot(page) {
-  const copy = page.cloneNode(true);
-  copy.setAttribute('aria-hidden','true');
-  copy.inert = true;
-  copy.classList.add('turn-copy');
-  return copy;
-}
-async function turnTo(i) {
-  if (!opened || busy || viewer.open || i===index || i<0 || i>=data.sections.length) return;
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const focusWasInContent=spread.contains(document.activeElement);
-    show(i);
-    if (focusWasInContent && !spread.contains(document.activeElement)) reader.querySelector('h1').focus({preventScroll:true});
-    return;
-  }
-  busy = true;
-  const direction = i>index ? 1 : -1;
-  const outgoing = spread.querySelector(direction===1?'.case-right':'.case-left');
-  const prepared = spread.cloneNode(true);
-  renderSection(prepared,i);
-  const incoming = prepared.querySelector(direction===1?'.case-right':'.case-left');
-  const reverse = prepared.querySelector(direction===1?'.case-left':'.case-right');
-  const width = outgoing.offsetWidth;
-  const height = outgoing.offsetHeight;
-  const spine = spread.clientWidth/2;
-  const count = 16;
-  const segment = width/count;
-  const overlap = 1.15;
+const chapterInk = [...reader.querySelectorAll('h1,.case-assigned,.case-chapter-left,.case-chapter-right')];
+const readRecords = new Set();
+let finishTyping = null;
 
-  const beneath = snapshot(incoming);
-  beneath.classList.add('turn-under');
-  beneath.style.cssText = 'left:'+ (direction===1?spine:0) +'px;width:'+width+'px;height:'+height+'px';
-  const shadow = document.createElement('div');
-  shadow.className = 'turn-shadow';
-  shadow.setAttribute('aria-hidden','true');
-  const turn = document.createElement('div');
-  turn.className = 'turn-leaf';
-  turn.setAttribute('aria-hidden','true');
-
-  const pieces = Array.from({length:count},(_,j)=>{
-    const piece = document.createElement('div');
-    piece.className = 'turn-strip';
-    piece.style.width = (segment+overlap)+'px';
-    piece.style.height = height+'px';
-    piece.style.transformOrigin = (direction===1?'left':'right')+' center';
-    for (const [side,page,offset] of [
-      ['front',outgoing,direction===1?j:count-1-j],
-      ['back',reverse,direction===1?count-1-j:j]
-    ]) {
-      const face = document.createElement('div');
-      face.className = 'turn-face turn-'+side;
-      const copy = snapshot(page);
-      const extendsLeft = side==='front' ? direction<0 : direction>0;
-      copy.style.cssText = 'left:'+(-offset*segment+(extendsLeft?overlap:0))+'px;width:'+width+'px;height:'+height+'px';
-      face.append(copy);
-      piece.append(face);
-    }
-    turn.append(piece);
-    return piece;
+function prepareRecord() {
+  const record = reader.querySelector('[data-type-record]');
+  if (!record || reducedMotion.matches || readRecords.has(index)) return;
+  const paragraphs = [...record.querySelectorAll('p:not(.chapter-empty)')];
+  const runs = paragraphs.map(paragraph=>{
+    const letters = typeof Intl.Segmenter === 'function'
+      ? Array.from(new Intl.Segmenter('ko').segment(paragraph.textContent), item=>item.segment)
+      : Array.from(paragraph.textContent);
+    return {paragraph,letters};
   });
-  const controls = [...reader.querySelectorAll('button')];
-  const focused = document.activeElement;
-  const previousDisabled = controls.map(button=>button.disabled);
-  controls.forEach(button=>button.disabled=true);
-  outgoing.style.visibility = 'hidden';
-  spread.append(beneath,shadow,turn);
-  try {
-    await motion(760,p=>{
-      let x = spine;
-      let z = .6;
-      const curve = Math.sin(Math.PI*p);
-      for (let j=0;j<count;j++) {
-        const u = (j+.5)/count;
-        const angle = Math.PI*p + .84*curve*(u-.31);
-        const piece = pieces[j];
-        piece.style.transform = 'translate3d('+ (x-(direction<0?segment+overlap:0)) +'px,0,'+z+'px) rotateY('+(-direction*angle)+'rad)';
-        piece.style.setProperty('--crease',String(.07*curve*(1-u)));
-        x += direction*segment*Math.cos(angle);
-        z += segment*Math.sin(angle);
-      }
-      shadow.style.left = Math.min(x,spine)+'px';
-      shadow.style.width = Math.max(1,Math.abs(x-spine))+'px';
-      shadow.style.opacity = String(curve*.65);
-    });
-    show(i);
-  } finally {
-    turn.remove();shadow.remove();beneath.remove();
-    outgoing.style.removeProperty('visibility');
-    controls.forEach((button,j)=>{
-      if (button.matches('[data-prev]')) button.disabled=index===0;
-      else if (button.matches('[data-next]')) button.disabled=index===data.sections.length-1;
-      else button.disabled=previousDisabled[j];
-    });
-    busy = false;
-    if (focused instanceof HTMLElement && focused.isConnected && !focused.matches(':disabled')) focused.focus({preventScroll:true});
-    else reader.querySelector('h1').focus({preventScroll:true});
+  const length = runs.reduce((total,{letters})=>total+letters.length,0);
+  if (!length || length>120) return;
+
+  const skip = document.createElement('button');
+  skip.type = 'button';
+  skip.className = 'case-type-skip';
+  skip.textContent = '전체 보기';
+  record.append(skip);
+  let frame, start;
+  const sectionIndex = index;
+  function reveal(count) {
+    for (const run of runs) {
+      const visible = Math.min(count,run.letters.length);
+      run.tail.textContent = run.letters.slice(visible).join('');
+      run.paragraph.replaceChildren(run.letters.slice(0,visible).join(''),run.tail);
+      count -= visible;
+    }
   }
+  finishTyping = (read=false)=>{
+    cancelAnimationFrame(frame);
+    reveal(length);
+    if (read) readRecords.add(sectionIndex);
+    if (document.activeElement===skip) reader.querySelector('h1').focus({preventScroll:true});
+    skip.disabled=true;
+    skip.style.visibility='hidden';
+    record.removeEventListener('click',skipTyping);
+    finishTyping=null;
+  };
+  function skipTyping() { if (!busy) finishTyping?.(true); }
+  record.addEventListener('click',skipTyping);
+  for (const run of runs) {
+    run.tail=document.createElement('span');
+    run.tail.className='case-type-tail';
+  }
+  reveal(0);
+  const duration=Math.min(1250,Math.max(240,length*24));
+  function tick(now) {
+    start ??= now;
+    const count=Math.floor((now-start)*length/duration);
+    if(count>=length)finishTyping(true);
+    else {
+      reveal(count);
+      frame=requestAnimationFrame(tick);
+    }
+  }
+  return ()=>{if (finishTyping) frame=requestAnimationFrame(tick);};
+}
+
+async function turnTo(i) {
+  if (!opened || busy || viewer.open || memoDialog.open || i===index || i<0 || i>=data.sections.length) return;
+  const focused = document.activeElement;
+  finishTyping?.();
+  busy = true;
+  const direction = Math.sign(i-index);
+  const animateInk = async (from,to,duration) => {
+    const animations=chapterInk.map(node=>node.animate([from,to],{duration,easing:'ease-in-out',fill:'forwards'}));
+    await Promise.all(animations.map(animation=>animation.finished));
+    return animations;
+  };
+  let outgoing = [];
+  let incoming = [];
+  let startRecord;
+  try {
+    if (!reducedMotion.matches) outgoing=await animateInk(
+      {opacity:1,transform:'none'},
+      {opacity:.08,transform:'translateX('+(-4*direction)+'px)'},145);
+    show(i);
+    startRecord=prepareRecord();
+    if (!reducedMotion.matches || outgoing.length) incoming=await animateInk(
+      {opacity:.08,transform:'translateX('+(4*direction)+'px)'},
+      {opacity:1,transform:'none'},165);
+  } finally {
+    [...outgoing,...incoming].forEach(animation=>animation.cancel());
+    busy=false;
+  }
+  if (reader.contains(focused) && (!focused.isConnected || focused.matches(':disabled'))) {
+    reader.querySelector('h1').focus({preventScroll:true});
+  }
+  startRecord?.();
 }
 reader.querySelector('[data-prev]').onclick=()=>turnTo(index-1);
 reader.querySelector('[data-next]').onclick=()=>turnTo(index+1);
@@ -473,9 +469,11 @@ async function open() {
   cassette.textContent=deckState==='loaded'?(window.HNJRoomMusic.status().playing?'▣ STOP':'▣ PLAY'):'▣ 테이프 없음';
   reader.querySelector('.case-close').focus();
   busy=false;root.dataset.caseState='reading';
+  prepareRecord()?.();
 }
 async function close() {
   if (busy || !opened || viewer.open) return;
+  finishTyping?.();
   busy=true;reader.inert=true;cassette.hidden=true;
   await window.HNJDeskCamera.move(false,t=>{
     reader.style.opacity=String(Math.max(0,1-t/.09));
