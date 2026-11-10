@@ -784,23 +784,45 @@
         [.142,.101,-.013,.007,-.045,.0019]
       ]);
       for(const [i,[x,z,r]] of [[-.62,.19,.032],[-.54,.32,.023],[.87,.45,.024]].entries()){
+        const soften=i<2;
         const geometry=new T.IcosahedronGeometry(1,3);
         const vertices=geometry.attributes.position;
         for(let n=0;n<vertices.count;n++){
           const a=vertices.getX(n),b=vertices.getY(n),c=vertices.getZ(n);
           const fold=.8+.24*Math.sin(a*16+b*11+c*13+i)*Math.cos(b*17-c*13)+.16*Math.sin(a*7-c*11);
-          vertices.setXYZ(n,a*fold*r,b*fold*r*1.12,c*fold*r*.89);
+          if(soften){
+            const ridge=Math.abs(Math.sin(a*8+b*3-c*6+i*1.7));
+            const volume=.82+.085*Math.sin(a*4.2+b*3.1+c*2.5+i)
+              +.045*Math.sin(c*9-a*5+b*4)-.085*ridge**3;
+            vertices.setXYZ(n,a*volume*r,b*volume*r*(i===0?1.02:.91),c*volume*r*(i===0?.91:1.02));
+          }else vertices.setXYZ(n,a*fold*r,b*fold*r*1.12,c*fold*r*.89);
         }
         geometry.computeBoundingBox();
-        geometry.translate(0,-geometry.boundingBox.min.y,0);
         geometry.computeVertexNormals();
+        if(soften){
+          const normals=geometry.attributes.normal;
+          const sums=new Map();
+          const key=i=>[vertices.getX(i),vertices.getY(i),vertices.getZ(i)]
+            .map(value=>Math.round(value*1e6)).join('/');
+          const normal=new T.Vector3();
+          for(let n=0;n<normals.count;n++){
+            const id=key(n);
+            if(!sums.has(id))sums.set(id,new T.Vector3());
+            sums.get(id).add(normal.fromBufferAttribute(normals,n));
+          }
+          for(let n=0;n<normals.count;n++){
+            normal.fromBufferAttribute(normals,n).lerp(sums.get(key(n)).normalize(),.72).normalize();
+            normals.setXYZ(n,normal.x,normal.y,normal.z);
+          }
+        }
+        geometry.translate(0,-geometry.boundingBox.min.y,0);
         geometries.set('desk-crumpled-paper-'+i,geometry);
         const wad=new T.Mesh(geometry,i===1?newsprint:loosePaper);
         wad.position.set(x,deskTop,z);
         wad.rotation.y=.8+i*1.6;
         wad.castShadow=wad.receiveShadow=true;
         workSurface.add(wad);
-        contact(r*2.6,r*2.4,x,deskTop+.0002,z,.62,workSurface);
+        contact(r*(soften?2.15:2.6),r*(soften?1.95:2.4),x,deskTop+.0002,z,soften?.54:.62,workSurface);
       }
       caseFile.position.set(.018,.7855,.18);
       const readingFileScale=1.12;
