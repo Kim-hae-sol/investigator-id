@@ -564,7 +564,7 @@ function clearLifts(){
   hovered=null;
   stage.style.cursor='';
 }
-function pickObject(event){
+function pickObject(event, includeHoverOnly=false){
   if(!active||busy||opened||viewer.open||memoMoving||memoDialog.open||layer.hidden)return null;
   const camera=window.HNJDeskCamera;
   const items=camera.room().getDeskItems();
@@ -574,13 +574,15 @@ function pickObject(event){
     const mesh=key==='cassette'&&deckState==='loaded'&&root.dataset.tapeFocus?items.tapeDeck.playKey:items[key];
     if(mesh)candidates.set(mesh,button);
   }
+  if(includeHoverOnly&&!root.dataset.tapeFocus)candidates.set(items.pen,null);
   const mesh=camera.pick(event.clientX,event.clientY,[...candidates.keys()]);
   return mesh?{mesh,button:candidates.get(mesh)}:null;
 }
 stage.addEventListener('pointermove',event=>{
   if(event.pointerType==='touch')return;
-  hovered=pickObject(event)?.mesh??null;
-  stage.style.cursor=hovered?'pointer':'';
+  const hit=pickObject(event,true);
+  hovered=hit?.mesh??null;
+  stage.style.cursor=hit?.button?'pointer':'';
 });
 stage.addEventListener('pointerleave',()=>{hovered=null;stage.style.cursor='';});
 stage.addEventListener('click',event=>{
@@ -615,7 +617,8 @@ function deskFrame(now){
   let changed=false;
   for(const [mesh,offset] of lifts){
     const selected=mesh===hovered;
-    const target=selected?(mesh===items.note ? .010 : mesh===items.tapeDeck.playKey ? 0 : .0035):0;
+    const distance=mesh===items.pen ? .0015 : mesh===items.note ? .010 : mesh===items.tapeDeck.playKey ? 0 : .0035;
+    const target=selected?distance:0;
     const difference=target-offset;
     const next=Math.abs(difference)<.00008?target:offset+difference*(1-Math.exp(-elapsed/61));
     if(mesh===items.note){if(next!==offset)items.curlNote(next);}

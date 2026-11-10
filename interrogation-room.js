@@ -465,7 +465,7 @@
 
       // A dark leather blotter grounds the folder and separates the wood from loose papers.
       const blotter=material('leather','#665c4c',.88,.08,3.2,2.0);
-      box(1.04,.004,.68,0,.841,.21,blotter,details,.006);
+      const blotterMesh=box(1.04,.004,.68,0,.841,.21,blotter,details,.006);
       // Place the blotter below the folder; all paper geometry stays above the tabletop.
       caseFile.position.y=.8445;
       for(const sign of [-1,1])box(.003,.001,.63,sign*.36,.845,.21,darkMetal,details,.001);
@@ -1001,12 +1001,15 @@
         form.rotation.y = -.24+i*.09;
       }
       const pen = new T.Group();
-      pen.position.set(.265,.787,.395);
-      pen.rotation.y = -.91;
+      const capRadius=.0052;
+      const matTop=blotterMesh.position.y+.002;
+      pen.position.set(.305,matTop+capRadius,.414);
+      pen.rotation.y=1.34;
+      deskItems.pen=pen;
       workSurface.add(pen);
       const barrel = cylinder(.0045,.0047,.091,0,0,-.014,darkMetal,pen,24);
       barrel.rotation.x = Math.PI/2;
-      const cap = cylinder(.0052,.0052,.043,0,0,.047,charcoal,pen,24);
+      const cap = cylinder(capRadius,capRadius,.043,0,0,.047,charcoal,pen,24);
       cap.rotation.x = Math.PI/2;
       const collar = cylinder(.0049,.0049,.004,0,0,.025,brass,pen,24);
       collar.rotation.x = Math.PI/2;
