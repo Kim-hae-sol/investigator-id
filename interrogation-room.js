@@ -628,6 +628,77 @@
           wisp.material.opacity=.155*Math.sin(Math.PI*age)*(1-age);
         });
       }
+      const newsprint = canvasMaterial(512,640,(ctx,w,h)=>{
+        ctx.fillStyle='#bcb19a';
+        ctx.fillRect(0,0,w,h);
+        ctx.fillStyle='#3a3530';
+        ctx.font='bold 40px Georgia';
+        ctx.fillText('EVENING EDITION',24,58);
+        ctx.fillRect(24,110,w-48,2);
+        ctx.fillRect(24,76,w-48,2);
+        for(let column=0;column<3;column++){
+          const x=24+column*159;
+          for(let row=0;row<34;row++){
+            ctx.fillStyle=row%7===0?'#4a4136':'#51493f89';
+            ctx.fillRect(x,130+row*14,139-(row*17+column*11)%35,row%7===0?5:2);
+          }
+        }
+      });
+      newsprint.side=T.DoubleSide;
+      newsprint.bumpMap=paperMicro;
+      newsprint.bumpScale=.00018;
+      const loosePaper=pageEdges.clone();
+      loosePaper.side=T.DoubleSide;
+      ownedMaterials.add(loosePaper);
+      const deskTop=window.HNJTableAsset ? .780 : .8375;
+      const stack=new T.Group();
+      stack.position.set(.77,deskTop,.29);
+      workSurface.add(stack);
+      contact(.34,.32,.77,deskTop+.0002,.29,.57,workSurface);
+      const sheets=[
+        [.268,.219,-.016,.005,-.14],[.251,.218,.009,.012,.06],
+        [.264,.204,-.002,.019,-.06],[.228,.209,.014,.027,.15],
+        [.255,.196,-.009,.035,-.11],[.233,.201,.005,.041,.08]
+      ];
+      for(const [i,[width,depth,x,y,angle]] of sheets.entries()){
+        const bundle=new T.Group();
+        bundle.position.set(x,y,(i%3-1)*.009);
+        bundle.rotation.y=angle;
+        stack.add(bundle);
+        box(width-.009,.006,depth-.007,0,-.003,0,pageEdges,bundle,.0015);
+        const top=new T.PlaneGeometry(width,depth,12,10);
+        const points=top.attributes.position;
+        for(let n=0;n<points.count;n++){
+          const u=points.getX(n)/width+.5;
+          const v=points.getY(n)/depth+.5;
+          points.setZ(n,.006*u**6*v**3+.002*Math.sin(u*5+i)*Math.sin(Math.PI*v));
+        }
+        top.computeVertexNormals();
+        geometries.set('desk-newspaper-'+i,top);
+        const sheet=new T.Mesh(top,i%2?newsprint:loosePaper);
+        sheet.rotation.x=-Math.PI/2;
+        sheet.castShadow=sheet.receiveShadow=true;
+        bundle.add(sheet);
+      }
+      for(const [i,[x,z,r]] of [[-.62,.24,.032],[.61,.48,.026],[.88,.13,.022]].entries()){
+        const geometry=new T.IcosahedronGeometry(1,3);
+        const vertices=geometry.attributes.position;
+        for(let n=0;n<vertices.count;n++){
+          const a=vertices.getX(n),b=vertices.getY(n),c=vertices.getZ(n);
+          const fold=.8+.17*Math.sin(a*16+b*11+c*13+i)*Math.cos(b*17-c*13)+.12*Math.sin(a*7-c*11);
+          vertices.setXYZ(n,a*fold*r,b*fold*r*.68,c*fold*r*.89);
+        }
+        geometry.computeBoundingBox();
+        geometry.translate(0,-geometry.boundingBox.min.y,0);
+        geometry.computeVertexNormals();
+        geometries.set('desk-crumpled-paper-'+i,geometry);
+        const wad=new T.Mesh(geometry,i===1?newsprint:loosePaper);
+        wad.position.set(x,deskTop,z);
+        wad.rotation.y=.8+i*1.6;
+        wad.castShadow=wad.receiveShadow=true;
+        workSurface.add(wad);
+        contact(r*2.6,r*2.4,x,deskTop+.0002,z,.62,workSurface);
+      }
       caseFile.position.set(.018,.7855,.18);caseFile.scale.setScalar(1.12);
       // Desk evidence is real metre-scale geometry. Text uses local canvas labels, never a scene plate.
       const deskItems={};
