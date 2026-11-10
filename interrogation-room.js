@@ -709,7 +709,7 @@
       caseFile.position.set(.018,.7855,.18);
       const readingFileScale=1.12;
       const deskFileScale=readingFileScale*1.15;
-      caseFile.scale.set(deskFileScale,readingFileScale,deskFileScale);
+      caseFile.scale.setScalar(readingFileScale);
       // Desk evidence is real metre-scale geometry. Text uses local canvas labels, never a scene plate.
       const deskItems={};
       function deskCard(key,label,x,z,pw,ph,color){
@@ -996,10 +996,13 @@
       }
       deskItems.readingFileScale=readingFileScale;
       deskItems.setFileOpen=amount=>{
-        const scale=T.MathUtils.lerp(deskFileScale,readingFileScale,amount);
+        const aspect=container.clientWidth/Math.max(1,container.clientHeight);
+        const fittedDeskScale=deskFileScale*Math.min(1,aspect/.54);
+        const scale=T.MathUtils.lerp(fittedDeskScale,readingFileScale,amount);
         caseFile.scale.x=caseFile.scale.z=scale;
         coverHinge.rotation.z=Math.PI*amount;
       };
+      deskItems.setFileOpen(0);
       deskItems.file=caseFile;deskItems.cassette=cassette;
 
       // Loose forms and a capped pen sit clear of the projected click targets.
