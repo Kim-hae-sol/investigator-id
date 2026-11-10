@@ -223,7 +223,8 @@ function animateNote(opening) {
       (c.x-a.x+h*c.x)/height,(c.y-a.y+h*c.y)/height,0,h/height,
       0,0,1,0,a.x,a.y,0,1
     ].join(',')+')';
-    memoDialog.style.setProperty('--desk-shade',String(.27*p));
+    memoDialog.style.setProperty('--desk-shade',String(.14*p));
+    memoSheet.style.setProperty('--paper-lift',String(p));
     memoSheet.style.setProperty('--note-ink',String(Math.max(0,(p-.45)/.55)));
   });
 }
@@ -238,6 +239,7 @@ async function showMemo(source) {
   memoStatus.textContent=memoDraft===null?'':'저장하지 않은 초안';
   memoSheet.inert=true;
   memoDialog.style.setProperty('--desk-shade','0');
+  memoSheet.style.setProperty('--paper-lift','0');
   memoSheet.style.setProperty('--note-ink','0');
   if (memoMesh) {
     memoSheet.style.setProperty('--note-surface','url('+memoMesh.material.map.image.toDataURL()+')');
@@ -329,11 +331,23 @@ const bookCorners = [
   [-.367,.017,-.167],[.114,.017,-.167],
   [-.367,.017,.167],[.114,.017,.167]
 ];
+let folioTravel=1;
 function alignFolio() {
   if (reader.hidden) return;
   if (stage.clientWidth < 760 || stage.clientHeight < 540) {
     reader.classList.add('folio-compact');
-    folio.style.removeProperty('transform');
+    if (folioTravel>=1) folio.style.removeProperty('transform');
+    else {
+      const camera=window.HNJDeskCamera;
+      const file=camera.room().getDeskItems().file;
+      const point=camera.project(file.getWorldPosition(new THREE.Vector3()).toArray());
+      const rect=stage.getBoundingClientRect();
+      const parent=reader.getBoundingClientRect();
+      const x=point.x+rect.left-parent.left-folio.offsetLeft-folio.offsetWidth/2;
+      const y=point.y+rect.top-parent.top-folio.offsetTop-folio.offsetHeight/2;
+      const remaining=1-folioTravel;
+      folio.style.transform=`translate(${x*remaining}px,${y*remaining}px) scale(${1-.65*remaining})`;
+    }
     return;
   }
   reader.classList.remove('folio-compact');
@@ -355,6 +369,13 @@ function alignFolio() {
 }
 stage.addEventListener('corridor:render',alignFolio);
 new ResizeObserver(alignFolio).observe(stage);
+function followFolder(openAmount) {
+  folioTravel=openAmount;
+  const start=stage.clientWidth<760||stage.clientHeight<540 ? .24 : .74;
+  const opacity=Math.max(0,Math.min(1,(openAmount-start)/(1-start)));
+  reader.style.opacity=String(opacity*opacity*(3-2*opacity));
+  alignFolio();
+}
 
 const chapterInk = [...reader.querySelectorAll('h1,.case-assigned,.case-chapter-left,.case-chapter-right')];
 const readRecords = new Set();
@@ -461,10 +482,8 @@ async function open() {
   reader.style.opacity='0';
   reader.inert=true;
   reader.hidden=false;
-  await camera.move(true,t=>{
-    reader.style.opacity=String(Math.max(0,(t-.91)/.09));
-    alignFolio();
-  });
+  followFolder(0);
+  await camera.move(true,followFolder);
   opened=true;reader.inert=false;
   reader.style.removeProperty('opacity');
   cassette.hidden=false;
@@ -478,9 +497,7 @@ async function close() {
   if (busy || !opened || viewer.open) return;
   finishTyping?.();
   busy=true;reader.inert=true;cassette.hidden=true;
-  await window.HNJDeskCamera.move(false,t=>{
-    reader.style.opacity=String(Math.max(0,1-t/.09));
-  });
+  await window.HNJDeskCamera.move(false,t=>followFolder(1-t));
   reader.hidden=true;reader.inert=false;reader.style.removeProperty('opacity');
   opened=false;layer.hidden=false;busy=false;root.dataset.caseState='desk';targets.file.focus();
 }

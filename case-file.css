@@ -392,3 +392,53 @@
 .case-reader.folio-compact .case-left h1 {font-size:clamp(16px,4vw,26px)}
 .case-reader.folio-compact .chapter-material {font-size:12px}
 .case-reader.folio-compact .chapter-material h2 {font-size:14px}
+
+/* Paper and ink under the desk lamp. The live room supplies the surrounding light. */
+:root {
+  --desk-paper-light:#e2d0ae;
+  --desk-paper-mid:#cdb894;
+  --desk-paper-edge:#b29a74;
+  --desk-ink:#382f25;
+  --desk-rule:#786447;
+  --desk-copy:Georgia,'Noto Serif KR',serif;
+  --desk-mark:ui-monospace,monospace;
+}
+.case-reader,.desk-note-sheet {color:var(--desk-ink);font-family:var(--desk-copy)}
+.case-spread article,.desk-note-sheet {
+  background:radial-gradient(ellipse at 12% 5%,#fff2d42e,transparent 62%),
+    linear-gradient(151deg,var(--desk-paper-light),var(--desk-paper-mid) 75%,var(--desk-paper-edge));
+}
+.case-spread .case-left {
+  box-shadow:inset -9px 0 13px -7px #4732229c,1px 2px 3px #35251a73;
+}
+.case-spread .case-right {
+  box-shadow:inset 9px 0 13px -7px #4732229c,2px 3px 4px #35251a73;
+}
+.case-reader .chapter-wanted {background:#e4d1aa}
+.case-reader.folio-compact .case-folio {animation:none}
+.desk-note-sheet {
+  box-shadow:1px 2px 4px #26180c60,
+    3px calc(3px + 12px * var(--paper-lift,0)) calc(4px + 17px * var(--paper-lift,0)) #26180c57;
+}
+.case-reader .case-tabs button,.desk-note-controls button,.case-tape-back,
+.case-reader .case-close,.case-cassette {
+  font-family:var(--desk-mark);letter-spacing:.045em;
+}
+.case-reader .case-tabs button {
+  color:var(--desk-ink);background:#baa17b;border-color:#927957;
+  box-shadow:1px 2px 3px #30221750;
+}
+.case-reader .case-tabs button[aria-current=true] {background:#e0caa0}
+.desk-note-controls button,.case-reader .case-pages button {border-bottom:1px solid transparent}
+.desk-note-controls button:hover,.case-reader .case-pages button:not(:disabled):hover {
+  border-color:var(--desk-rule);
+}
+.case-tape-back,.case-cassette {
+  background:transparent;color:#ecdbbb;
+  text-shadow:0 1px 4px #160f08,0 0 8px #160f08;
+  border-bottom:1px solid #cdb88e55;
+}
+.case-tape-back:hover,.case-cassette:not(:disabled):hover {border-color:#ecdbbb}
+.case-tape-back:focus-visible,.case-cassette:focus-visible {
+  outline:1px solid #ecdbbb;outline-offset:4px;
+}
